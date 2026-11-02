@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("public navigation and service search work without backend credentials", async ({
+const backendConfigured = Boolean(
+  process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY,
+);
+
+test("public navigation and service search work with either backend mode", async ({
   page,
 }) => {
   await page.goto("/");
@@ -20,7 +24,7 @@ test("public navigation and service search work without backend credentials", as
   ).toBeVisible();
   await expect(page.locator(".service-card")).toHaveCount(1);
   await expect(
-    page.getByText("1 service in the initial catalogue"),
+    page.getByText(/^1 service in the (initial|live) catalogue$/),
   ).toBeVisible();
 });
 
@@ -33,7 +37,7 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   ).toBeVisible();
   await expect(page.locator(".service-card")).toHaveCount(12);
   await expect(
-    page.getByText("14 services in the initial catalogue"),
+    page.getByText(/^14 services in the (initial|live) catalogue$/),
   ).toBeVisible();
   await expect(page.getByText("Page 1 of 2")).toBeVisible();
   await page.getByRole("button", { name: "Next page" }).click();
@@ -51,12 +55,18 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   await expect(
     page.getByRole("heading", { name: "Let's get you to the right place." }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/Secure online submissions are not configured yet/),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /Submit enquiry/ }),
-  ).toBeDisabled();
+  const submitButton = page.getByRole("button", { name: /Submit enquiry/ });
+  if (backendConfigured) {
+    await expect(
+      page.getByText(/Secure online submissions are not configured yet/),
+    ).toHaveCount(0);
+    await expect(submitButton).toBeEnabled();
+  } else {
+    await expect(
+      page.getByText(/Secure online submissions are not configured yet/),
+    ).toBeVisible();
+    await expect(submitButton).toBeDisabled();
+  }
   const viewportWidth = await page.evaluate(
     () => document.documentElement.clientWidth,
   );
@@ -66,18 +76,46 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
 });
 
-test("tracking and admin do not offer unauthenticated write paths", async ({
+test("tracking follows backend configuration and admin remains owner-only", async ({
   page,
 }) => {
   await page.goto("/track");
-  await expect(
-    page.getByRole("button", { name: /View application status/ }),
-  ).toBeDisabled();
+  const trackingButton = page.getByRole("button", {
+    name: /View application status/,
+  });
+  if (backendConfigured) await expect(trackingButton).toBeEnabled();
+  else await expect(trackingButton).toBeDisabled();
   await page.goto("/admin/login");
   await expect(
     page.getByText("There is no public registration."),
   ).toBeVisible();
+  const signInButton = page.getByRole("button", { name: /Sign in securely/ });
+  if (backendConfigured) await expect(signInButton).toBeEnabled();
+  else await expect(signInButton).toBeDisabled();
+});
+
+test("admin password recovery uses a generic confirmation and safe redirect", async ({
+  page,
+}) => {
+  test.skip(!backendConfigured, "requires configured Supabase client");
+  let recoveryUrl = "";
+  await page.route("**/auth/v1/recover**", async (route) => {
+    recoveryUrl = route.request().url();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: "{}",
+    });
+  });
+
+  await page.goto("/admin/login");
+  await page
+    .getByRole("textbox", { name: "Verified email" })
+    .fill("support@babacybercafe.in");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
   await expect(
-    page.getByRole("button", { name: /Sign in securely/ }),
-  ).toBeDisabled();
+    page.getByText("If the account exists, password reset instructions were sent."),
+  ).toBeVisible();
+  const callbackUrl = new URL(recoveryUrl).searchParams.get("redirect_to");
+  expect(callbackUrl).toBe(`${new URL(page.url()).origin}/admin/login`);
 });

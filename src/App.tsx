@@ -28,6 +28,7 @@ import {
   FileText,
   Globe2,
   HeartHandshake,
+  Instagram,
   Landmark,
   Menu,
   MessageCircle,
@@ -91,7 +92,7 @@ type SiteSettings = {
   announcement: { enabled: boolean; text: string };
   homepage: { eyebrow: string; headline: string; description: string };
   contact: { phone: string; whatsapp: string; email: string };
-  social: { facebook: string; business_profile: string };
+  social: { facebook: string; business_profile: string; instagram: string };
 };
 
 const defaultSiteSettings: SiteSettings = {
@@ -103,7 +104,7 @@ const defaultSiteSettings: SiteSettings = {
       "Friendly help with digital applications, documents and service enquiries, all in one place.",
   },
   contact: { phone, whatsapp, email },
-  social: { facebook, business_profile: businessProfile },
+  social: { facebook, business_profile: businessProfile, instagram: "" },
 };
 
 function useSiteSettings() {
@@ -162,6 +163,8 @@ function useSiteSettings() {
             typeof social.business_profile === "string"
               ? social.business_profile
               : businessProfile,
+          instagram:
+            typeof social.instagram === "string" ? social.instagram : "",
         },
       });
     };
@@ -299,6 +302,15 @@ function Footer() {
           >
             Google Business Profile <ArrowUpRight size={13} />
           </a>
+          {settings.social.instagram && (
+            <a
+              href={settings.social.instagram}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Instagram <ArrowUpRight size={13} />
+            </a>
+          )}
         </div>
       </div>
       <div className="footer-bottom">
@@ -311,6 +323,15 @@ function Footer() {
           <a href={settings.social.facebook} target="_blank" rel="noreferrer">
             Facebook
           </a>
+          {settings.social.instagram && (
+            <a
+              href={settings.social.instagram}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Instagram
+            </a>
+          )}
         </div>
       </div>
       <p className="independence-note">
@@ -1818,6 +1839,8 @@ function WebsiteSettingsEditor() {
               typeof social.business_profile === "string"
                 ? social.business_profile
                 : businessProfile,
+            instagram:
+              typeof social.instagram === "string" ? social.instagram : "",
           },
         });
       });
@@ -2047,6 +2070,21 @@ function WebsiteSettingsEditor() {
                 required
               />
             </label>
+            <label className="field field-wide">
+              <span>Instagram page (optional)</span>
+              <input
+                type="url"
+                pattern="https://.*"
+                value={form.social.instagram}
+                onChange={(event) =>
+                  update("social", {
+                    ...form.social,
+                    instagram: event.target.value,
+                  })
+                }
+                placeholder="https://www.instagram.com/your-page/"
+              />
+            </label>
           </div>
         </div>
         <button className="button button-dark" disabled={busy}>
@@ -2076,6 +2114,10 @@ function AdminPage() {
   const [ready, setReady] = useState(!isSupabaseConfigured);
   const [adminEmail, setAdminEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [error, setError] = useState("");
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
@@ -2141,7 +2183,8 @@ function AdminPage() {
         ),
       );
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
         setUser(
           session?.user
             ? { id: session.user.id, email: session.user.email }
@@ -2255,6 +2298,70 @@ function AdminPage() {
       password,
     });
     if (authError) setError(authError.message);
+  }
+  async function requestPasswordReset() {
+    setError("");
+    setNotice("");
+    if (!supabase) return;
+    if (!adminEmail.trim()) {
+      setError("Enter your verified email address first.");
+      return;
+    }
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      adminEmail.trim(),
+      { redirectTo: `${window.location.origin}/admin/login` },
+    );
+    if (resetError) setError(resetError.message);
+    else setNotice("If the account exists, password reset instructions were sent.");
+  }
+  async function updateRecoveredPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    if (!supabase) return;
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (updateError) setError(updateError.message);
+    else {
+      setPasswordRecovery(false);
+      setNewPassword("");
+      setNotice("Password updated.");
+    }
+  }
+  async function changeAdminPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    if (!supabase || !isOwner) return;
+    if (newPassword.length !== 8) {
+      setError("Choose exactly 8 characters.");
+      return;
+    }
+    if (
+      !/[A-Z]/.test(newPassword) ||
+      !/[a-z]/.test(newPassword) ||
+      !/[0-9]/.test(newPassword) ||
+      !/[^A-Za-z0-9]/.test(newPassword)
+    ) {
+      setError("Include uppercase, lowercase, a number, and a symbol.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
+    setChangingPassword(true);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setChangingPassword(false);
+    if (updateError) setError(updateError.message);
+    else {
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setNotice("Password updated successfully.");
+    }
   }
   async function signOut() {
     await supabase?.auth.signOut();
@@ -2608,7 +2715,34 @@ function AdminPage() {
           Admin authentication is unavailable until Supabase is configured.
         </ConfigurationNote>
       )}
-      {!user && (
+      {passwordRecovery && (
+        <form
+          className="signin-panel admin-signin"
+          onSubmit={updateRecoveredPassword}
+        >
+          <div className="signin-icon">
+            <ShieldCheck size={25} />
+          </div>
+          <span className="eyebrow">PASSWORD RECOVERY</span>
+          <h2>Choose a new password</h2>
+          <label className="field">
+            <span>New password</span>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              required
+              minLength={12}
+              autoComplete="new-password"
+            />
+          </label>
+          {error && <div className="notice notice-error">{error}</div>}
+          <button className="button button-dark" disabled={!isSupabaseConfigured}>
+            Update password <ArrowRight size={16} />
+          </button>
+        </form>
+      )}
+      {!user && !passwordRecovery && (
         <form className="signin-panel admin-signin" onSubmit={signIn}>
           <div className="signin-icon">
             <ShieldCheck size={25} />
@@ -2640,21 +2774,30 @@ function AdminPage() {
             />
           </label>
           {error && <div className="notice notice-error">{error}</div>}
+          {notice && <div className="notice notice-success">{notice}</div>}
           <button
             className="button button-dark"
             disabled={!isSupabaseConfigured}
           >
             Sign in securely <ArrowRight size={16} />
           </button>
+          <button
+            className="button button-outline"
+            type="button"
+            disabled={!isSupabaseConfigured}
+            onClick={() => void requestPasswordReset()}
+          >
+            Forgot password?
+          </button>
         </form>
       )}
-      {user && !ready && <p>Checking owner permissions…</p>}
-      {user && ready && !isOwner && (
+      {!passwordRecovery && user && !ready && <p>Checking owner permissions…</p>}
+      {!passwordRecovery && user && ready && !isOwner && (
         <div className="notice notice-error">
           {error || "Owner access is required for this dashboard."}
         </div>
       )}
-      {user && ready && isOwner && (
+      {!passwordRecovery && user && ready && isOwner && (
         <>
           {error && <div className="notice notice-error">{error}</div>}
           {notice && (
@@ -2663,6 +2806,51 @@ function AdminPage() {
               {notice}
             </div>
           )}
+          <section className="admin-section">
+            <div className="admin-section-head">
+              <div>
+                <span className="eyebrow">ACCOUNT SECURITY</span>
+                <h2>Change password</h2>
+              </div>
+            </div>
+            <form className="form-panel" onSubmit={changeAdminPassword}>
+              <div className="field-grid">
+                <label className="field">
+                  <span>New 8-character password</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    minLength={8}
+                    maxLength={8}
+                    required
+                    autoComplete="new-password"
+                  />
+                </label>
+                <label className="field">
+                  <span>Confirm new password</span>
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(event) =>
+                      setConfirmNewPassword(event.target.value)
+                    }
+                    minLength={8}
+                    maxLength={8}
+                    required
+                    autoComplete="new-password"
+                  />
+                </label>
+              </div>
+              {error && <div className="notice notice-error">{error}</div>}
+              <button
+                className="button button-dark"
+                disabled={changingPassword}
+              >
+                {changingPassword ? "Updating…" : "Update password"}
+              </button>
+            </form>
+          </section>
           <div className="metric-grid">
             <div>
               <span>Applications</span>
@@ -3462,6 +3650,22 @@ function ContactPage() {
           <p>Visit our Facebook page.</p>
           <ArrowUpRight size={16} />
         </a>
+        {settings.social.instagram && (
+          <a
+            href={settings.social.instagram}
+            target="_blank"
+            rel="noreferrer"
+            className="contact-card"
+          >
+            <span>
+              <Instagram size={21} />
+            </span>
+            <small>FOLLOW</small>
+            <strong>Instagram</strong>
+            <p>Visit our Instagram page.</p>
+            <ArrowUpRight size={16} />
+          </a>
+        )}
         <a
           href={settings.social.business_profile}
           target="_blank"
@@ -3548,9 +3752,9 @@ function LegalPage({ privacy = false }: { privacy?: boolean }) {
             <h2>Third-party services</h2>
             <p>
               Authentication, hosting and email providers may process
-              information to operate the portal. WhatsApp, Facebook and Google
-              links are governed by their own privacy policies. Do not use the
-              portal for emergencies.
+              information to operate the portal. WhatsApp, Facebook, Instagram
+              and Google links are governed by their own privacy policies. Do
+              not use the portal for emergencies.
             </p>
             <h2>Contact</h2>
             <p>
