@@ -28,8 +28,17 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   page,
 }) => {
   await page.goto("/services/insurance");
-  await expect(page.getByRole("heading", { name: "Insurance" })).toBeVisible();
-  await expect(page.locator(".service-card")).toHaveCount(14);
+  await expect(
+    page.getByRole("heading", { name: "Insurance", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".service-card")).toHaveCount(12);
+  await expect(
+    page.getByText("14 services in the initial catalogue"),
+  ).toBeVisible();
+  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(page.locator(".service-card")).toHaveCount(2);
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   const serviceViewportWidth = await page.evaluate(
     () => document.documentElement.clientWidth,
   );
