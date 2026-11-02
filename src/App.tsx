@@ -1,0 +1,3702 @@
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  BrowserRouter,
+  Link,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import Papa from "papaparse";
+import {
+  Activity,
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  BookOpen,
+  BriefcaseBusiness,
+  Building2,
+  CarFront,
+  Check,
+  ChevronDown,
+  CircleHelp,
+  Clock3,
+  FileCheck2,
+  FileText,
+  Globe2,
+  HeartHandshake,
+  Landmark,
+  Menu,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Ticket,
+  UsersRound,
+  X,
+  Zap,
+} from "lucide-react";
+import {
+  categories,
+  categoryName,
+  seedServices,
+  statusLabels,
+  type ApplicationStatus,
+  type Category,
+  type ServiceRecord,
+} from "./data";
+import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
+import "./App.css";
+
+const phone = "+91 7006865909";
+const email = "support@babacybercafe.in";
+const whatsapp = "917006865909";
+const facebook = "https://www.facebook.com/share/1cKyxm9dZ/";
+const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
+
+function useCategoryList(activeOnly = true) {
+  const [items, setItems] = useState<Category[]>(categories);
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    const load = () => {
+      let query = supabase!
+        .from("service_categories")
+        .select("slug, name, description, icon, is_active, sort_order")
+        .order("sort_order");
+      if (activeOnly) query = query.eq("is_active", true);
+      void query.then(({ data }) => {
+        if (current && data) setItems(data as Category[]);
+      });
+    };
+    const refresh = () => load();
+    load();
+    window.addEventListener("catalog-updated", refresh);
+    return () => {
+      current = false;
+      window.removeEventListener("catalog-updated", refresh);
+    };
+  }, [activeOnly]);
+  return items;
+}
+
+function categoryLabel(slug: string, items: Category[]) {
+  return items.find((item) => item.slug === slug)?.name ?? categoryName(slug);
+}
+
+type SiteSettings = {
+  announcement: { enabled: boolean; text: string };
+  homepage: { eyebrow: string; headline: string; description: string };
+  contact: { phone: string; whatsapp: string; email: string };
+  social: { facebook: string; business_profile: string };
+};
+
+const defaultSiteSettings: SiteSettings = {
+  announcement: { enabled: false, text: "" },
+  homepage: {
+    eyebrow: "LOCAL SERVICE · SRINAGAR, J&K",
+    headline: "Everyday services|made simpler.",
+    description:
+      "Friendly help with digital applications, documents and service enquiries, all in one place.",
+  },
+  contact: { phone, whatsapp, email },
+  social: { facebook, business_profile: businessProfile },
+};
+
+function useSiteSettings() {
+  const [settings, setSettings] = useState<SiteSettings>(defaultSiteSettings);
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    const loadSettings = async () => {
+      const { data } = await supabase!
+        .from("website_settings")
+        .select("key, value")
+        .in("key", [
+          "homepage_announcement",
+          "homepage_content",
+          "contact",
+          "social_links",
+        ])
+        .eq("is_public", true);
+      if (!current || !data) return;
+      const values = Object.fromEntries(
+        data.map((item) => [item.key, item.value as Record<string, unknown>]),
+      );
+      const announcement = values.homepage_announcement ?? {};
+      const homepage = values.homepage_content ?? {};
+      const contact = values.contact ?? {};
+      const social = values.social_links ?? {};
+      setSettings({
+        announcement: {
+          enabled: announcement.enabled === true,
+          text: typeof announcement.text === "string" ? announcement.text : "",
+        },
+        homepage: {
+          eyebrow:
+            typeof homepage.eyebrow === "string"
+              ? homepage.eyebrow
+              : defaultSiteSettings.homepage.eyebrow,
+          headline:
+            typeof homepage.headline === "string"
+              ? homepage.headline
+              : defaultSiteSettings.homepage.headline,
+          description:
+            typeof homepage.description === "string"
+              ? homepage.description
+              : defaultSiteSettings.homepage.description,
+        },
+        contact: {
+          phone: typeof contact.phone === "string" ? contact.phone : phone,
+          whatsapp:
+            typeof contact.whatsapp === "string" ? contact.whatsapp : whatsapp,
+          email: typeof contact.email === "string" ? contact.email : email,
+        },
+        social: {
+          facebook:
+            typeof social.facebook === "string" ? social.facebook : facebook,
+          business_profile:
+            typeof social.business_profile === "string"
+              ? social.business_profile
+              : businessProfile,
+        },
+      });
+    };
+    const refresh = () => {
+      void loadSettings();
+    };
+    void loadSettings();
+    window.addEventListener("site-settings-updated", refresh);
+    return () => {
+      current = false;
+      window.removeEventListener("site-settings-updated", refresh);
+    };
+  }, []);
+  return settings;
+}
+
+function ConfigurationNote({
+  children = "Secure online submissions are not configured yet. Please contact the cafe directly.",
+}: {
+  children?: string;
+}) {
+  return (
+    <div className="notice notice-warn" role="status">
+      <CircleHelp size={17} />
+      {children}
+    </div>
+  );
+}
+
+function Header() {
+  const settings = useSiteSettings();
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  return (
+    <>
+      <div className="topline">
+        <span>Srinagar, Jammu &amp; Kashmir</span>
+        <a href={`tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`}>
+          {settings.contact.phone}
+        </a>
+        <span>Independent digital assistance</span>
+      </div>
+      <header className="site-header">
+        <Link
+          to="/"
+          className="brand"
+          onClick={close}
+          aria-label="Baba's Cyber Cafe home"
+        >
+          <span className="brand-mark">B</span>
+          <span className="brand-name">
+            BABA'S <small>CYBER CAFE</small>
+          </span>
+        </Link>
+        <button
+          className="icon-button menu-toggle"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X /> : <Menu />}
+        </button>
+        <nav
+          className={open ? "main-nav is-open" : "main-nav"}
+          aria-label="Main navigation"
+        >
+          <NavLink to="/services" onClick={close}>
+            Services
+          </NavLink>
+          <NavLink to="/about" onClick={close}>
+            About
+          </NavLink>
+          <NavLink to="/track" onClick={close}>
+            Track application
+          </NavLink>
+          <NavLink to="/contact" onClick={close}>
+            Contact
+          </NavLink>
+          <Link className="nav-button" to="/apply" onClick={close}>
+            Start an enquiry <ArrowUpRight size={15} />
+          </Link>
+        </nav>
+      </header>
+    </>
+  );
+}
+
+function Footer() {
+  const settings = useSiteSettings();
+  return (
+    <footer className="site-footer">
+      <div className="footer-main">
+        <div className="footer-brand">
+          <Link to="/" className="brand">
+            <span className="brand-mark">B</span>
+            <span className="brand-name">
+              BABA'S <small>CYBER CAFE</small>
+            </span>
+          </Link>
+          <p>Thoughtful digital assistance, rooted in Srinagar.</p>
+        </div>
+        <div>
+          <h3>Explore</h3>
+          <Link to="/services">All services</Link>
+          <Link to="/services/insurance">Insurance services</Link>
+          <Link to="/about">About us</Link>
+          <Link to="/contact">Contact</Link>
+        </div>
+        <div>
+          <h3>Your applications</h3>
+          <Link to="/apply">New enquiry</Link>
+          <Link to="/track">Track an application</Link>
+          <Link to="/dashboard">Customer dashboard</Link>
+          <Link to="/admin/login">Admin sign-in</Link>
+        </div>
+        <div>
+          <h3>Reach us</h3>
+          <a href={`tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`}>
+            {settings.contact.phone}
+          </a>
+          <a href={`mailto:${settings.contact.email}`}>
+            {settings.contact.email}
+          </a>
+          <a
+            href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            WhatsApp <ArrowUpRight size={13} />
+          </a>
+          <a
+            href={settings.social.business_profile}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Google Business Profile <ArrowUpRight size={13} />
+          </a>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>
+          © {new Date().getFullYear()} BABA'S CYBER CAFE · Srinagar, J&amp;K
+        </span>
+        <div>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
+          <a href={settings.social.facebook} target="_blank" rel="noreferrer">
+            Facebook
+          </a>
+        </div>
+      </div>
+      <p className="independence-note">
+        BABA'S CYBER CAFE is an independent assistance business, not a
+        government office or an authorised government service centre. Official
+        authorities make all application decisions.
+      </p>
+    </footer>
+  );
+}
+
+function PageIntro({
+  eyebrow,
+  title,
+  copy,
+}: {
+  eyebrow: string;
+  title: string;
+  copy: string;
+}) {
+  return (
+    <div className="page-intro">
+      <span className="eyebrow">{eyebrow}</span>
+      <h1>{title}</h1>
+      <p>{copy}</p>
+    </div>
+  );
+}
+
+function HomePage() {
+  const settings = useSiteSettings();
+  const [headlineLead, headlineFinish = ""] =
+    settings.homepage.headline.split("|");
+  return (
+    <>
+      <main>
+        {settings.announcement.enabled && settings.announcement.text && (
+          <div className="site-announcement">
+            <BadgeCheck size={15} />
+            {settings.announcement.text}
+          </div>
+        )}
+        <section className="home-hero">
+          <div className="hero-copy">
+            <span className="eyebrow">
+              <span className="eyebrow-dot" />
+              {settings.homepage.eyebrow}
+            </span>
+            <h1>
+              {headlineLead}
+              <br />
+              <em>{headlineFinish}</em>
+            </h1>
+            <p>{settings.homepage.description}</p>
+            <div className="hero-actions">
+              <Link className="button button-gold" to="/services">
+                Explore services <ArrowRight size={16} />
+              </Link>
+              <Link className="button button-outline" to="/track">
+                Track an application <ArrowUpRight size={15} />
+              </Link>
+            </div>
+            <div className="hero-caption">
+              <span className="caption-rule" />
+              Independent assistance. Clear next steps.
+            </div>
+          </div>
+          <div className="hero-visual">
+            <img
+              src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=85"
+              alt="A bright workspace with a computer ready for digital services"
+            />
+            <div className="hero-stamp">
+              <span>
+                <ShieldCheck size={19} />
+              </span>
+              <small>
+                PERSONAL
+                <br />
+                SERVICE
+              </small>
+            </div>
+            <div className="hero-image-caption">
+              <span>01 / DIGITAL ASSISTANCE</span>
+              <span>SRINAGAR, J&amp;K</span>
+            </div>
+          </div>
+          <div className="hero-index">
+            01 <span /> 04
+          </div>
+        </section>
+
+        <section className="quick-strip">
+          <div>
+            <span className="strip-number">01</span>
+            <span>
+              <b>Browse assistance</b>
+              <small>Explore services by department</small>
+            </span>
+            <ArrowDown size={16} />
+          </div>
+          <div>
+            <span className="strip-number">02</span>
+            <span>
+              <b>Send an enquiry</b>
+              <small>Share what you need help with</small>
+            </span>
+            <ArrowDown size={16} />
+          </div>
+          <div>
+            <span className="strip-number">03</span>
+            <span>
+              <b>Follow your request</b>
+              <small>Track updates with your reference</small>
+            </span>
+            <ArrowDown size={16} />
+          </div>
+        </section>
+
+        <section className="insurance-feature">
+          <div className="insurance-art">
+            <div className="orbit orbit-one" />
+            <div className="orbit orbit-two" />
+            <div className="insurance-symbol">
+              <ShieldCheck size={62} strokeWidth={1.2} />
+            </div>
+            <span className="art-caption">COVERAGE · CARE · CLARITY</span>
+          </div>
+          <div className="insurance-copy">
+            <span className="eyebrow">INSURANCE ASSISTANCE</span>
+            <h2>
+              Good cover starts
+              <br />
+              with a <em>clear conversation.</em>
+            </h2>
+            <p>
+              Explore insurance enquiry and documentation assistance. We can
+              help you navigate a question; policy terms and decisions always
+              remain with the insurer.
+            </p>
+            <div className="insurance-links">
+              <Link to="/services/insurance">
+                Explore insurance services <ArrowRight size={16} />
+              </Link>
+              <Link to="/apply?category=insurance">
+                Ask about a policy <ArrowUpRight size={15} />
+              </Link>
+            </div>
+            <span className="feature-footnote">
+              <BadgeCheck size={15} /> No public prices. No insurer affiliation
+              implied.
+            </span>
+          </div>
+          <span className="feature-vertical">BABA'S · SERVICE DESK</span>
+        </section>
+
+        <section className="category-section">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">HOW CAN WE HELP?</span>
+              <h2>Assistance, by department.</h2>
+            </div>
+            <Link className="text-link" to="/services">
+              View all services <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="category-grid">
+            {categories.slice(1, 7).map((category, index) => (
+              <Link
+                className="category-card"
+                to={`/services/${category.slug}`}
+                key={category.slug}
+              >
+                <span className="category-number">0{index + 1}</span>
+                <CategoryIcon slug={category.slug} />
+                <h3>{category.name}</h3>
+                <p>{category.description}</p>
+                <ArrowUpRight size={16} className="card-arrow" />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="track-cta">
+          <div>
+            <span className="eyebrow">ALREADY SENT AN ENQUIRY?</span>
+            <h2>
+              Your next step,
+              <br />
+              <em>just a reference away.</em>
+            </h2>
+          </div>
+          <div className="track-cta-right">
+            <p>
+              Check progress with your tracking ID and the mobile number
+              registered with your enquiry.
+            </p>
+            <Link className="button button-dark" to="/track">
+              Track your application <ArrowRight size={16} />
+            </Link>
+          </div>
+          <span className="cta-watermark">B</span>
+        </section>
+        <ContactBand />
+      </main>
+    </>
+  );
+}
+
+function ContactBand() {
+  const settings = useSiteSettings();
+  return (
+    <section className="contact-band">
+      <div>
+        <span className="eyebrow">NEED A HAND?</span>
+        <h2>Talk to a real person.</h2>
+      </div>
+      <div className="contact-band-actions">
+        <a
+          className="button button-gold"
+          href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <MessageCircle size={16} /> WhatsApp us
+        </a>
+        <a
+          className="button button-light-outline"
+          href={`mailto:${settings.contact.email}`}
+        >
+          Send an email <ArrowUpRight size={15} />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function CategoryIcon({ slug }: { slug: string }) {
+  const icons: Record<string, typeof Building2> = {
+    insurance: ShieldCheck,
+    revenue: Landmark,
+    smc: Building2,
+    labour: BriefcaseBusiness,
+    handloom: HeartHandshake,
+    rto: CarFront,
+    central: Globe2,
+    education: BookOpen,
+    "social-welfare": HeartHandshake,
+    employment: UsersRound,
+    health: Activity,
+    agriculture: Sparkles,
+    electricity: Zap,
+    water: Activity,
+    banking: Landmark,
+    travel: Ticket,
+    other: CircleHelp,
+  };
+  const Icon = icons[slug] ?? FileText;
+  return (
+    <span className="category-icon">
+      <Icon size={20} strokeWidth={1.5} />
+    </span>
+  );
+}
+
+function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
+  const categoryList = useCategoryList();
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState(fixedCategory ?? "all");
+  const [department, setDepartment] = useState("all");
+  const [sort, setSort] = useState("featured");
+  const [page, setPage] = useState(1);
+  const [remoteServices, setRemoteServices] = useState<ServiceRecord[]>([]);
+  const [remoteCount, setRemoteCount] = useState(0);
+  const pageSize = 12;
+
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    let request = supabase
+      .from("services")
+      .select("*", { count: "exact" })
+      .eq("is_active", true);
+    if (category !== "all") request = request.eq("category_slug", category);
+    if (department !== "all") request = request.eq("category_slug", department);
+    const needle = search.trim().replace(/[%,_]/g, "");
+    if (needle) request = request.ilike("name", `%${needle}%`);
+    if (sort === "alphabetical")
+      request = request.order("name", { ascending: true });
+    else if (sort === "recent")
+      request = request.order("created_at", { ascending: false });
+    else
+      request = request
+        .order("is_featured", { ascending: false })
+        .order("name", { ascending: true });
+    void request
+      .range((page - 1) * pageSize, page * pageSize - 1)
+      .then(({ data, count }) => {
+        if (current) {
+          setRemoteServices((data ?? []) as ServiceRecord[]);
+          setRemoteCount(count ?? 0);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [category, department, page, search, sort]);
+
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    const matching = seedServices.filter((service) => {
+      const matchesName =
+        !needle ||
+        `${service.name} ${service.description} ${categoryName(service.category_slug)}`
+          .toLowerCase()
+          .includes(needle);
+      return (
+        matchesName &&
+        (category === "all" || service.category_slug === category) &&
+        (department === "all" || service.category_slug === department)
+      );
+    });
+    return matching.sort((a, b) =>
+      sort === "alphabetical"
+        ? a.name.localeCompare(b.name)
+        : sort === "recent"
+          ? b.created_at.localeCompare(a.created_at)
+          : Number(b.is_featured) - Number(a.is_featured) ||
+            a.name.localeCompare(b.name),
+    );
+  }, [category, department, search, sort]);
+  const visible = supabase
+    ? remoteServices
+    : filtered.slice((page - 1) * pageSize, page * pageSize);
+  const resultCount = supabase ? remoteCount : filtered.length;
+  const totalPages = Math.max(1, Math.ceil(resultCount / pageSize));
+  const activeCategory = categoryList.find(
+    (item) => item.slug === fixedCategory,
+  );
+
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow={activeCategory ? "SERVICE DEPARTMENT" : "SERVICE DIRECTORY"}
+        title={activeCategory?.name ?? "Find the right assistance."}
+        copy={
+          activeCategory?.description ??
+          "Search a growing directory of digital and public-service assistance. Requirements can change; confirm current rules with the responsible authority."
+        }
+      />
+      <div className="catalog-toolbar">
+        <label className="search-box">
+          <Search size={18} />
+          <input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Search services..."
+            aria-label="Search services by name"
+          />
+          <kbd>⌘ K</kbd>
+        </label>
+        <label className="select-wrap">
+          <span>Category</span>
+          <select
+            value={category}
+            onChange={(event) => {
+              setCategory(event.target.value);
+              setPage(1);
+            }}
+            disabled={Boolean(fixedCategory)}
+          >
+            <option value="all">All categories</option>
+            {categoryList.map((item) => (
+              <option value={item.slug} key={item.slug}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={15} />
+        </label>
+        <label className="select-wrap">
+          <span>Department</span>
+          <select
+            value={department}
+            onChange={(event) => {
+              setDepartment(event.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="all">All departments</option>
+            {categoryList
+              .filter(
+                (item) =>
+                  !["insurance", "travel", "banking", "other"].includes(
+                    item.slug,
+                  ),
+              )
+              .map((item) => (
+                <option value={item.slug} key={item.slug}>
+                  {item.name}
+                </option>
+              ))}
+          </select>
+          <ChevronDown size={15} />
+        </label>
+        <label className="select-wrap sort-select">
+          <span>Sort by</span>
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value)}
+          >
+            <option value="featured">Featured</option>
+            <option value="recent">Recently added</option>
+            <option value="alphabetical">A to Z</option>
+          </select>
+          <ChevronDown size={15} />
+        </label>
+      </div>
+      <div className="catalog-meta">
+        <span>
+          {resultCount} {resultCount === 1 ? "service" : "services"}{" "}
+          {supabase ? "in the live catalogue" : "in the initial catalogue"}
+        </span>
+        <span>Assistance only · Department rules apply</span>
+      </div>
+      {visible.length ? (
+        <div className="service-grid">
+          {visible.map((service) => (
+            <article className="service-card" key={service.id}>
+              <div className="service-card-top">
+                <CategoryIcon slug={service.category_slug} />
+                {service.is_featured && (
+                  <span className="featured-label">FEATURED</span>
+                )}
+              </div>
+              <span className="service-department">
+                {categoryLabel(service.category_slug, categoryList)}
+              </span>
+              <h2>{service.name}</h2>
+              <p>{service.description}</p>
+              {service.required_documents.length > 0 && (
+                <p className="service-documents">
+                  <b>Documents noted:</b>{" "}
+                  {service.required_documents.join(", ")} · confirm current
+                  requirements with the authority.
+                </p>
+              )}
+              {service.official_url && service.official_url_verified && (
+                <a
+                  className="official-service-link"
+                  href={service.official_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Verified official portal <ArrowUpRight size={13} />
+                </a>
+              )}
+              <div className="service-card-bottom">
+                <Link
+                  to={`/apply?service=${encodeURIComponent(service.name)}&category=${service.category_slug}`}
+                >
+                  Enquire <ArrowRight size={15} />
+                </Link>
+                <span>Details confirmed at enquiry</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <Search size={22} />
+          <h2>No matching services</h2>
+          <p>Try a different search term or category.</p>
+        </div>
+      )}
+      <div className="pagination">
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <div>
+          <button
+            className="icon-button"
+            aria-label="Previous page"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            <ArrowRight className="flip-icon" size={17} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Next page"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            <ArrowRight size={17} />
+          </button>
+        </div>
+      </div>
+      <div className="disclaimer-box">
+        <ShieldCheck size={18} />
+        <p>
+          We provide independent application assistance. Official procedures,
+          eligibility, required documents and decisions must be confirmed with
+          the relevant department. We do not represent any government
+          department.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+function AboutPage() {
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow="ABOUT BABA'S"
+        title="Local knowledge. Practical digital help."
+        copy="BABA'S CYBER CAFE is a Srinagar-based independent business offering support with digital tasks, application enquiries and document preparation."
+      />
+      <section className="about-grid">
+        <div className="about-portrait">
+          <img
+            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85"
+            alt="People collaborating at a bright workspace"
+          />
+          <span>SRINAGAR · JAMMU &amp; KASHMIR</span>
+        </div>
+        <div className="about-copy">
+          <span className="eyebrow">A HUMAN-FIRST SERVICE DESK</span>
+          <h2>Clear help for the steps that feel complicated.</h2>
+          <p>
+            Digital forms and document requirements can be difficult to
+            navigate. We help customers understand the information they need to
+            prepare and offer assistance with online applications.
+          </p>
+          <p>
+            Our role is to assist, not to decide. Government departments,
+            insurers and other providers set their own eligibility rules,
+            processes and outcomes.
+          </p>
+          <div className="about-principles">
+            <div>
+              <span>01</span>
+              <b>Clarity first</b>
+              <small>We explain what we can and cannot do.</small>
+            </div>
+            <div>
+              <span>02</span>
+              <b>Privacy matters</b>
+              <small>
+                Application details are handled through configured secure
+                systems.
+              </small>
+            </div>
+            <div>
+              <span>03</span>
+              <b>Independent service</b>
+              <small>
+                No government authorisation or affiliation is claimed.
+              </small>
+            </div>
+          </div>
+          <Link className="text-link" to="/contact">
+            Get in touch <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ApplicationPage() {
+  const settings = useSiteSettings();
+  const categoryList = useCategoryList();
+  const [params] = useSearchParams();
+  const [serviceList, setServiceList] = useState(seedServices);
+  const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(
+    params.get("category") ?? "",
+  );
+  const [selectedService, setSelectedService] = useState(
+    params.get("service") ?? "",
+  );
+  const [description, setDescription] = useState("");
+  const [documents, setDocuments] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<{
+    trackingId: string;
+    emailSent: boolean;
+    emailWarning?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let query = supabase
+      .from("services")
+      .select("*")
+      .eq("is_active", true)
+      .order("name");
+    if (selectedCategory) query = query.eq("category_slug", selectedCategory);
+    let current = true;
+    void query.range(0, 999).then(({ data }) => {
+      if (current && data) setServiceList(data as ServiceRecord[]);
+    });
+    return () => {
+      current = false;
+    };
+  }, [selectedCategory]);
+  const options = serviceList.filter(
+    (item) => !selectedCategory || item.category_slug === selectedCategory,
+  );
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    if (!isSupabaseConfigured) {
+      setError(
+        "Online applications are not configured yet. Please call or WhatsApp the cafe to send your enquiry.",
+      );
+      return;
+    }
+    if (!consent) {
+      setError("Please confirm the privacy notice before continuing.");
+      return;
+    }
+    setBusy(true);
+    const whatsappWindow = window.open("", "_blank");
+    try {
+      const { data: sessionData } = await supabase!.auth.getSession();
+      const response = await callFunction<{
+        trackingId: string;
+        emailSent: boolean;
+        emailWarning?: string;
+      }>(
+        "create-application",
+        {
+          fullName,
+          mobile,
+          email: customerEmail,
+          category: selectedCategory,
+          service: selectedService,
+          description,
+          requiredDocuments: documents,
+          consent,
+        },
+        sessionData.session?.access_token,
+      );
+      setResult(response);
+      const message = `Hello BABA'S CYBER CAFE, I have submitted an enquiry. Reference: ${response.trackingId}. Please let me know the next steps.`;
+      if (whatsappWindow)
+        whatsappWindow.location.href = `https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+    } catch (reason) {
+      whatsappWindow?.close();
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The application could not be submitted. Please try again or contact the cafe.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (result)
+    return (
+      <main className="content-page narrow-page">
+        <div className="success-panel">
+          <span className="success-icon">
+            <Check size={26} />
+          </span>
+          <span className="eyebrow">ENQUIRY RECEIVED</span>
+          <h1>Your next step is in motion.</h1>
+          <p>
+            Your reference number is ready. Keep it private and use it with your
+            registered mobile number to check for updates.
+          </p>
+          <div className="tracking-code">
+            <small>TRACKING REFERENCE</small>
+            <strong>{result.trackingId}</strong>
+          </div>
+          <div className="success-actions">
+            <Link className="button button-dark" to="/track">
+              Track application <ArrowRight size={16} />
+            </Link>
+            <a
+              className="button button-outline"
+              href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello BABA'S CYBER CAFE, I submitted enquiry ${result.trackingId}.`)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open WhatsApp <ArrowUpRight size={15} />
+            </a>
+          </div>
+          {result.emailSent ? (
+            <p className="success-note">A confirmation email has been sent.</p>
+          ) : (
+            <ConfigurationNote>
+              {result.emailWarning ??
+                "The enquiry was saved, but email confirmation is not configured. Keep your reference number."}
+            </ConfigurationNote>
+          )}
+        </div>
+      </main>
+    );
+
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow="NEW ENQUIRY"
+        title="Let's get you to the right place."
+        copy="Tell us what you need. We will review your enquiry and share a reference to help you follow its progress."
+      />
+      {!isSupabaseConfigured && <ConfigurationNote />}
+      <div className="form-layout">
+        <form className="form-panel" onSubmit={submit}>
+          <div className="form-section-title">
+            <span>01</span>
+            <div>
+              <h2>Your details</h2>
+              <p>
+                We use these details to respond and verify tracking requests.
+              </p>
+            </div>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>
+                Full name <i>*</i>
+              </span>
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                minLength={2}
+                maxLength={120}
+                autoComplete="name"
+              />
+            </label>
+            <label className="field">
+              <span>
+                Mobile number <i>*</i>
+              </span>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(event) => setMobile(event.target.value)}
+                required
+                pattern="[+0-9 ()-]{8,18}"
+                autoComplete="tel"
+                placeholder="+91"
+              />
+            </label>
+            <label className="field field-wide">
+              <span>
+                Email address <i>*</i>
+              </span>
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(event) => setCustomerEmail(event.target.value)}
+                required
+                maxLength={254}
+                autoComplete="email"
+              />
+            </label>
+          </div>
+          <div className="form-section-title">
+            <span>02</span>
+            <div>
+              <h2>Your service</h2>
+              <p>
+                Choose the closest match. You can describe anything else below.
+              </p>
+            </div>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>
+                Department <i>*</i>
+              </span>
+              <select
+                value={selectedCategory}
+                onChange={(event) => {
+                  setSelectedCategory(event.target.value);
+                  setSelectedService("");
+                }}
+                required
+              >
+                <option value="">Choose a department</option>
+                {categoryList.map((item) => (
+                  <option key={item.slug} value={item.slug}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>
+                Service <i>*</i>
+              </span>
+              <select
+                value={selectedService}
+                onChange={(event) => setSelectedService(event.target.value)}
+                required
+              >
+                <option value="">Choose a service</option>
+                {options.map((item) => (
+                  <option key={item.id} value={item.name}>
+                    {item.name}
+                  </option>
+                ))}
+                <option value="Other enquiry">Other enquiry</option>
+              </select>
+            </label>
+            <label className="field field-wide">
+              <span>
+                Tell us what you need <i>*</i>
+              </span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                required
+                minLength={10}
+                maxLength={2000}
+                rows={4}
+                placeholder="A brief description of the help you are looking for"
+              />
+            </label>
+            <label className="field field-wide">
+              <span>Documents you already have</span>
+              <textarea
+                value={documents}
+                onChange={(event) => setDocuments(event.target.value)}
+                maxLength={1000}
+                rows={2}
+                placeholder="List document names only. Do not send sensitive documents here."
+              />
+            </label>
+          </div>
+          <label className="consent-check">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+              required
+            />
+            <span>
+              I agree to the{" "}
+              <Link to="/privacy" target="_blank">
+                Privacy Policy
+              </Link>{" "}
+              and consent to BABA'S CYBER CAFE using these details to respond to
+              my enquiry.
+            </span>
+          </label>
+          {error && (
+            <div className="notice notice-error" role="alert">
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            className="button button-dark form-submit"
+            disabled={busy || !isSupabaseConfigured}
+          >
+            {busy ? "Sending securely…" : "Submit enquiry"}{" "}
+            <ArrowRight size={16} />
+          </button>
+          <p className="form-footnote">
+            <ShieldCheck size={14} /> Your reference is generated securely after
+            submission. Do not include passwords, PINs or OTPs.
+          </p>
+        </form>
+        <aside className="form-aside">
+          <span className="eyebrow">WHAT HAPPENS NEXT</span>
+          <div className="aside-step">
+            <b>01</b>
+            <span>
+              <strong>We receive your enquiry</strong>
+              <small>
+                Your details are stored securely after the system is configured.
+              </small>
+            </span>
+          </div>
+          <div className="aside-step">
+            <b>02</b>
+            <span>
+              <strong>We review the request</strong>
+              <small>We may contact you if more information is needed.</small>
+            </span>
+          </div>
+          <div className="aside-step">
+            <b>03</b>
+            <span>
+              <strong>You follow your reference</strong>
+              <small>
+                Use your reference ID and mobile number to check progress.
+              </small>
+            </span>
+          </div>
+          <div className="aside-caution">
+            <ShieldCheck size={17} />
+            <p>
+              Never share bank PINs, passwords or one-time passcodes. Government
+              departments and insurers make all official decisions.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+type TrackedRecord = {
+  trackingId: string;
+  service: string;
+  category: string;
+  status: ApplicationStatus;
+  submittedAt: string;
+  remarks: string[];
+  history: { status: ApplicationStatus; created_at: string }[];
+  documents: { name: string; url: string; expiresAt: string }[];
+};
+
+function TrackPage() {
+  const categoryList = useCategoryList();
+  const [trackingId, setTrackingId] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [record, setRecord] = useState<TrackedRecord | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setRecord(null);
+    try {
+      setRecord(
+        await callFunction<TrackedRecord>("track-application", {
+          trackingId,
+          mobile,
+        }),
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "We could not verify those details. Please check and try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow="APPLICATION TRACKING"
+        title="A clear view of what comes next."
+        copy="Enter your tracking reference and the mobile number registered with your enquiry. Sensitive application details are never placed in the page URL."
+      />
+      {!isSupabaseConfigured && <ConfigurationNote />}
+      <div className="track-layout">
+        <form className="track-form" onSubmit={submit}>
+          <span className="eyebrow">VERIFY YOUR REQUEST</span>
+          <label className="field">
+            <span>Tracking ID</span>
+            <input
+              value={trackingId}
+              onChange={(event) =>
+                setTrackingId(event.target.value.toUpperCase())
+              }
+              required
+              minLength={8}
+              maxLength={30}
+              autoComplete="off"
+              placeholder="BABA-XXXXXXXX"
+            />
+          </label>
+          <label className="field">
+            <span>Registered mobile number</span>
+            <input
+              type="tel"
+              value={mobile}
+              onChange={(event) => setMobile(event.target.value)}
+              required
+              pattern="[+0-9 ()-]{8,18}"
+              autoComplete="tel"
+              placeholder="+91"
+            />
+          </label>
+          {error && (
+            <div className="notice notice-error" role="alert">
+              {error}
+            </div>
+          )}
+          <button
+            className="button button-dark"
+            type="submit"
+            disabled={busy || !isSupabaseConfigured}
+          >
+            {busy ? "Verifying…" : "View application status"}{" "}
+            <ArrowRight size={16} />
+          </button>
+          <p className="form-footnote">
+            <ShieldCheck size={14} /> Requests are rate-limited to protect your
+            information.
+          </p>
+        </form>
+        {record ? (
+          <div className="tracking-result">
+            <div className="tracking-result-head">
+              <div>
+                <span className="eyebrow">{record.trackingId}</span>
+                <h2>{record.service}</h2>
+                <p>
+                  {categoryLabel(record.category, categoryList)} · Received{" "}
+                  {new Date(record.submittedAt).toLocaleDateString("en-IN")}
+                </p>
+              </div>
+              <StatusTag status={record.status} />
+            </div>
+            <div className="timeline">
+              {record.history.map((item, index) => (
+                <div
+                  className={
+                    index === 0 ? "timeline-item is-current" : "timeline-item"
+                  }
+                  key={`${item.status}-${item.created_at}`}
+                >
+                  <span className="timeline-dot" />
+                  <div>
+                    <strong>{item.status}</strong>
+                    <small>
+                      {new Date(item.created_at).toLocaleString("en-IN")}
+                    </small>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {record.remarks.length > 0 && (
+              <div className="customer-remarks">
+                <h3>Latest update</h3>
+                {record.remarks.map((remark, index) => (
+                  <p key={index}>{remark}</p>
+                ))}
+              </div>
+            )}
+            {record.documents.length > 0 && (
+              <div className="approved-documents">
+                <h3>Approved documents</h3>
+                {record.documents.map((doc) => (
+                  <a
+                    href={doc.url}
+                    key={doc.name}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <FileCheck2 size={16} />
+                    {doc.name}
+                    <ArrowUpRight size={14} />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="track-empty">
+            <Clock3 size={27} />
+            <h2>Progress, without the guesswork.</h2>
+            <p>
+              Once verified, you will see the latest status, approved updates
+              and any documents shared with you.
+            </p>
+            <span>Keep your tracking ID private.</span>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function StatusTag({ status }: { status: string }) {
+  const key = status.toLowerCase().replaceAll(" ", "-");
+  return <span className={`status-tag status-${key}`}>{status}</span>;
+}
+
+type CustomerApplication = {
+  trackingId: string;
+  service: string;
+  category: string;
+  status: string;
+  submittedAt: string;
+  history: { status: string; created_at: string }[];
+  remarks: { body: string; created_at: string }[];
+  documents: { name: string; url: string; expiresAt: string }[];
+};
+
+type CustomerDashboardData = {
+  profile: { fullName: string; mobile: string; email: string };
+  applications: CustomerApplication[];
+};
+
+function CustomerDashboard() {
+  const categoryList = useCategoryList();
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [message, setMessage] = useState("");
+  const [profile, setProfile] = useState({
+    fullName: "",
+    mobile: "",
+    email: "",
+  });
+  const [profileName, setProfileName] = useState("");
+  const [profileMobile, setProfileMobile] = useState("");
+  const [sessionUser, setSessionUser] = useState<{
+    id: string;
+    email?: string;
+  } | null>(null);
+  const [applications, setApplications] = useState<CustomerApplication[]>([]);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const loading = Boolean(sessionUser && loadedUserId !== sessionUser.id);
+
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase.auth
+      .getSession()
+      .then(({ data }) =>
+        setSessionUser(
+          data.session?.user
+            ? { id: data.session.user.id, email: data.session.user.email }
+            : null,
+        ),
+      );
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSessionUser(
+          session?.user
+            ? { id: session.user.id, email: session.user.email }
+            : null,
+        );
+        if (!session?.user) {
+          setApplications([]);
+          setLoadedUserId(null);
+        }
+      },
+    );
+    return () => listener.subscription.unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (!supabase || !sessionUser) return;
+    let current = true;
+    void (async () => {
+      const { data } = await supabase!.auth.getSession();
+      const dashboard = await callFunction<CustomerDashboardData>(
+        "customer-dashboard",
+        {},
+        data.session?.access_token,
+      );
+      if (!current) return;
+      setProfile(dashboard.profile);
+      setProfileName(dashboard.profile.fullName);
+      setProfileMobile(dashboard.profile.mobile);
+      setApplications(dashboard.applications);
+      setMessage("");
+      setLoadedUserId(sessionUser.id);
+    })().catch((reason) => {
+      if (!current) return;
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : "Customer records could not be loaded.",
+      );
+      setLoadedUserId(sessionUser.id);
+    });
+    return () => {
+      current = false;
+    };
+  }, [refreshVersion, sessionUser]);
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!supabase || !sessionUser) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: profileName.trim(),
+        mobile: profileMobile.trim() || null,
+      })
+      .eq("id", sessionUser.id);
+    if (error) setMessage(error.message);
+    else {
+      setProfile((current) => ({
+        ...current,
+        fullName: profileName.trim(),
+        mobile: profileMobile.trim(),
+      }));
+      setMessage("Profile details updated.");
+    }
+  }
+
+  async function requestLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!supabase) return;
+    const { error } = await supabase.auth.signInWithOtp({
+      email: customerEmail,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    if (error) setMessage(error.message);
+    else setSent(true);
+  }
+  async function signOut() {
+    await supabase?.auth.signOut();
+    setApplications([]);
+    setProfile({ fullName: "", mobile: "", email: "" });
+  }
+
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow="CUSTOMER DASHBOARD"
+        title={
+          sessionUser
+            ? "Your applications, together."
+            : "Your applications, in one place."
+        }
+        copy="Sign in using a secure email link to see requests connected to your account. You can also track any reference with your registered mobile number."
+      />
+      {!isSupabaseConfigured && <ConfigurationNote />}
+      {sessionUser ? (
+        <section className="dashboard-panel">
+          <div className="dashboard-heading">
+            <div>
+              <span className="eyebrow">SIGNED IN AS</span>
+              <h2>{profile.email || sessionUser.email}</h2>
+            </div>
+            <div className="dashboard-actions">
+              <button
+                className="icon-button"
+                title="Refresh secure links"
+                aria-label="Refresh dashboard and document links"
+                onClick={() => setRefreshVersion((version) => version + 1)}
+              >
+                <ArrowDown size={16} />
+              </button>
+              <button
+                className="button button-outline"
+                onClick={() => void signOut()}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+          {message && (
+            <div
+              className={
+                message.includes("updated")
+                  ? "notice notice-success"
+                  : "notice notice-error"
+              }
+            >
+              {message}
+            </div>
+          )}
+          {loading ? (
+            <p>Loading your applications…</p>
+          ) : (
+            <div className="customer-dashboard-grid">
+              <aside className="profile-panel">
+                <span className="eyebrow">PROFILE &amp; CONTACT</span>
+                <h3>Your details</h3>
+                <form onSubmit={saveProfile}>
+                  <label className="field">
+                    <span>Full name</span>
+                    <input
+                      value={profileName}
+                      onChange={(event) => setProfileName(event.target.value)}
+                      required
+                      minLength={2}
+                      maxLength={120}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Mobile number</span>
+                    <input
+                      type="tel"
+                      value={profileMobile}
+                      onChange={(event) => setProfileMobile(event.target.value)}
+                      pattern="[+0-9 ()-]{8,18}"
+                      placeholder="Add a contact number"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Verified email</span>
+                    <input
+                      value={profile.email || sessionUser.email || ""}
+                      readOnly
+                    />
+                  </label>
+                  <button className="button button-dark">Save profile</button>
+                </form>
+                <p className="profile-note">
+                  Updating your profile does not change the mobile number
+                  already registered with an application.
+                </p>
+              </aside>
+              <div className="customer-applications">
+                <div className="customer-list-heading">
+                  <div>
+                    <span className="eyebrow">APPLICATION HISTORY</span>
+                    <h2>Your requests</h2>
+                  </div>
+                  <Link className="text-link" to="/apply">
+                    New enquiry <ArrowRight size={15} />
+                  </Link>
+                </div>
+                {applications.length ? (
+                  applications.map((application) => (
+                    <article
+                      className="customer-app-card"
+                      key={application.trackingId}
+                    >
+                      <div className="customer-app-head">
+                        <div>
+                          <span className="eyebrow">
+                            {application.trackingId}
+                          </span>
+                          <h3>{application.service}</h3>
+                          <small>
+                            {categoryLabel(application.category, categoryList)}{" "}
+                            ·{" "}
+                            {new Date(
+                              application.submittedAt,
+                            ).toLocaleDateString("en-IN")}
+                          </small>
+                        </div>
+                        <StatusTag status={application.status} />
+                      </div>
+                      {application.remarks.length > 0 && (
+                        <div className="customer-update">
+                          <span>SECURE UPDATE</span>
+                          <p>{application.remarks[0].body}</p>
+                          <small>
+                            {new Date(
+                              application.remarks[0].created_at,
+                            ).toLocaleString("en-IN")}
+                          </small>
+                        </div>
+                      )}
+                      {application.history.length > 0 && (
+                        <div className="mini-history">
+                          {application.history.slice(-3).map((item) => (
+                            <span key={`${item.status}-${item.created_at}`}>
+                              <i />
+                              {item.status}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {application.documents.length > 0 && (
+                        <div className="customer-downloads">
+                          <b>Approved documents</b>
+                          {application.documents.map((document) => (
+                            <a
+                              href={document.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              key={document.name}
+                            >
+                              <FileCheck2 size={15} />
+                              {document.name}
+                              <ArrowUpRight size={14} />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <FileText size={22} />
+                    <h2>No linked applications yet</h2>
+                    <p>
+                      Only enquiries submitted while signed in appear here.
+                      Other references can be checked on the tracking page.
+                    </p>
+                    <Link className="text-link" to="/apply">
+                      Start an enquiry <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                )}
+                {applications.length >= 50 && (
+                  <p className="profile-note">
+                    Showing your 50 most recent applications.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      ) : (
+        <div className="signin-panel">
+          <div className="signin-icon">
+            <ShieldCheck size={25} />
+          </div>
+          <span className="eyebrow">PASSWORDLESS SIGN-IN</span>
+          <h2>Secure link. No password to remember.</h2>
+          <p>
+            We will email you a one-time sign-in link. For security, only
+            applications submitted while signed in are linked to this dashboard.
+          </p>
+          {sent ? (
+            <div className="notice notice-success">
+              <Check size={17} /> Check your inbox for the sign-in link.
+            </div>
+          ) : (
+            <form onSubmit={requestLink}>
+              <label className="field">
+                <span>Email address</span>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(event) => setCustomerEmail(event.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </label>
+              {message && <div className="notice notice-error">{message}</div>}
+              <button
+                className="button button-dark"
+                disabled={!isSupabaseConfigured}
+              >
+                Email me a secure link <ArrowRight size={16} />
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+    </main>
+  );
+}
+
+function WebsiteSettingsEditor() {
+  const [form, setForm] = useState<SiteSettings>(defaultSiteSettings);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    void supabase
+      .from("website_settings")
+      .select("key, value")
+      .then(({ data }) => {
+        if (!current || !data) return;
+        const values = Object.fromEntries(
+          data.map((item) => [item.key, item.value as Record<string, unknown>]),
+        );
+        const announcement = values.homepage_announcement ?? {};
+        const homepage = values.homepage_content ?? {};
+        const contact = values.contact ?? {};
+        const social = values.social_links ?? {};
+        setForm({
+          announcement: {
+            enabled: announcement.enabled === true,
+            text:
+              typeof announcement.text === "string" ? announcement.text : "",
+          },
+          homepage: {
+            eyebrow:
+              typeof homepage.eyebrow === "string"
+                ? homepage.eyebrow
+                : defaultSiteSettings.homepage.eyebrow,
+            headline:
+              typeof homepage.headline === "string"
+                ? homepage.headline
+                : defaultSiteSettings.homepage.headline,
+            description:
+              typeof homepage.description === "string"
+                ? homepage.description
+                : defaultSiteSettings.homepage.description,
+          },
+          contact: {
+            phone: typeof contact.phone === "string" ? contact.phone : phone,
+            whatsapp:
+              typeof contact.whatsapp === "string"
+                ? contact.whatsapp
+                : whatsapp,
+            email: typeof contact.email === "string" ? contact.email : email,
+          },
+          social: {
+            facebook:
+              typeof social.facebook === "string" ? social.facebook : facebook,
+            business_profile:
+              typeof social.business_profile === "string"
+                ? social.business_profile
+                : businessProfile,
+          },
+        });
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  function update<K extends keyof SiteSettings>(
+    key: K,
+    value: SiteSettings[K],
+  ) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      await callFunction(
+        "admin-update-settings",
+        form,
+        data.session?.access_token,
+      );
+      window.dispatchEvent(new Event("site-settings-updated"));
+      setNotice("Website content and contact settings are updated.");
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Website settings could not be saved.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="admin-section settings-editor">
+      <div className="admin-section-head">
+        <div>
+          <span className="eyebrow">PUBLIC WEBSITE</span>
+          <h2>Content, contact &amp; announcements</h2>
+        </div>
+      </div>
+      {notice && (
+        <div className="notice notice-success">
+          <Check size={16} />
+          {notice}
+        </div>
+      )}
+      {error && <div className="notice notice-error">{error}</div>}
+      <form className="settings-form" onSubmit={save}>
+        <div className="settings-group">
+          <div>
+            <span className="eyebrow">HOMEPAGE</span>
+            <p>Set the public heading and supporting copy.</p>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>Eyebrow</span>
+              <input
+                value={form.homepage.eyebrow}
+                onChange={(event) =>
+                  update("homepage", {
+                    ...form.homepage,
+                    eyebrow: event.target.value,
+                  })
+                }
+                maxLength={100}
+                required
+              />
+            </label>
+            <label className="field">
+              <span>Headline (use | to split lines)</span>
+              <input
+                value={form.homepage.headline}
+                onChange={(event) =>
+                  update("homepage", {
+                    ...form.homepage,
+                    headline: event.target.value,
+                  })
+                }
+                maxLength={120}
+                required
+              />
+            </label>
+            <label className="field field-wide">
+              <span>Description</span>
+              <textarea
+                value={form.homepage.description}
+                onChange={(event) =>
+                  update("homepage", {
+                    ...form.homepage,
+                    description: event.target.value,
+                  })
+                }
+                maxLength={400}
+                rows={2}
+                required
+              />
+            </label>
+          </div>
+        </div>
+        <div className="settings-group">
+          <div>
+            <span className="eyebrow">ANNOUNCEMENT</span>
+            <p>Publish a short banner across the home page.</p>
+          </div>
+          <div className="field-grid">
+            <label className="consent-check field-wide">
+              <input
+                type="checkbox"
+                checked={form.announcement.enabled}
+                onChange={(event) =>
+                  update("announcement", {
+                    ...form.announcement,
+                    enabled: event.target.checked,
+                  })
+                }
+              />
+              <span>Show announcement banner</span>
+            </label>
+            <label className="field field-wide">
+              <span>Announcement text</span>
+              <input
+                value={form.announcement.text}
+                onChange={(event) =>
+                  update("announcement", {
+                    ...form.announcement,
+                    text: event.target.value,
+                  })
+                }
+                maxLength={240}
+              />
+            </label>
+          </div>
+        </div>
+        <div className="settings-group">
+          <div>
+            <span className="eyebrow">CONTACT DETAILS</span>
+            <p>Update public phone, WhatsApp and email.</p>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>Phone number</span>
+              <input
+                value={form.contact.phone}
+                onChange={(event) =>
+                  update("contact", {
+                    ...form.contact,
+                    phone: event.target.value,
+                  })
+                }
+                maxLength={22}
+                required
+              />
+            </label>
+            <label className="field">
+              <span>WhatsApp number (country code)</span>
+              <input
+                value={form.contact.whatsapp}
+                onChange={(event) =>
+                  update("contact", {
+                    ...form.contact,
+                    whatsapp: event.target.value,
+                  })
+                }
+                maxLength={20}
+                required
+              />
+            </label>
+            <label className="field field-wide">
+              <span>Business email</span>
+              <input
+                type="email"
+                value={form.contact.email}
+                onChange={(event) =>
+                  update("contact", {
+                    ...form.contact,
+                    email: event.target.value,
+                  })
+                }
+                maxLength={254}
+                required
+              />
+            </label>
+          </div>
+        </div>
+        <div className="settings-group">
+          <div>
+            <span className="eyebrow">SOCIAL LINKS</span>
+            <p>Only HTTPS links are accepted.</p>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>Facebook</span>
+              <input
+                type="url"
+                pattern="https://.*"
+                value={form.social.facebook}
+                onChange={(event) =>
+                  update("social", {
+                    ...form.social,
+                    facebook: event.target.value,
+                  })
+                }
+                required
+              />
+            </label>
+            <label className="field">
+              <span>Google Business Profile</span>
+              <input
+                type="url"
+                pattern="https://.*"
+                value={form.social.business_profile}
+                onChange={(event) =>
+                  update("social", {
+                    ...form.social,
+                    business_profile: event.target.value,
+                  })
+                }
+                required
+              />
+            </label>
+          </div>
+        </div>
+        <button className="button button-dark" disabled={busy}>
+          {busy ? "Saving…" : "Save website settings"} <Check size={15} />
+        </button>
+      </form>
+    </section>
+  );
+}
+
+type AdminApplication = {
+  id: string;
+  tracking_id: string;
+  full_name: string;
+  mobile: string;
+  email: string;
+  category_slug: string;
+  service_name: string;
+  status: ApplicationStatus;
+  created_at: string;
+};
+
+function AdminPage() {
+  const adminCategories = useCategoryList(false);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [ready, setReady] = useState(!isSupabaseConfigured);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [applications, setApplications] = useState<AdminApplication[]>([]);
+  const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [applicationPage, setApplicationPage] = useState(1);
+  const [applicationCount, setApplicationCount] = useState(0);
+  const [applicationPageCount, setApplicationPageCount] = useState(1);
+  const [overviewVersion, setOverviewVersion] = useState(0);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    completed: 0,
+    documentsRequired: 0,
+  });
+  const [active, setActive] = useState<AdminApplication | null>(null);
+  const [newStatus, setNewStatus] = useState<ApplicationStatus>("Under Review");
+  const [customerRemark, setCustomerRemark] = useState("");
+  const [internalRemark, setInternalRemark] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [serviceName, setServiceName] = useState("");
+  const [serviceCategory, setServiceCategory] = useState(categories[0].slug);
+  const [featureService, setFeatureService] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [adminServices, setAdminServices] = useState<ServiceRecord[]>([]);
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [servicePage, setServicePage] = useState(1);
+  const [serviceCount, setServiceCount] = useState(0);
+  const [servicePageCount, setServicePageCount] = useState(1);
+  const [catalogVersion, setCatalogVersion] = useState(0);
+  const [categoryNameInput, setCategoryNameInput] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryDraft, setCategoryDraft] = useState({
+    name: "",
+    description: "",
+  });
+  const [editingService, setEditingService] = useState<ServiceRecord | null>(
+    null,
+  );
+  const [serviceDraft, setServiceDraft] = useState({
+    name: "",
+    category_slug: categories[0].slug,
+    description: "",
+    required_documents: "",
+    eligibility: "",
+    application_method: "",
+    official_url: "",
+    official_url_verified: false,
+    is_active: true,
+    is_featured: false,
+  });
+
+  useEffect(() => {
+    if (!supabase) return;
+    void supabase.auth
+      .getSession()
+      .then(({ data }) =>
+        setUser(
+          data.session?.user
+            ? { id: data.session.user.id, email: data.session.user.email }
+            : null,
+        ),
+      );
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(
+          session?.user
+            ? { id: session.user.id, email: session.user.email }
+            : null,
+        );
+        setIsOwner(false);
+        setReady(!session?.user);
+      },
+    );
+    return () => listener.subscription.unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (!supabase || !user) return;
+    let current = true;
+    void supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "owner")
+      .maybeSingle()
+      .then(({ data, error: roleError }) => {
+        if (!current) return;
+        setIsOwner(Boolean(data?.role === "owner"));
+        setError(
+          roleError?.message ??
+            (data?.role === "owner"
+              ? ""
+              : "This account does not have owner access."),
+        );
+        setReady(true);
+      });
+    return () => {
+      current = false;
+    };
+  }, [user]);
+  useEffect(() => {
+    if (!supabase || !isOwner) return;
+    let current = true;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const { data } = await supabase!.auth.getSession();
+        const overview = await callFunction<{
+          items: AdminApplication[];
+          count: number;
+          pageSize: number;
+          page: number;
+          stats: typeof stats;
+        }>(
+          "admin-overview",
+          { search: filter, status: statusFilter, page: applicationPage },
+          data.session?.access_token,
+        );
+        if (!current) return;
+        setApplications(overview.items);
+        setApplicationCount(overview.count);
+        setApplicationPageCount(
+          Math.max(1, Math.ceil(overview.count / overview.pageSize)),
+        );
+        setStats(overview.stats);
+      })().catch((reason) => {
+        if (current)
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "Admin overview could not be loaded.",
+          );
+      });
+    }, 180);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [applicationPage, filter, isOwner, overviewVersion, statusFilter]);
+  useEffect(() => {
+    if (!supabase || !isOwner) return;
+    let current = true;
+    const timer = window.setTimeout(() => {
+      let query = supabase!
+        .from("services")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false });
+      const needle = serviceSearch.trim().replace(/[%,_]/g, "");
+      if (needle) query = query.ilike("name", `%${needle}%`);
+      void query
+        .range((servicePage - 1) * 20, servicePage * 20 - 1)
+        .then(({ data, count, error: queryError }) => {
+          if (!current) return;
+          if (queryError) setError(queryError.message);
+          else {
+            setAdminServices((data ?? []) as ServiceRecord[]);
+            setServiceCount(count ?? 0);
+            setServicePageCount(Math.max(1, Math.ceil((count ?? 0) / 20)));
+          }
+        });
+    }, 180);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [catalogVersion, isOwner, servicePage, serviceSearch]);
+
+  async function signIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    if (!supabase) {
+      setError("Supabase authentication is not configured.");
+      return;
+    }
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: adminEmail,
+      password,
+    });
+    if (authError) setError(authError.message);
+  }
+  async function signOut() {
+    await supabase?.auth.signOut();
+    setApplications([]);
+    setIsOwner(false);
+  }
+  async function saveUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!active || !supabase) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const update = await callFunction<{
+        emailSent: boolean;
+        emailWarning?: string;
+      }>(
+        "admin-update-application",
+        {
+          applicationId: active.id,
+          status: newStatus,
+          customerRemark,
+          internalRemark,
+        },
+        data.session?.access_token,
+      );
+      setNotice(
+        update.emailWarning
+          ? `Application update saved. ${update.emailWarning}`
+          : update.emailSent
+            ? "Application update saved and an email was sent."
+            : "Application update saved and recorded in the audit history.",
+      );
+      setCustomerRemark("");
+      setInternalRemark("");
+      setActive(null);
+      setOverviewVersion((version) => version + 1);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not save this update.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function addService(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: insertError } = await supabase.from("services").insert({
+      category_slug: serviceCategory,
+      name: serviceName.trim(),
+      description:
+        "Application assistance. Confirm current requirements with the responsible authority.",
+      required_documents: [],
+      eligibility:
+        "Confirm current eligibility with the responsible authority.",
+      application_method:
+        "Enquire with BABA'S CYBER CAFE for assistance. The responsible authority controls the official process.",
+      official_url: null,
+      official_url_verified: false,
+      is_active: true,
+      is_featured: featureService,
+    });
+    if (insertError) setError(insertError.message);
+    else {
+      setServiceName("");
+      setFeatureService(false);
+      setNotice("Service added to the catalogue.");
+      setCatalogVersion((version) => version + 1);
+    }
+    setBusy(false);
+  }
+  async function importCsv(file?: File) {
+    if (!file || !supabase) return;
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async ({ data, errors: parseErrors }) => {
+        if (parseErrors.length) {
+          setError(`CSV could not be read: ${parseErrors[0].message}`);
+          return;
+        }
+        const valid = data.filter(
+          (row) =>
+            row.name?.trim() &&
+            adminCategories.some(
+              (item) => item.slug === row.category_slug?.trim(),
+            ),
+        );
+        if (!valid.length) {
+          setError(
+            "No valid rows. Include name and a valid category_slug column.",
+          );
+          return;
+        }
+        setBusy(true);
+        try {
+          const { data: session } = await supabase!.auth.getSession();
+          const result = await callFunction<{
+            imported: number;
+            skipped: number;
+          }>("import-services", { rows: valid }, session.session?.access_token);
+          setNotice(
+            `${result.imported} service(s) imported; ${result.skipped} row(s) skipped.`,
+          );
+          setError("");
+          setCatalogVersion((version) => version + 1);
+        } catch (reason) {
+          setError(
+            reason instanceof Error ? reason.message : "CSV import failed.",
+          );
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }
+  async function addCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase) return;
+    const slug = categoryNameInput
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: insertError } = await supabase
+      .from("service_categories")
+      .insert({
+        slug,
+        name: categoryNameInput.trim(),
+        description: categoryDescription.trim(),
+        icon: "file",
+        is_active: true,
+        sort_order: adminCategories.length + 1,
+      });
+    if (insertError) setError(insertError.message);
+    else {
+      setCategoryNameInput("");
+      setCategoryDescription("");
+      setNotice("Category added to the catalogue.");
+      window.dispatchEvent(new Event("catalog-updated"));
+    }
+    setBusy(false);
+  }
+  async function setCategoryActive(category: Category) {
+    if (!supabase) return;
+    const { error: updateError } = await supabase
+      .from("service_categories")
+      .update({ is_active: category.is_active === false })
+      .eq("slug", category.slug);
+    if (updateError) setError(updateError.message);
+    else {
+      setNotice(
+        `Category ${category.is_active === false ? "activated" : "deactivated"}.`,
+      );
+      window.dispatchEvent(new Event("catalog-updated"));
+    }
+  }
+  function editCategory(category: Category) {
+    setEditingCategory(category);
+    setCategoryDraft({
+      name: category.name,
+      description: category.description,
+    });
+  }
+  async function saveCategoryEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !editingCategory) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: updateError } = await supabase
+      .from("service_categories")
+      .update({
+        name: categoryDraft.name.trim(),
+        description: categoryDraft.description.trim(),
+      })
+      .eq("slug", editingCategory.slug);
+    if (updateError) setError(updateError.message);
+    else {
+      setEditingCategory(null);
+      setNotice("Category details saved.");
+      window.dispatchEvent(new Event("catalog-updated"));
+    }
+    setBusy(false);
+  }
+  async function setServiceField(
+    service: ServiceRecord,
+    field: "is_active" | "is_featured",
+  ) {
+    if (!supabase) return;
+    const { error: updateError } = await supabase
+      .from("services")
+      .update({ [field]: !service[field] })
+      .eq("id", service.id);
+    if (updateError) setError(updateError.message);
+    else {
+      setNotice("Service listing updated.");
+      setCatalogVersion((version) => version + 1);
+    }
+  }
+  function editService(service: ServiceRecord) {
+    setEditingService(service);
+    setServiceDraft({
+      name: service.name,
+      category_slug: service.category_slug,
+      description: service.description,
+      required_documents: service.required_documents.join(" | "),
+      eligibility: service.eligibility,
+      application_method: service.application_method,
+      official_url: service.official_url ?? "",
+      official_url_verified: service.official_url_verified,
+      is_active: service.is_active,
+      is_featured: service.is_featured,
+    });
+  }
+  async function saveServiceEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!supabase || !editingService) return;
+    if (serviceDraft.official_url && !serviceDraft.official_url_verified) {
+      setError(
+        "Confirm that this HTTPS address is an official source before saving it.",
+      );
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: updateError } = await supabase
+      .from("services")
+      .update({
+        name: serviceDraft.name.trim(),
+        category_slug: serviceDraft.category_slug,
+        description: serviceDraft.description.trim(),
+        required_documents: serviceDraft.required_documents
+          .split("|")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        eligibility: serviceDraft.eligibility.trim(),
+        application_method: serviceDraft.application_method.trim(),
+        official_url: serviceDraft.official_url.trim() || null,
+        official_url_verified: Boolean(
+          serviceDraft.official_url.trim() &&
+          serviceDraft.official_url_verified,
+        ),
+        is_active: serviceDraft.is_active,
+        is_featured: serviceDraft.is_featured,
+      })
+      .eq("id", editingService.id);
+    if (updateError) setError(updateError.message);
+    else {
+      setEditingService(null);
+      setNotice("Service details saved.");
+      setCatalogVersion((version) => version + 1);
+    }
+    setBusy(false);
+  }
+  async function uploadDocument(file?: File) {
+    if (!active || !file || !supabase) return;
+    if (
+      !["application/pdf", "image/jpeg", "image/png"].includes(file.type) ||
+      file.size > 10 * 1024 * 1024
+    ) {
+      setError("Choose a PDF, JPG or PNG file up to 10 MB.");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${active.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("application-documents")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadError) throw uploadError;
+      const { error: recordError } = await supabase
+        .from("application_documents")
+        .insert({
+          application_id: active.id,
+          file_name: file.name,
+          storage_path: path,
+          mime_type: file.type,
+          file_size_bytes: file.size,
+          is_customer_visible: true,
+          uploaded_by: user?.id,
+        });
+      if (recordError) throw recordError;
+      setNotice(
+        "Document uploaded to private storage. It appears in tracking only after the application is Approved or Completed.",
+      );
+      try {
+        const { data } = await supabase.auth.getSession();
+        const notification = await callFunction<{
+          emailSent: boolean;
+          emailWarning?: string;
+        }>(
+          "notify-customer",
+          { applicationId: active.id, type: "document_available" },
+          data.session?.access_token,
+        );
+        if (notification.emailWarning)
+          setNotice(`Document uploaded. ${notification.emailWarning}`);
+        else if (notification.emailSent)
+          setNotice(
+            "Document uploaded privately and an availability email was sent.",
+          );
+      } catch {
+        setNotice(
+          "Document uploaded privately. Email notification could not be confirmed; check the email configuration.",
+        );
+      }
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Document upload failed.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const shownApplications = applications;
+
+  return (
+    <main className="content-page admin-page">
+      <div className="admin-head">
+        <div>
+          <span className="eyebrow">PRIVATE WORKSPACE</span>
+          <h1>Owner dashboard</h1>
+          <p>Manage enquiries, service listings and customer updates.</p>
+        </div>
+        {user && (
+          <button
+            className="button button-outline"
+            onClick={() => void signOut()}
+          >
+            Sign out
+          </button>
+        )}
+      </div>
+      {!isSupabaseConfigured && (
+        <ConfigurationNote>
+          Admin authentication is unavailable until Supabase is configured.
+        </ConfigurationNote>
+      )}
+      {!user && (
+        <form className="signin-panel admin-signin" onSubmit={signIn}>
+          <div className="signin-icon">
+            <ShieldCheck size={25} />
+          </div>
+          <span className="eyebrow">OWNER ACCESS ONLY</span>
+          <h2>Secure admin sign-in</h2>
+          <p>
+            There is no public registration. Owner accounts must be provisioned
+            by a trusted administrator.
+          </p>
+          <label className="field">
+            <span>Verified email</span>
+            <input
+              type="email"
+              value={adminEmail}
+              onChange={(event) => setAdminEmail(event.target.value)}
+              required
+              autoComplete="username"
+            />
+          </label>
+          <label className="field">
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          {error && <div className="notice notice-error">{error}</div>}
+          <button
+            className="button button-dark"
+            disabled={!isSupabaseConfigured}
+          >
+            Sign in securely <ArrowRight size={16} />
+          </button>
+        </form>
+      )}
+      {user && !ready && <p>Checking owner permissions…</p>}
+      {user && ready && !isOwner && (
+        <div className="notice notice-error">
+          {error || "Owner access is required for this dashboard."}
+        </div>
+      )}
+      {user && ready && isOwner && (
+        <>
+          {error && <div className="notice notice-error">{error}</div>}
+          {notice && (
+            <div className="notice notice-success">
+              <Check size={16} />
+              {notice}
+            </div>
+          )}
+          <div className="metric-grid">
+            <div>
+              <span>Applications</span>
+              <strong>{stats.total}</strong>
+              <small>All records</small>
+            </div>
+            <div>
+              <span>In progress</span>
+              <strong>{stats.pending}</strong>
+              <small>Awaiting completion</small>
+            </div>
+            <div>
+              <span>Documents needed</span>
+              <strong>{stats.documentsRequired}</strong>
+              <small>Customer follow-up</small>
+            </div>
+            <div>
+              <span>Completed</span>
+              <strong>{stats.completed}</strong>
+              <small>Marked complete</small>
+            </div>
+          </div>
+          <section className="admin-section">
+            <div className="admin-section-head">
+              <div>
+                <span className="eyebrow">CUSTOMER REQUESTS</span>
+                <h2>Application management</h2>
+              </div>
+              <label className="search-box admin-search">
+                <Search size={17} />
+                <input
+                  value={filter}
+                  onChange={(event) => {
+                    setFilter(event.target.value);
+                    setApplicationPage(1);
+                  }}
+                  placeholder="Name, phone or tracking ID"
+                />
+              </label>
+            </div>
+            <div className="admin-filters">
+              <label className="field">
+                <span>Status</span>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => {
+                    setStatusFilter(event.target.value);
+                    setApplicationPage(1);
+                  }}
+                >
+                  <option value="all">All statuses</option>
+                  {statusLabels.map((status) => (
+                    <option key={status}>{status}</option>
+                  ))}
+                </select>
+              </label>
+              <span>{applicationCount} matching · owner-only data</span>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reference / customer</th>
+                    <th>Service</th>
+                    <th>Received</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shownApplications.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <b>{item.tracking_id}</b>
+                        <small>
+                          {item.full_name} · {item.mobile}
+                        </small>
+                      </td>
+                      <td>
+                        {item.service_name}
+                        <small>
+                          {categoryLabel(item.category_slug, adminCategories)}
+                        </small>
+                      </td>
+                      <td>
+                        {new Date(item.created_at).toLocaleDateString("en-IN")}
+                      </td>
+                      <td>
+                        <StatusTag status={item.status} />
+                      </td>
+                      <td>
+                        <button
+                          className="text-button"
+                          onClick={() => {
+                            setActive(item);
+                            setNewStatus(item.status);
+                            setError("");
+                          }}
+                        >
+                          Update <ArrowRight size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {shownApplications.length === 0 && (
+                <p className="table-empty">No matching applications.</p>
+              )}
+            </div>
+            <div className="pagination admin-pagination">
+              <span>
+                Page {applicationPage} of {applicationPageCount}
+              </span>
+              <div>
+                <button
+                  className="icon-button"
+                  aria-label="Previous applications"
+                  disabled={applicationPage <= 1}
+                  onClick={() => setApplicationPage((page) => page - 1)}
+                >
+                  <ArrowRight className="flip-icon" size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label="Next applications"
+                  disabled={applicationPage >= applicationPageCount}
+                  onClick={() => setApplicationPage((page) => page + 1)}
+                >
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            </div>
+          </section>
+          <section className="admin-section service-admin">
+            <div className="admin-section-head">
+              <div>
+                <span className="eyebrow">SERVICE CATALOGUE</span>
+                <h2>Add or import services</h2>
+              </div>
+              <a
+                className="text-link"
+                href="/service-catalogue-template.csv"
+                download
+              >
+                CSV template <ArrowDown size={15} />
+              </a>
+            </div>
+            <div className="service-admin-grid">
+              <form className="inline-service-form" onSubmit={addService}>
+                <label className="field">
+                  <span>Service name</span>
+                  <input
+                    value={serviceName}
+                    onChange={(event) => setServiceName(event.target.value)}
+                    required
+                    maxLength={160}
+                  />
+                </label>
+                <label className="field">
+                  <span>Category</span>
+                  <select
+                    value={serviceCategory}
+                    onChange={(event) => setServiceCategory(event.target.value)}
+                  >
+                    {adminCategories
+                      .filter((item) => item.is_active !== false)
+                      .map((item) => (
+                        <option key={item.slug} value={item.slug}>
+                          {item.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="consent-check">
+                  <input
+                    type="checkbox"
+                    checked={featureService}
+                    onChange={(event) =>
+                      setFeatureService(event.target.checked)
+                    }
+                  />
+                  <span>Feature on service listing</span>
+                </label>
+                <button className="button button-dark" disabled={busy}>
+                  Add service <ArrowRight size={15} />
+                </button>
+              </form>
+              <label className="csv-drop">
+                <FileText size={24} />
+                <b>Import a CSV catalogue</b>
+                <small>
+                  Upload rows with name and category_slug. The server validates
+                  imports.
+                </small>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(event) => void importCsv(event.target.files?.[0])}
+                  disabled={busy}
+                />
+              </label>
+            </div>
+          </section>
+          <section className="admin-section">
+            <div className="admin-section-head">
+              <div>
+                <span className="eyebrow">CATALOGUE RECORDS</span>
+                <h2>Edit or deactivate services</h2>
+              </div>
+              <label className="search-box admin-search">
+                <Search size={17} />
+                <input
+                  value={serviceSearch}
+                  onChange={(event) => {
+                    setServiceSearch(event.target.value);
+                    setServicePage(1);
+                  }}
+                  placeholder="Search catalogue by service name"
+                />
+              </label>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Category</th>
+                    <th>Featured</th>
+                    <th>Active</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminServices.map((service) => (
+                    <tr key={service.id}>
+                      <td>
+                        <b>{service.name}</b>
+                        <small>{service.description}</small>
+                      </td>
+                      <td>
+                        {categoryLabel(service.category_slug, adminCategories)}
+                      </td>
+                      <td>
+                        <input
+                          aria-label={`Feature ${service.name}`}
+                          type="checkbox"
+                          checked={service.is_featured}
+                          onChange={() =>
+                            void setServiceField(service, "is_featured")
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          aria-label={`Activate ${service.name}`}
+                          type="checkbox"
+                          checked={service.is_active}
+                          onChange={() =>
+                            void setServiceField(service, "is_active")
+                          }
+                        />
+                      </td>
+                      <td>
+                        <button
+                          className="text-button"
+                          onClick={() => editService(service)}
+                        >
+                          Edit <ArrowRight size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {adminServices.length === 0 && (
+                <p className="table-empty">No matching services.</p>
+              )}
+            </div>
+            <div className="pagination admin-pagination">
+              <span>
+                {serviceCount} services · page {servicePage} of{" "}
+                {servicePageCount}
+              </span>
+              <div>
+                <button
+                  className="icon-button"
+                  aria-label="Previous service page"
+                  disabled={servicePage <= 1}
+                  onClick={() => setServicePage((page) => page - 1)}
+                >
+                  <ArrowRight className="flip-icon" size={17} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label="Next service page"
+                  disabled={servicePage >= servicePageCount}
+                  onClick={() => setServicePage((page) => page + 1)}
+                >
+                  <ArrowRight size={17} />
+                </button>
+              </div>
+            </div>
+          </section>
+          <section className="admin-section category-admin">
+            <div className="admin-section-head">
+              <div>
+                <span className="eyebrow">DEPARTMENTS &amp; CATEGORIES</span>
+                <h2>Manage service categories</h2>
+              </div>
+            </div>
+            <div className="category-management-grid">
+              <form className="category-create-form" onSubmit={addCategory}>
+                <label className="field">
+                  <span>Category name</span>
+                  <input
+                    value={categoryNameInput}
+                    onChange={(event) =>
+                      setCategoryNameInput(event.target.value)
+                    }
+                    required
+                    minLength={2}
+                    maxLength={100}
+                  />
+                </label>
+                <label className="field">
+                  <span>Category slug</span>
+                  <input
+                    value={categoryNameInput
+                      .trim()
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-|-$/g, "")}
+                    readOnly
+                  />
+                </label>
+                <label className="field">
+                  <span>Description</span>
+                  <textarea
+                    value={categoryDescription}
+                    onChange={(event) =>
+                      setCategoryDescription(event.target.value)
+                    }
+                    maxLength={500}
+                    rows={2}
+                  />
+                </label>
+                <button className="button button-dark" disabled={busy}>
+                  Add category <ArrowRight size={15} />
+                </button>
+              </form>
+              <div className="category-admin-list">
+                {adminCategories.map((item) => (
+                  <div className="category-admin-row" key={item.slug}>
+                    <CategoryIcon slug={item.slug} />
+                    <span>
+                      <b>{item.name}</b>
+                      <small>{item.slug}</small>
+                    </span>
+                    <StatusTag
+                      status={item.is_active === false ? "Inactive" : "Active"}
+                    />
+                    <button
+                      className="text-button"
+                      onClick={() => editCategory(item)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => void setCategoryActive(item)}
+                    >
+                      {item.is_active === false ? "Activate" : "Deactivate"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <WebsiteSettingsEditor />
+          {active && (
+            <div
+              className="modal-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setActive(null);
+              }}
+            >
+              <section
+                className="admin-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="update-title"
+              >
+                <div className="modal-head">
+                  <div>
+                    <span className="eyebrow">{active.tracking_id}</span>
+                    <h2 id="update-title">Update application</h2>
+                    <p>
+                      {active.full_name} · {active.service_name}
+                    </p>
+                  </div>
+                  <button
+                    className="icon-button"
+                    aria-label="Close update dialog"
+                    onClick={() => setActive(null)}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={saveUpdate}>
+                  <label className="field">
+                    <span>Application status</span>
+                    <select
+                      value={newStatus}
+                      onChange={(event) =>
+                        setNewStatus(event.target.value as ApplicationStatus)
+                      }
+                    >
+                      {statusLabels.map((status) => (
+                        <option key={status}>{status}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Customer-visible update</span>
+                    <textarea
+                      value={customerRemark}
+                      onChange={(event) =>
+                        setCustomerRemark(event.target.value)
+                      }
+                      maxLength={1000}
+                      rows={3}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Internal note (owner only)</span>
+                    <textarea
+                      value={internalRemark}
+                      onChange={(event) =>
+                        setInternalRemark(event.target.value)
+                      }
+                      maxLength={1000}
+                      rows={3}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>
+                      Upload approved customer document (PDF, JPG, PNG · max 10
+                      MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png"
+                      disabled={uploading}
+                      onChange={(event) =>
+                        void uploadDocument(event.target.files?.[0])
+                      }
+                    />
+                  </label>
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="button button-outline"
+                      onClick={() => setActive(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button className="button button-dark" disabled={busy}>
+                      {busy ? "Saving…" : "Save update"} <Check size={15} />
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          )}
+          {editingService && (
+            <div
+              className="modal-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget)
+                  setEditingService(null);
+              }}
+            >
+              <section
+                className="admin-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="service-edit-title"
+              >
+                <div className="modal-head">
+                  <div>
+                    <span className="eyebrow">SERVICE CATALOGUE</span>
+                    <h2 id="service-edit-title">Edit service listing</h2>
+                  </div>
+                  <button
+                    className="icon-button"
+                    aria-label="Close service editor"
+                    onClick={() => setEditingService(null)}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={saveServiceEdit}>
+                  <label className="field">
+                    <span>Service name</span>
+                    <input
+                      value={serviceDraft.name}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          name: event.target.value,
+                        })
+                      }
+                      maxLength={160}
+                      required
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Category</span>
+                    <select
+                      value={serviceDraft.category_slug}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          category_slug: event.target.value,
+                        })
+                      }
+                    >
+                      {adminCategories
+                        .filter((item) => item.is_active !== false)
+                        .map((item) => (
+                          <option value={item.slug} key={item.slug}>
+                            {item.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Description</span>
+                    <textarea
+                      value={serviceDraft.description}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          description: event.target.value,
+                        })
+                      }
+                      maxLength={2000}
+                      rows={2}
+                      required
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Required documents (separate with |)</span>
+                    <textarea
+                      value={serviceDraft.required_documents}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          required_documents: event.target.value,
+                        })
+                      }
+                      maxLength={4000}
+                      rows={2}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Eligibility information</span>
+                    <textarea
+                      value={serviceDraft.eligibility}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          eligibility: event.target.value,
+                        })
+                      }
+                      maxLength={1000}
+                      rows={2}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Application method</span>
+                    <textarea
+                      value={serviceDraft.application_method}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          application_method: event.target.value,
+                        })
+                      }
+                      maxLength={1000}
+                      rows={2}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>
+                      Official HTTPS URL (leave blank unless verified)
+                    </span>
+                    <input
+                      type="url"
+                      pattern="https://.*"
+                      value={serviceDraft.official_url}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          official_url: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="consent-check">
+                    <input
+                      type="checkbox"
+                      checked={serviceDraft.official_url_verified}
+                      onChange={(event) =>
+                        setServiceDraft({
+                          ...serviceDraft,
+                          official_url_verified: event.target.checked,
+                        })
+                      }
+                    />
+                    <span>
+                      I verified this is the responsible authority's official
+                      URL.
+                    </span>
+                  </label>
+                  <div className="field-grid">
+                    <label className="consent-check">
+                      <input
+                        type="checkbox"
+                        checked={serviceDraft.is_active}
+                        onChange={(event) =>
+                          setServiceDraft({
+                            ...serviceDraft,
+                            is_active: event.target.checked,
+                          })
+                        }
+                      />
+                      <span>Active</span>
+                    </label>
+                    <label className="consent-check">
+                      <input
+                        type="checkbox"
+                        checked={serviceDraft.is_featured}
+                        onChange={(event) =>
+                          setServiceDraft({
+                            ...serviceDraft,
+                            is_featured: event.target.checked,
+                          })
+                        }
+                      />
+                      <span>Featured</span>
+                    </label>
+                  </div>
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="button button-outline"
+                      onClick={() => setEditingService(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button className="button button-dark" disabled={busy}>
+                      {busy ? "Saving…" : "Save service"} <Check size={15} />
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          )}
+          {editingCategory && (
+            <div
+              className="modal-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget)
+                  setEditingCategory(null);
+              }}
+            >
+              <section
+                className="admin-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="category-edit-title"
+              >
+                <div className="modal-head">
+                  <div>
+                    <span className="eyebrow">
+                      CATEGORY · {editingCategory.slug}
+                    </span>
+                    <h2 id="category-edit-title">Edit category</h2>
+                  </div>
+                  <button
+                    className="icon-button"
+                    aria-label="Close category editor"
+                    onClick={() => setEditingCategory(null)}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={saveCategoryEdit}>
+                  <label className="field">
+                    <span>Category name</span>
+                    <input
+                      value={categoryDraft.name}
+                      onChange={(event) =>
+                        setCategoryDraft({
+                          ...categoryDraft,
+                          name: event.target.value,
+                        })
+                      }
+                      minLength={2}
+                      maxLength={100}
+                      required
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Description</span>
+                    <textarea
+                      value={categoryDraft.description}
+                      onChange={(event) =>
+                        setCategoryDraft({
+                          ...categoryDraft,
+                          description: event.target.value,
+                        })
+                      }
+                      maxLength={500}
+                      rows={3}
+                    />
+                  </label>
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="button button-outline"
+                      onClick={() => setEditingCategory(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button className="button button-dark" disabled={busy}>
+                      {busy ? "Saving…" : "Save category"} <Check size={15} />
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          )}
+        </>
+      )}
+    </main>
+  );
+}
+
+function ContactPage() {
+  const settings = useSiteSettings();
+  return (
+    <main className="content-page">
+      <PageIntro
+        eyebrow="CONTACT"
+        title="A conversation is a good place to start."
+        copy="Reach BABA'S CYBER CAFE in Srinagar for service enquiries, application assistance or help with an existing reference."
+      />
+      <div className="contact-grid">
+        <a
+          href={`tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`}
+          className="contact-card"
+        >
+          <span>
+            <MessageCircle size={21} />
+          </span>
+          <small>CALL OR WHATSAPP</small>
+          <strong>{settings.contact.phone}</strong>
+          <p>For a quick enquiry or follow-up.</p>
+          <ArrowUpRight size={16} />
+        </a>
+        <a href={`mailto:${settings.contact.email}`} className="contact-card">
+          <span>
+            <FileText size={21} />
+          </span>
+          <small>EMAIL</small>
+          <strong>{settings.contact.email}</strong>
+          <p>Send a detailed question by email.</p>
+          <ArrowUpRight size={16} />
+        </a>
+        <a
+          href={settings.social.facebook}
+          target="_blank"
+          rel="noreferrer"
+          className="contact-card"
+        >
+          <span>
+            <Globe2 size={21} />
+          </span>
+          <small>FOLLOW</small>
+          <strong>Facebook</strong>
+          <p>Visit our Facebook page.</p>
+          <ArrowUpRight size={16} />
+        </a>
+        <a
+          href={settings.social.business_profile}
+          target="_blank"
+          rel="noreferrer"
+          className="contact-card"
+        >
+          <span>
+            <Building2 size={21} />
+          </span>
+          <small>BUSINESS PROFILE</small>
+          <strong>Google Business Profile</strong>
+          <p>Open the shared business profile.</p>
+          <ArrowUpRight size={16} />
+        </a>
+      </div>
+      <div className="location-note">
+        <Landmark size={20} />
+        <div>
+          <h2>Based in Srinagar, Jammu &amp; Kashmir</h2>
+          <p>
+            We have not published a street address or map pin. Use the verified
+            business profile or contact us for directions.
+          </p>
+          <a
+            className="text-link"
+            href={settings.social.business_profile}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Get directions via Google Business Profile{" "}
+            <ArrowUpRight size={14} />
+          </a>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function LegalPage({ privacy = false }: { privacy?: boolean }) {
+  return (
+    <main className="content-page legal-page">
+      <PageIntro
+        eyebrow={privacy ? "PRIVACY" : "TERMS"}
+        title={
+          privacy
+            ? "Your information deserves care."
+            : "Clear terms for assistance."
+        }
+        copy={
+          privacy
+            ? "This policy explains what information may be collected when you enquire with BABA'S CYBER CAFE."
+            : "These terms describe the independent assistance services offered by BABA'S CYBER CAFE."
+        }
+      />
+      <article className="legal-copy">
+        <p className="legal-updated">Last updated: 2 November 2026</p>
+        {privacy ? (
+          <>
+            <h2>Information we collect</h2>
+            <p>
+              If you submit an application enquiry, we collect the name, mobile
+              number, email, selected service and details you provide. Do not
+              submit passwords, bank details, PINs or one-time passcodes.
+            </p>
+            <h2>How information is used</h2>
+            <p>
+              Information is used to respond to enquiries, provide application
+              assistance, share status updates and maintain service records. We
+              do not sell personal information.
+            </p>
+            <h2>Storage and access</h2>
+            <p>
+              Once the secure backend is configured, application data is stored
+              in Supabase with access controls. Documents are stored in private
+              storage and shared only when approved. System availability depends
+              on the configured service providers.
+            </p>
+            <h2>Your choices</h2>
+            <p>
+              You may contact us to request access, correction or deletion,
+              subject to legal and operational record-keeping requirements.
+              Email <a href={`mailto:${email}`}>{email}</a>.
+            </p>
+            <h2>Third-party services</h2>
+            <p>
+              Authentication, hosting and email providers may process
+              information to operate the portal. WhatsApp, Facebook and Google
+              links are governed by their own privacy policies. Do not use the
+              portal for emergencies.
+            </p>
+            <h2>Contact</h2>
+            <p>
+              BABA'S CYBER CAFE · Srinagar, Jammu &amp; Kashmir ·{" "}
+              <a href={`tel:+917006865909`}>{phone}</a>.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2>Independent assistance only</h2>
+            <p>
+              BABA'S CYBER CAFE is not a government office,
+              government-authorised centre, insurer, bank or department
+              representative. Assistance does not guarantee submission
+              acceptance, eligibility, approval or a specific outcome.
+            </p>
+            <h2>Official processes and information</h2>
+            <p>
+              The responsible authority controls application rules, required
+              documents, fees, processing times and decisions. Confirm current
+              requirements directly with that authority. No prices are published
+              on this website.
+            </p>
+            <h2>Customer responsibilities</h2>
+            <p>
+              Provide accurate information and only documents you are permitted
+              to share. Never share passwords, PINs or OTPs. Keep tracking
+              references private and use the registered mobile number for
+              verification.
+            </p>
+            <h2>Availability and communication</h2>
+            <p>
+              Online services depend on configured third-party systems and may
+              be unavailable. A confirmation email is sent only when the email
+              integration is configured and reports success. WhatsApp is an
+              optional communication channel.
+            </p>
+            <h2>Contact</h2>
+            <p>
+              Questions about these terms:{" "}
+              <a href={`mailto:${email}`}>{email}</a> or{" "}
+              <a href="tel:+917006865909">{phone}</a>.
+            </p>
+          </>
+        )}
+      </article>
+    </main>
+  );
+}
+
+function NotFound() {
+  return (
+    <main className="content-page not-found">
+      <span className="eyebrow">404 · NOT FOUND</span>
+      <h1>This page isn't here.</h1>
+      <p>The link may have changed. Let's find the right place.</p>
+      <Link className="button button-dark" to="/">
+        Back to home <ArrowRight size={16} />
+      </Link>
+    </main>
+  );
+}
+
+function RoutedApp() {
+  const location = useLocation();
+  useEffect(() => {
+    const path = location.pathname;
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track"].some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+    );
+    const categorySlug = path.startsWith("/services/")
+      ? path.split("/").at(-1)
+      : "";
+    const category = categories.find((item) => item.slug === categorySlug);
+    const titles: Record<string, string> = {
+      "/": "BABA'S CYBER CAFE | Digital Service Assistance in Srinagar",
+      "/about": "About Us | BABA'S CYBER CAFE",
+      "/services": "Service Directory | BABA'S CYBER CAFE",
+      "/apply": "New Enquiry | BABA'S CYBER CAFE",
+      "/track": "Track Application | BABA'S CYBER CAFE",
+      "/dashboard": "Customer Dashboard | BABA'S CYBER CAFE",
+      "/contact": "Contact | BABA'S CYBER CAFE",
+      "/privacy": "Privacy Policy | BABA'S CYBER CAFE",
+      "/terms": "Terms & Conditions | BABA'S CYBER CAFE",
+      "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
+      "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
+    };
+    document.title = category
+      ? `${category.name} Assistance | BABA'S CYBER CAFE`
+      : (titles[path] ?? "BABA'S CYBER CAFE | Srinagar");
+    const robots = document.querySelector<HTMLMetaElement>(
+      'meta[name="robots"]',
+    );
+    if (robots)
+      robots.content = privateRoute ? "noindex,nofollow" : "index,follow";
+    const canonical = document.querySelector<HTMLLinkElement>(
+      'link[rel="canonical"]',
+    );
+    if (canonical)
+      canonical.href = `https://babacybercafe.in${path === "/" ? "/" : path}`;
+    const description = document.querySelector<HTMLMetaElement>(
+      'meta[name="description"]',
+    );
+    if (description)
+      description.content = privateRoute
+        ? "Secure application services for BABA'S CYBER CAFE customers."
+        : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
+  }, [location.pathname]);
+  return (
+    <>
+      <Header />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/services/:category" element={<CategoryRoute />} />
+        <Route path="/apply" element={<ApplicationPage />} />
+        <Route path="/track" element={<TrackPage />} />
+        <Route path="/dashboard" element={<CustomerDashboard />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy" element={<LegalPage privacy />} />
+        <Route path="/terms" element={<LegalPage />} />
+        <Route path="/admin/login" element={<AdminPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Footer />
+    </>
+  );
+}
+
+function CategoryRoute() {
+  const categoryList = useCategoryList();
+  const { category: slug = "" } = useParams();
+  const category = categoryList.find((item) => item.slug === slug);
+  return category ? (
+    <ServicesPage fixedCategory={category.slug} key={category.slug} />
+  ) : (
+    <NotFound />
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <RoutedApp />
+    </BrowserRouter>
+  );
+}

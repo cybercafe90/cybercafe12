@@ -1,0 +1,6 @@
+category_slug,name,description,required_documents,eligibility,application_method,official_url,official_url_verified,is_active,is_featured
+insurance,Life Insurance,Enquiry and documentation assistance. Coverage and decisions remain with the insurer.,,Confirm terms with the insurer.,Independent enquiry assistance.,,false,true,true
+revenue,Income Certificate,Application assistance. Requirements and issuance are determined by the relevant department.,,Confirm current eligibility with the responsible authority.,Independent application assistance.,,false,true,false
+smc,Birth Registration Assistance,Application assistance. Availability and decisions are determined by Srinagar Municipal Corporation.,,Confirm current requirements with the responsible authority.,Independent application assistance.,,false,true,false
+labour,Labour Registration Assistance,Application assistance. Eligibility and decisions are determined by the relevant department.,,Confirm current eligibility with the responsible authority.,Independent application assistance.,,false,true,false
+central,PAN Card Assistance,Digital application assistance. Eligibility and decisions are determined by the relevant authority.,,Confirm current eligibility with the responsible authority.,Independent application assistance.,,false,true,false

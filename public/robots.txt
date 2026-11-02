@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /apply
+Disallow: /track
+Sitemap: https://babacybercafe.in/sitemap.xml

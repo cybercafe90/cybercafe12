@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { min-width: 320px; min-height: 100vh; margin: 0; }
+#root { min-height: 100vh; }
+::selection { color: #171713; background: #e2d2aa; }
