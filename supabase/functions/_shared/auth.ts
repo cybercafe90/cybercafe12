@@ -17,7 +17,7 @@ export async function verifyOwner(request: Request, admin: SupabaseClient): Prom
     auth: { autoRefreshToken: false, persistSession: false },
   })
   const { data: { user }, error } = await userClient.auth.getUser(token)
-  if (error || !user || !(user.email_confirmed_at || user.confirmed_at)) throw new Error('Verified owner sign-in required.')
+  if (error || !user) throw new Error('Owner sign-in required.')
   const { data: role, error: roleError } = await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'owner').maybeSingle()
   if (roleError || role?.role !== 'owner') throw new Error('Owner authorization required.')
   return user
