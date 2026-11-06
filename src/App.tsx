@@ -584,18 +584,19 @@ function SocialPreviewSection() {
             <div><b>Facebook</b><small>BABA'S CYBER CAFE</small></div>
             <a href={settings.social.facebook} target="_blank" rel="noreferrer">Open page <ArrowUpRight size={14} /></a>
           </div>
-          <div className="social-embed-frame facebook-frame">
-            <iframe
-              title="BABA'S CYBER CAFE Facebook page preview"
-              src={facebookEmbed}
-              loading="lazy"
-              scrolling="no"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
-          <p className="social-preview-note">Facebook controls which public page content can be embedded here.</p>
+          <a className="facebook-live-card" href={settings.social.facebook} target="_blank" rel="noreferrer">
+            <div className="instagram-live-top">
+              <span className="facebook-avatar">f</span>
+              <span><b>babascybercafe</b><small>BABA'S CYBER CAFE · Srinagar</small></span>
+            </div>
+            <div className="facebook-preview-art">
+              <span className="facebook-preview-mark">f</span>
+              <b>Follow us on Facebook</b>
+              <span>Services · Announcements · Customer information</span>
+            </div>
+            <span className="instagram-live-action">Visit our Facebook page <ArrowUpRight size={15} /></span>
+          </a>
+          <p className="social-preview-note">Follow our official Facebook page for business updates and announcements.</p>
         </article>
         <article className="social-preview-card instagram-preview">
           <div className="social-preview-head">
