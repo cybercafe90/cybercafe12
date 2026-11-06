@@ -2193,6 +2193,13 @@ function AdminPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [mfaMode, setMfaMode] = useState<"none" | "enroll" | "challenge">("none");
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaPendingFactorId, setMfaPendingFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaQr, setMfaQr] = useState("");
+  const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
   const [error, setError] = useState("");
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
@@ -2266,6 +2273,10 @@ function AdminPage() {
             : null,
         );
         setIsOwner(false);
+        setMfaMode("none");
+        setMfaCode("");
+        setMfaQr("");
+        setMfaSecret("");
         setReady(!session?.user);
       },
     );
@@ -2274,34 +2285,58 @@ function AdminPage() {
   useEffect(() => {
     if (!supabase || !user) return;
     let current = true;
+    setReady(false);
     void (async () => {
-      const { data, error: roleError } = await supabase!
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "owner")
-        .maybeSingle();
-      if (!current) return;
-      if (data?.role === "owner") {
-        setIsOwner(true);
-        setError(roleError?.message ?? "");
-        setReady(true);
-        return;
-      }
-      const { data: sessionData } = await supabase!.auth.getSession();
       try {
+        const [{ data: aalData, error: aalError }, { data: factorData, error: factorError }] = await Promise.all([
+          supabase!.auth.mfa.getAuthenticatorAssuranceLevel(),
+          supabase!.auth.mfa.listFactors(),
+        ]);
+        if (aalError) throw aalError;
+        if (factorError) throw factorError;
+        if (!current) return;
+        const verifiedTotp = factorData.totp.find((factor) => factor.status === "verified");
+        const pendingTotp = factorData.totp.find((factor) => factor.status !== "verified");
+        if (!verifiedTotp) {
+          setMfaFactorId("");
+          setMfaPendingFactorId(pendingTotp?.id ?? "");
+          setMfaMode("enroll");
+          setReady(true);
+          return;
+        }
+        setMfaPendingFactorId("");
+        setMfaFactorId(verifiedTotp.id);
+        if (aalData.currentLevel !== "aal2" && aalData.nextLevel === "aal2") {
+          setMfaMode("challenge");
+          setReady(true);
+          return;
+        }
+        if (aalData.currentLevel !== "aal2") throw new Error("Google Authenticator verification is required.");
+        setMfaMode("none");
+        const { data, error: roleError } = await supabase!
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "owner")
+          .maybeSingle();
+        if (!current) return;
+        if (data?.role === "owner") {
+          setIsOwner(true);
+          setError(roleError?.message ?? "");
+          setReady(true);
+          return;
+        }
+        const { data: sessionData } = await supabase!.auth.getSession();
         await callFunction("investigation-overview", {}, sessionData.session?.access_token);
         if (current) window.location.replace("/investigation");
-      } catch {
+      } catch (reason) {
         if (!current) return;
         setIsOwner(false);
-        setError(roleError?.message ?? "This account does not have owner or investigator access.");
+        setError(reason instanceof Error ? reason.message : "Secure portal access could not be verified.");
         setReady(true);
       }
     })();
-    return () => {
-      current = false;
-    };
+    return () => { current = false; };
   }, [user]);
   useEffect(() => {
     if (!supabase || !isOwner) return;
@@ -2368,6 +2403,40 @@ function AdminPage() {
       window.clearTimeout(timer);
     };
   }, [catalogVersion, isOwner, servicePage, serviceSearch]);
+
+  async function beginMfaEnrollment() {
+    if (!supabase) return;
+    setMfaBusy(true); setError("");
+    try {
+      if (mfaPendingFactorId) {
+        const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: mfaPendingFactorId });
+        if (removeError) throw removeError;
+        setMfaPendingFactorId("");
+      }
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "BABA'S CYBER CAFE Admin" });
+      if (enrollError) throw enrollError;
+      setMfaFactorId(data.id);
+      setMfaQr(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+      setMfaMode("enroll");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Google Authenticator setup could not start.");
+    } finally { setMfaBusy(false); }
+  }
+
+  async function verifyAdminMfa() {
+    if (!supabase || !mfaFactorId || !mfaCode.trim()) return;
+    setMfaBusy(true); setError("");
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code: mfaCode.trim() });
+      if (verifyError) throw verifyError;
+      window.location.reload();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The authenticator code could not be verified.");
+    } finally { setMfaBusy(false); }
+  }
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2902,7 +2971,38 @@ function AdminPage() {
           </button>
         </form>
       )}
-      {!passwordRecovery && user && !ready && <p>Checking owner permissions…</p>}
+      {!passwordRecovery && user && ready && mfaMode !== "none" && (
+        <section className="signin-panel admin-signin">
+          <div className="signin-icon"><ShieldCheck size={25} /></div>
+          <span className="eyebrow">ADMIN TWO-FACTOR SECURITY</span>
+          {mfaMode === "enroll" ? (
+            <>
+              <h2>Set up Google Authenticator</h2>
+              <p>Scan this QR code with Google Authenticator. If scanning is unavailable, enter the setup key manually. Keep this key private.</p>
+              {mfaQr ? (
+                <>
+                  <img className="mfa-qr" src={`data:image/svg+xml;utf8,${encodeURIComponent(mfaQr)}`} alt="Google Authenticator setup QR code" />
+                  <label className="field"><span>Manual setup key</span><input readOnly value={mfaSecret} /></label>
+                  <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} maxLength={6} /></label>
+                  <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and secure account"}</button>
+                </>
+              ) : (
+                <button className="button button-dark" type="button" disabled={mfaBusy} onClick={() => void beginMfaEnrollment()}>{mfaBusy ? "Preparing…" : mfaPendingFactorId ? "Restart authenticator setup" : "Set up authenticator"}</button>
+              )}
+            </>
+          ) : (
+            <>
+              <h2>Verify your authenticator</h2>
+              <p>Enter the current 6-digit code from Google Authenticator to continue to the secure portal.</p>
+              <label className="field"><span>Authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} maxLength={6} /></label>
+              <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and continue"}</button>
+            </>
+          )}
+          {error && <div className="notice notice-error" role="alert">{error}</div>}
+          <button className="button button-outline" type="button" disabled={mfaBusy} onClick={() => void signOut()}>Sign out</button>
+        </section>
+      )}
+      {!passwordRecovery && user && !ready && <p>Checking secure portal access…</p>}
       {!passwordRecovery && user && ready && !isOwner && (
         <div className="notice notice-error">
           {error || "Owner access is required for this dashboard."}
