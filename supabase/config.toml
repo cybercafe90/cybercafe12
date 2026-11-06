@@ -75,6 +75,15 @@ verify_jwt = false
 [functions.admin-grievances]
 verify_jwt = true
 
+[functions.payment-customer]
+verify_jwt = false
+
+[functions.admin-payments]
+verify_jwt = true
+
+[functions.bank-sms-webhook]
+verify_jwt = false
+
 
 [auth.email.template.confirmation]
 subject = "Your BABA'S CYBER CAFE verification code"
