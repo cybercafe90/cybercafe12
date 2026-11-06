@@ -1,4 +1,4 @@
-import { serviceClient } from '../_shared/auth.ts'
+import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
 import { normalizeMobile, preflight, response } from '../_shared/http.ts'
 
 const validTracking = (value: unknown) => typeof value === 'string' && /^BABA-[A-Z0-9]{10}$/.test(value.trim().toUpperCase())
@@ -27,6 +27,13 @@ Deno.serve(async (request) => {
     const mobile = normalizeMobile(body.mobile)
     if (!trackingId || !mobile) return response(request, { error: 'We could not verify those details. Check the tracking ID and registered mobile number.' }, 404, { 'Cache-Control': 'no-store' })
     const admin = serviceClient()
+    const ipLimit = action === 'status' ? 3000 : action === 'submit_confirmation' ? 30 : 60
+    const referenceLimit = action === 'status' ? 300 : action === 'submit_confirmation' ? 4 : 8
+    const [ipAllowed, referenceAllowed] = await Promise.all([
+      checkRateLimit(admin, request, `payment-${action}-ip`, 'all', ipLimit, 15),
+      checkRateLimit(admin, request, `payment-${action}-reference`, trackingId, referenceLimit, 15),
+    ])
+    if (!ipAllowed || !referenceAllowed) return response(request, { error: 'Too many payment lookups. Please wait and try again.' }, 429, { 'Cache-Control': 'no-store' })
     const record = await getRecord(admin, trackingId, mobile)
     if (!record) return response(request, { error: 'We could not verify those details. Check the tracking ID and registered mobile number.' }, 404, { 'Cache-Control': 'no-store' })
 
