@@ -37,9 +37,9 @@ function makeUpiUri(amount: number, trackingId: string) {
 }
 
 function useQrCode(value: string, enabled: boolean) {
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(() => typeof window !== "undefined" && Boolean(window.QRCode));
   useEffect(() => {
-    if (window.QRCode) { setReady(true); return; }
+    if (window.QRCode) return;
     const existing = document.querySelector<HTMLScriptElement>('script[data-upi-qr]');
     if (existing) {
       existing.addEventListener("load", () => setReady(true), { once: true });
