@@ -943,11 +943,6 @@ function ApplicationPage() {
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [mfaMode, setMfaMode] = useState<"enroll" | "challenge" | null>(null);
-  const [mfaFactorId, setMfaFactorId] = useState("");
-  const [mfaQrCode, setMfaQrCode] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaBusy, setMfaBusy] = useState(false);
   const [result, setResult] = useState<{
     trackingId: string;
     emailSent: boolean;
@@ -1799,6 +1794,11 @@ function AdminPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [error, setError] = useState("");
+  const [mfaMode, setMfaMode] = useState<"enroll" | "challenge" | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaQrCode, setMfaQrCode] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
