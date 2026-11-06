@@ -1,6 +1,26 @@
-import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+import { checkRateLimit, serviceClient, verifyCustomerEmail } from '../_shared/auth.ts'
 import { sendCustomerEmail } from '../_shared/email.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
+
+async function recordSecurityEvent(admin: SupabaseClient, request: Request, eventType: string, summary: string, route: string) {
+  try {
+    const ip = request.headers.get("cf-connecting-ip");
+    const sourceIp = ip && ip.length <= 45 && /^[0-9a-fA-F:.]+$/.test(ip) ? ip : null;
+    await admin.from("security_events").insert({
+      source: "application",
+      event_type: eventType,
+      severity: "medium",
+      status: "new",
+      source_ip: sourceIp,
+      route,
+      summary,
+      details: { detection: "server_rate_limit" },
+    });
+  } catch {
+    // Telemetry must never interrupt the customer-facing request path.
+  }
+}
 
 Deno.serve(async (request) => {
   const early = preflight(request)
@@ -8,7 +28,10 @@ Deno.serve(async (request) => {
   let admin
   try {
     admin = serviceClient()
-    if (!await checkRateLimit(admin, request, 'application-submit', 'all', 8, 15)) return response(request, { error: 'Too many requests. Please wait before trying again.' }, 429)
+    if (!await checkRateLimit(admin, request, 'application-submit', 'all', 8, 15)) {
+      await recordSecurityEvent(admin, request, 'application_submit_rate_limited', 'Application submission rate limit exceeded.', '/apply')
+      return response(request, { error: 'Too many requests. Please wait before trying again.' }, 429)
+    }
     const raw = await request.text()
     if (raw.length > 12_000) return response(request, { error: 'Request is too large.' }, 413)
     const body = JSON.parse(raw)
@@ -29,17 +52,13 @@ Deno.serve(async (request) => {
       if (!serviceRecord) return response(request, { error: 'The selected service is unavailable. Refresh the catalogue and try again.' }, 400)
     }
 
-    let userId: string | null = null
-    const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]
-    if (token) {
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-      if (!anonKey) return response(request, { error: 'Secure authentication is not configured.' }, 503)
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.0')
-      const userClient = createClient(Deno.env.get('SUPABASE_URL')!, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } })
-      const { data: { user }, error } = await userClient.auth.getUser(token)
-      if (error || !user || !(user.email_confirmed_at || user.confirmed_at) || user.email?.toLowerCase() !== email) return response(request, { error: 'Your signed-in email must match the email on this enquiry.' }, 403)
-      userId = user.id
+    let verifiedUser
+    try {
+      verifiedUser = await verifyCustomerEmail(request, email)
+    } catch {
+      return response(request, { error: 'Verify your email address with the one-time code before submitting this enquiry.' }, 401)
     }
+    const userId: string = verifiedUser.id
 
     let saved: { id: string; tracking_id: string; email: string; full_name: string; service_name: string } | null = null
     for (let attempt = 0; attempt < 2 && !saved; attempt += 1) {

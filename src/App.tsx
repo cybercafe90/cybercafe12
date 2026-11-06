@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -39,6 +39,8 @@ import {
   UsersRound,
   X,
   Zap,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import {
   categories,
@@ -50,6 +52,9 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
+import InvestigationPage from "./pages/InvestigationPage";
+import GrievancePage from "./pages/GrievancePage";
+import AdminGrievancePage from "./pages/AdminGrievancePage";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -240,6 +245,12 @@ function Header() {
           <NavLink to="/track" onClick={close}>
             Track application
           </NavLink>
+          <NavLink to="/grievance" onClick={close}>
+            Grievance portal
+          </NavLink>
+          <NavLink to="/investigation" onClick={close}>
+            Investigation
+          </NavLink>
           <NavLink to="/contact" onClick={close}>
             Contact
           </NavLink>
@@ -279,6 +290,8 @@ function Footer() {
           <Link to="/track">Track an application</Link>
           <Link to="/dashboard">Customer dashboard</Link>
           <Link to="/admin/login">Admin sign-in</Link>
+          <Link to="/investigation">Investigation portal</Link>
+          <Link to="/grievance">Grievance redressal</Link>
         </div>
         <div>
           <h3>Reach us</h3>
@@ -924,6 +937,11 @@ function ApplicationPage() {
   const [documents, setDocuments] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
     trackingId: string;
@@ -951,6 +969,36 @@ function ApplicationPage() {
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
 
+  async function sendCustomerOtp() {
+    if (!supabase) return setError("Secure email verification is unavailable.");
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
+    setOtpBusy(true); setError("");
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
+      if (otpError) throw otpError;
+      setOtpSent(true); setOtpVerified(false); setVerifiedEmail(""); setOtpCode("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "We could not send your verification code.");
+    } finally { setOtpBusy(false); }
+  }
+
+  async function verifyCustomerOtp() {
+    if (!supabase) return;
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!otpCode.trim()) return setError("Enter the one-time code sent to your email.");
+    setOtpBusy(true); setError("");
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({ email: normalizedEmail, token: otpCode.trim(), type: "email" });
+      if (verifyError) throw verifyError;
+      if (!data.session || !data.user?.email_confirmed_at || data.user.email?.toLowerCase() !== normalizedEmail) throw new Error("Email verification could not be confirmed. Request a new code.");
+      setOtpVerified(true); setVerifiedEmail(normalizedEmail);
+    } catch (reason) {
+      setOtpVerified(false); setVerifiedEmail("");
+      setError(reason instanceof Error ? reason.message : "The verification code is invalid or expired.");
+    } finally { setOtpBusy(false); }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -964,10 +1012,18 @@ function ApplicationPage() {
       setError("Please confirm the privacy notice before continuing.");
       return;
     }
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!otpVerified || verifiedEmail !== normalizedEmail) {
+      setError("Verify your email address with the one-time code before submitting.");
+      return;
+    }
     setBusy(true);
     const whatsappWindow = window.open("", "_blank");
     try {
       const { data: sessionData } = await supabase!.auth.getSession();
+      if (!sessionData.session?.user?.email_confirmed_at || sessionData.session.user.email?.toLowerCase() !== normalizedEmail) {
+        throw new Error("Your verified email session has expired. Please verify your email again.");
+      }
       const response = await callFunction<{
         trackingId: string;
         emailSent: boolean;
@@ -1098,12 +1154,31 @@ function ApplicationPage() {
               <input
                 type="email"
                 value={customerEmail}
-                onChange={(event) => setCustomerEmail(event.target.value)}
+                onChange={(event) => { setCustomerEmail(event.target.value); setOtpSent(false); setOtpVerified(false); setVerifiedEmail(""); setOtpCode(""); }}
                 required
                 maxLength={254}
                 autoComplete="email"
               />
             </label>
+            <div className="field field-wide">
+              <span>Email verification <i>*</i></span>
+              {!otpVerified ? (
+                <>
+                  <div className="otp-actions">
+                    <button type="button" className="button button-outline" onClick={() => void sendCustomerOtp()} disabled={otpBusy || !customerEmail.trim()}>
+                      {otpBusy ? "Please wait…" : otpSent ? "Send code again" : "Send email code"}
+                    </button>
+                    {otpSent && <span className="form-footnote">Enter the code sent to your email address.</span>}
+                  </div>
+                  {otpSent && (
+                    <div className="otp-actions">
+                      <input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\s/g, ""))} maxLength={8} placeholder="Enter email code" />
+                      <button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button>
+                    </div>
+                  )}
+                </>
+              ) : <p className="notice notice-success"><ShieldCheck size={15} /> Email verified: {verifiedEmail}</p>}
+            </div>
           </div>
           <div className="form-section-title">
             <span>02</span>
@@ -2118,6 +2193,13 @@ function AdminPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [mfaMode, setMfaMode] = useState<"none" | "enroll" | "challenge">("none");
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaPendingFactorId, setMfaPendingFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaQr, setMfaQr] = useState("");
+  const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
   const [error, setError] = useState("");
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
@@ -2191,6 +2273,10 @@ function AdminPage() {
             : null,
         );
         setIsOwner(false);
+        setMfaMode("none");
+        setMfaCode("");
+        setMfaQr("");
+        setMfaSecret("");
         setReady(!session?.user);
       },
     );
@@ -2199,26 +2285,57 @@ function AdminPage() {
   useEffect(() => {
     if (!supabase || !user) return;
     let current = true;
-    void supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "owner")
-      .maybeSingle()
-      .then(({ data, error: roleError }) => {
+    void (async () => {
+      try {
+        const [{ data: aalData, error: aalError }, { data: factorData, error: factorError }] = await Promise.all([
+          supabase!.auth.mfa.getAuthenticatorAssuranceLevel(),
+          supabase!.auth.mfa.listFactors(),
+        ]);
+        if (aalError) throw aalError;
+        if (factorError) throw factorError;
         if (!current) return;
-        setIsOwner(Boolean(data?.role === "owner"));
-        setError(
-          roleError?.message ??
-            (data?.role === "owner"
-              ? ""
-              : "This account does not have owner access."),
-        );
+        const verifiedTotp = factorData.totp.find((factor) => factor.status === "verified");
+        const pendingTotp = factorData.totp.find((factor) => factor.status !== "verified");
+        if (!verifiedTotp) {
+          setMfaFactorId("");
+          setMfaPendingFactorId(pendingTotp?.id ?? "");
+          setMfaMode("enroll");
+          setReady(true);
+          return;
+        }
+        setMfaPendingFactorId("");
+        setMfaFactorId(verifiedTotp.id);
+        if (aalData.currentLevel !== "aal2" && aalData.nextLevel === "aal2") {
+          setMfaMode("challenge");
+          setReady(true);
+          return;
+        }
+        if (aalData.currentLevel !== "aal2") throw new Error("Google Authenticator verification is required.");
+        setMfaMode("none");
+        const { data, error: roleError } = await supabase!
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "owner")
+          .maybeSingle();
+        if (!current) return;
+        if (data?.role === "owner") {
+          setIsOwner(true);
+          setError(roleError?.message ?? "");
+          setReady(true);
+          return;
+        }
+        const { data: sessionData } = await supabase!.auth.getSession();
+        await callFunction("investigation-overview", {}, sessionData.session?.access_token);
+        if (current) window.location.replace("/investigation");
+      } catch (reason) {
+        if (!current) return;
+        setIsOwner(false);
+        setError(reason instanceof Error ? reason.message : "Secure portal access could not be verified.");
         setReady(true);
-      });
-    return () => {
-      current = false;
-    };
+      }
+    })();
+    return () => { current = false; };
   }, [user]);
   useEffect(() => {
     if (!supabase || !isOwner) return;
@@ -2286,6 +2403,40 @@ function AdminPage() {
     };
   }, [catalogVersion, isOwner, servicePage, serviceSearch]);
 
+  async function beginMfaEnrollment() {
+    if (!supabase) return;
+    setMfaBusy(true); setError("");
+    try {
+      if (mfaPendingFactorId) {
+        const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: mfaPendingFactorId });
+        if (removeError) throw removeError;
+        setMfaPendingFactorId("");
+      }
+      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "BABA'S CYBER CAFE Admin" });
+      if (enrollError) throw enrollError;
+      setMfaFactorId(data.id);
+      setMfaQr(data.totp.qr_code);
+      setMfaSecret(data.totp.secret);
+      setMfaMode("enroll");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Google Authenticator setup could not start.");
+    } finally { setMfaBusy(false); }
+  }
+
+  async function verifyAdminMfa() {
+    if (!supabase || !mfaFactorId || !mfaCode.trim()) return;
+    setMfaBusy(true); setError("");
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code: mfaCode.trim() });
+      if (verifyError) throw verifyError;
+      window.location.reload();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The authenticator code could not be verified.");
+    } finally { setMfaBusy(false); }
+  }
+
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -2303,22 +2454,31 @@ function AdminPage() {
     setError("");
     setNotice("");
     if (!supabase) return;
-    if (!adminEmail.trim()) {
+    const normalizedEmail = adminEmail.trim().toLowerCase();
+    if (!normalizedEmail) {
       setError("Enter your verified email address first.");
       return;
     }
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      adminEmail.trim(),
+      normalizedEmail,
       { redirectTo: `${window.location.origin}/admin/login` },
     );
     if (resetError) setError(resetError.message);
-    else setNotice("If the account exists, password reset instructions were sent.");
+    else setNotice("If the account exists, password reset instructions were sent. Use the newest email link once.");
   }
   async function updateRecoveredPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
     if (!supabase) return;
+    if (newPassword.length < 12) {
+      setError("Choose a password with at least 12 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword,
     });
@@ -2326,7 +2486,8 @@ function AdminPage() {
     else {
       setPasswordRecovery(false);
       setNewPassword("");
-      setNotice("Password updated.");
+      setConfirmNewPassword("");
+      setNotice("Password updated. Sign in with your new password.");
     }
   }
   async function changeAdminPassword(event: FormEvent<HTMLFormElement>) {
@@ -2334,8 +2495,8 @@ function AdminPage() {
     setError("");
     setNotice("");
     if (!supabase || !isOwner) return;
-    if (newPassword.length !== 8) {
-      setError("Choose exactly 8 characters.");
+    if (newPassword.length < 12) {
+      setError("Choose at least 12 characters.");
       return;
     }
     if (
@@ -2700,6 +2861,12 @@ function AdminPage() {
           <span className="eyebrow">PRIVATE WORKSPACE</span>
           <h1>Owner dashboard</h1>
           <p>Manage enquiries, service listings and customer updates.</p>
+          {isOwner && (
+            <div className="admin-portal-shortcuts">
+              <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
+            </div>
+          )}
         </div>
         {user && (
           <button
@@ -2726,7 +2893,7 @@ function AdminPage() {
           <span className="eyebrow">PASSWORD RECOVERY</span>
           <h2>Choose a new password</h2>
           <label className="field">
-            <span>New password</span>
+            <span>New password (at least 12 characters)</span>
             <input
               type="password"
               value={newPassword}
@@ -2736,8 +2903,20 @@ function AdminPage() {
               autoComplete="new-password"
             />
           </label>
+          <label className="field">
+            <span>Confirm new password</span>
+            <input
+              type="password"
+              value={confirmNewPassword}
+              onChange={(event) => setConfirmNewPassword(event.target.value)}
+              required
+              minLength={12}
+              autoComplete="new-password"
+            />
+          </label>
           {error && <div className="notice notice-error">{error}</div>}
-          <button className="button button-dark" disabled={!isSupabaseConfigured}>
+          {notice && <div className="notice notice-success">{notice}</div>}
+          <button className="button button-dark" disabled={!isSupabaseConfigured || newPassword.length < 12 || newPassword !== confirmNewPassword}>
             Update password <ArrowRight size={16} />
           </button>
         </form>
@@ -2791,7 +2970,38 @@ function AdminPage() {
           </button>
         </form>
       )}
-      {!passwordRecovery && user && !ready && <p>Checking owner permissions…</p>}
+      {!passwordRecovery && user && ready && mfaMode !== "none" && (
+        <section className="signin-panel admin-signin">
+          <div className="signin-icon"><ShieldCheck size={25} /></div>
+          <span className="eyebrow">ADMIN TWO-FACTOR SECURITY</span>
+          {mfaMode === "enroll" ? (
+            <>
+              <h2>Set up Google Authenticator</h2>
+              <p>Scan this QR code with Google Authenticator. If scanning is unavailable, enter the setup key manually. Keep this key private.</p>
+              {mfaQr ? (
+                <>
+                  <img className="mfa-qr" src={mfaQr} alt="Google Authenticator setup QR code" />
+                  <label className="field"><span>Manual setup key</span><input readOnly value={mfaSecret} /></label>
+                  <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
+                  <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and secure account"}</button>
+                </>
+              ) : (
+                <button className="button button-dark" type="button" disabled={mfaBusy} onClick={() => void beginMfaEnrollment()}>{mfaBusy ? "Preparing…" : mfaPendingFactorId ? "Restart authenticator setup" : "Set up authenticator"}</button>
+              )}
+            </>
+          ) : (
+            <>
+              <h2>Verify your authenticator</h2>
+              <p>Enter the current 6-digit code from Google Authenticator to continue to the secure portal.</p>
+              <label className="field"><span>Authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
+              <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and continue"}</button>
+            </>
+          )}
+          {error && <div className="notice notice-error" role="alert">{error}</div>}
+          <button className="button button-outline" type="button" disabled={mfaBusy} onClick={() => void signOut()}>Sign out</button>
+        </section>
+      )}
+      {!passwordRecovery && user && !ready && <p>Checking secure portal access…</p>}
       {!passwordRecovery && user && ready && !isOwner && (
         <div className="notice notice-error">
           {error || "Owner access is required for this dashboard."}
@@ -2816,13 +3026,12 @@ function AdminPage() {
             <form className="form-panel" onSubmit={changeAdminPassword}>
               <div className="field-grid">
                 <label className="field">
-                  <span>New 8-character password</span>
+                  <span>New password (at least 12 characters)</span>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(event) => setNewPassword(event.target.value)}
-                    minLength={8}
-                    maxLength={8}
+                    minLength={12}
                     required
                     autoComplete="new-password"
                   />
@@ -3818,11 +4027,98 @@ function NotFound() {
   );
 }
 
+
+function SoundControls() {
+  const [enabled, setEnabled] = useState(() => {
+    try {
+      return window.localStorage.getItem("baba-site-sound") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const enabledRef = useRef(enabled);
+  const audioRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+    try {
+      window.localStorage.setItem("baba-site-sound", enabled ? "on" : "off");
+    } catch {
+      // Sound preference remains available for this page session.
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    const playTone = (kind: "tap" | "submit") => {
+      if (!enabledRef.current) return;
+      try {
+        const AudioContextClass = window.AudioContext;
+        if (!AudioContextClass) return;
+        const context = audioRef.current ?? new AudioContextClass();
+        audioRef.current = context;
+        if (context.state === "suspended") void context.resume();
+        const now = context.currentTime;
+        const notes = kind === "submit" ? [660, 880] : [520];
+        notes.forEach((frequency, index) => {
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          const start = now + index * 0.085;
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(frequency, start);
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(kind === "submit" ? 0.045 : 0.022, start + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.start(start);
+          oscillator.stop(start + 0.08);
+        });
+      } catch {
+        // Audio is an enhancement; it must never interrupt a customer action.
+      }
+    };
+    const onClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const control = target.closest("a,button,[role='button'],summary,input[type='submit'],input[type='button'],select");
+      if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
+      if (control.closest("[data-sound-control]")) return;
+      playTone("tap");
+    };
+    const onSubmit = (event: Event) => {
+      if (event.target instanceof HTMLFormElement) playTone("submit");
+    };
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("submit", onSubmit, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("submit", onSubmit, true);
+      void audioRef.current?.close();
+      audioRef.current = null;
+    };
+  }, []);
+
+  return (
+    <button
+      className="sound-control"
+      type="button"
+      data-sound-control
+      aria-label={enabled ? "Turn interface sounds off" : "Turn interface sounds on"}
+      aria-pressed={enabled}
+      title={enabled ? "Sound on · click to mute" : "Sound off · click to enable"}
+      onClick={() => setEnabled((value) => !value)}
+    >
+      {enabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+      <span>{enabled ? "Sound on" : "Sound off"}</span>
+    </button>
+  );
+}
+
 function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/investigation", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3841,6 +4137,9 @@ function RoutedApp() {
       "/terms": "Terms & Conditions | BABA'S CYBER CAFE",
       "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
       "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
+      "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
+      "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
+      "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3879,9 +4178,13 @@ function RoutedApp() {
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/investigation" element={<InvestigationPage />} />
+        <Route path="/grievance" element={<GrievancePage />} />
+        <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
+      <SoundControls />
     </>
   );
 }
