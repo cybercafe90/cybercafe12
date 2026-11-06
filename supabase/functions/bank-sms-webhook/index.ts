@@ -5,12 +5,6 @@ async function sha256(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
 }
-function safeEqual(a: string, b: string) {
-  if (a.length !== b.length) return false
-  let result = 0
-  for (let i = 0; i < a.length; i++) result |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return result === 0
-}
 function parseAmount(message: string) {
   const match = message.match(/(?:credited|credit(?:ed)?\s+to)[^\d]{0,50}(?:Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)/i)
     ?? message.match(/(?:Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)[^\n]{0,50}(?:credited|credit)/i)
@@ -31,9 +25,13 @@ Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: { 'Access-Control-Allow-Origin': 'https://babacybercafe.in', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type, x-api-key' } })
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
   try {
-    const expected = Deno.env.get('BANK_SMS_WEBHOOK_API_KEY')
     const supplied = request.headers.get('x-api-key') ?? ''
-    if (!expected || !supplied || !safeEqual(expected, supplied)) return new Response('Unauthorized', { status: 401 })
+    if (!supplied || supplied.length > 256) return new Response('Unauthorized', { status: 401 })
+    const admin = serviceClient()
+    const { data: authorized, error: secretError } = await admin.rpc('verify_bank_sms_webhook_key', {
+      p_supplied_key: supplied,
+    })
+    if (secretError || authorized !== true) return new Response('Unauthorized', { status: 401 })
     const raw = await request.text()
     if (raw.length > 5000) return new Response('Payload too large', { status: 413 })
     const body = JSON.parse(raw)
@@ -48,7 +46,6 @@ Deno.serve(async (request) => {
     const amount = parseAmount(message)
     const utr = parseUtr(message)
     const trackingId = parseTracking(message)
-    const admin = serviceClient()
     const messageHash = await sha256(sender + '|' + message)
     const { data: alert, error: insertError } = await admin.from('bank_sms_alerts').insert({
       sender, message, bank_timestamp: bankTime.toISOString(), parsed_amount: amount,
