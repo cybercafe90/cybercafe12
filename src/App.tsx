@@ -246,6 +246,9 @@ function Header() {
           <NavLink to="/track" onClick={close}>
             Track application
           </NavLink>
+          <NavLink to="/pay" onClick={close}>
+            Make a payment
+          </NavLink>
           <NavLink to="/grievance" onClick={close}>
             Grievance portal
           </NavLink>
@@ -289,6 +292,7 @@ function Footer() {
           <h3>Your applications</h3>
           <Link to="/apply">New enquiry</Link>
           <Link to="/track">Track an application</Link>
+          <Link to="/pay">Make a payment</Link>
           <Link to="/dashboard">Customer dashboard</Link>
           <Link to="/admin/login">Admin sign-in</Link>
           <Link to="/investigation">Investigation portal</Link>
@@ -3613,7 +3617,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/investigation", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/investigation", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
