@@ -96,7 +96,9 @@ function CustomerPayment() {
   const refresh = useCallback(async (action: "lookup" | "status" = "lookup") => {
     if (!record && action === "status") return;
     const result = await callFunction<PaymentRecord>("payment-customer", {
-      action, trackingId: record?.application.tracking_id ?? trackingId, mobile: record?.application.mobile ?? mobile,
+      action,
+      trackingId: action === "status" ? record?.application.tracking_id : trackingId,
+      mobile: action === "status" ? record?.application.mobile : mobile,
     });
     setRecord(result);
     return result;
