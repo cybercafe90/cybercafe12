@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
-const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in"];
+const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in", "https://security-audit-working-2026-11-06.babacybercafe.pages.dev"];
 function cors(req: Request): HeadersInit {
   const origin = req.headers.get("origin") ?? "";
   return {
