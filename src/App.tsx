@@ -1436,22 +1436,6 @@ function StatusTag({ status }: { status: string }) {
   return <span className={`status-tag status-${key}`}>{status}</span>;
 }
 
-type CustomerApplication = {
-  trackingId: string;
-  service: string;
-  category: string;
-  status: string;
-  submittedAt: string;
-  history: { status: string; created_at: string }[];
-  remarks: { body: string; created_at: string }[];
-  documents: { name: string; url: string; expiresAt: string }[];
-};
-
-type CustomerDashboardData = {
-  profile: { fullName: string; mobile: string; email: string };
-  applications: CustomerApplication[];
-};
-
 function CustomerDashboard() {
   return (
     <main className="content-page narrow-page">
