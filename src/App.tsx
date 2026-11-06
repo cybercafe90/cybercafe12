@@ -50,6 +50,7 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
+import InvestigationPage from "./pages/InvestigationPage";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -3822,7 +3823,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/investigation"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3841,6 +3842,7 @@ function RoutedApp() {
       "/terms": "Terms & Conditions | BABA'S CYBER CAFE",
       "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
       "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
+      "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3879,6 +3881,7 @@ function RoutedApp() {
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/investigation" element={<InvestigationPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
