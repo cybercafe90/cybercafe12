@@ -563,3 +563,43 @@ td small { display: block; margin-top: 4px; color: #89887e; font-size: 8px; }
 .investigator-row strong { overflow-wrap:anywhere; color:var(--ink); font-size:10px; }
 .investigator-row small,.investigator-empty-note { color:var(--muted); font-size:9px; }
 @media(max-width:600px) { .investigator-grant-form { grid-template-columns:1fr; } .investigator-row { align-items:flex-start; flex-direction:column; } }
+
+.grievance-page,.grievance-admin-page { max-width:1120px; margin:0 auto; }
+.grievance-page > h1 { max-width:760px; margin:12px 0; font:500 clamp(34px,4vw,52px)/1.1 var(--serif); }
+.grievance-intro { max-width:700px; margin-bottom:28px; color:#77766d; font-size:12px; line-height:1.8; }
+.grievance-tabs { display:flex; gap:6px; margin:24px 0 0; border-bottom:1px solid var(--line); }
+.grievance-tabs button { padding:13px 16px; border:0; border-bottom:2px solid transparent; background:transparent; color:var(--muted); font:inherit; font-size:10px; cursor:pointer; }
+.grievance-tabs button.active { border-bottom-color:var(--ink); color:var(--ink); }
+.grievance-panel { padding:24px; border:1px solid var(--line); border-top:0; background:var(--white); }
+.grievance-form { display:flex; flex-direction:column; gap:14px; max-width:760px; }
+.grievance-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.grievance-form .field input,.grievance-form .field textarea,.grievance-admin-grid .field textarea,.grievance-admin-grid .field select { width:100%; min-width:0; }
+.grievance-consent { display:flex; align-items:flex-start; gap:9px; color:#6f6e65; font-size:10px; line-height:1.6; }
+.grievance-consent input { margin-top:2px; }
+.grievance-success { display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:14px 0; }
+.grievance-success h2 { margin:0; color:var(--ink); font:500 27px var(--serif); }
+.grievance-success > p { margin:0; color:var(--muted); font-size:10px; }
+.grievance-success > strong { padding:10px 13px; border:1px dashed #bcb7a9; color:var(--ink); font-size:20px; letter-spacing:.08em; }
+.grievance-success small,.grievance-track-date { color:var(--muted); font-size:9px; }
+.grievance-track-result { margin-top:26px; padding-top:20px; border-top:1px solid var(--line); }
+.grievance-track-heading,.grievance-admin-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.grievance-track-heading h2,.grievance-admin-head h2 { margin:6px 0; font:500 22px var(--serif); }
+.grievance-status { display:inline-flex; padding:5px 8px; border:1px solid var(--line); color:#635d4d; font-size:9px; }
+.grievance-timeline { display:flex; flex-direction:column; gap:0; margin-top:18px; }
+.grievance-update { display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--line); color:var(--ink); }
+.grievance-dot { width:8px; height:8px; margin:4px 0 0 4px; flex:none; border-radius:50%; background:#8a826c; }
+.grievance-update > div { display:flex; flex-direction:column; gap:4px; }
+.grievance-update strong { font-size:10px; }
+.grievance-update small { color:var(--muted); font-size:9px; }
+.grievance-update p { margin:3px 0 0; color:#66655d; font-size:10px; line-height:1.6; }
+.grievance-admin-toolbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:22px 0; }
+.grievance-admin-toolbar input { min-height:40px; width:min(420px,100%); padding:0 11px; border:1px solid var(--line); background:#fff; font:inherit; font-size:10px; }
+.grievance-admin-toolbar span { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:9px; }
+.grievance-admin-card { margin:12px 0; padding:20px; border:1px solid var(--line); background:var(--white); }
+.grievance-admin-head small { display:block; color:var(--muted); font-size:9px; }
+.grievance-description { margin:14px 0; color:#5f5e56; font-size:11px; line-height:1.7; white-space:pre-wrap; }
+.grievance-admin-grid { display:grid; grid-template-columns:180px repeat(2,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.grievance-admin-grid .field { display:flex; flex-direction:column; gap:6px; }
+.grievance-admin-grid .field span { color:var(--muted); font-size:9px; }
+.grievance-admin-grid .field textarea,.grievance-admin-grid .field select { padding:9px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-size:10px; }
+@media(max-width:720px) { .grievance-form-grid,.grievance-admin-grid { grid-template-columns:1fr; } .grievance-admin-toolbar,.grievance-track-heading,.grievance-admin-head { align-items:flex-start; flex-direction:column; } .grievance-panel,.grievance-admin-card { padding:16px; } }
