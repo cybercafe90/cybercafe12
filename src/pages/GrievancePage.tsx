@@ -24,7 +24,7 @@ export default function GrievancePage() {
   async function sendCustomerOtp() {
     if (!supabase) return setError("Secure email verification is unavailable.");
     const normalizedEmail = form.email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
     setOtpBusy(true); setError("");
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
@@ -105,13 +105,13 @@ export default function GrievancePage() {
               <label className="field"><span>Full name</span><input required minLength={2} maxLength={120} value={form.fullName} onChange={e=>setForm({...form,fullName:e.target.value})}/></label>
               <div className="grievance-form-grid">
                 <label className="field"><span>Mobile number</span><input required type="tel" minLength={8} maxLength={18} value={form.mobile} onChange={e=>setForm({...form,mobile:e.target.value})} placeholder="+91…"/></label>
-                <label className="field"><span>Email address</span><input required type="email" maxLength={254} value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></label>
+                <label className="field"><span>Email address</span><input required type="email" maxLength={254} value={form.email} onChange={e=>{setForm({...form,email:e.target.value});setOtpSent(false);setOtpVerified(false);setVerifiedEmail("");setOtpCode("");}}/></label>
                 <div className="field field-wide">
                   <span>Email verification <i>*</i></span>
                   {!otpVerified ? (
                     <>
                       <button type="button" className="button button-outline" onClick={() => void sendCustomerOtp()} disabled={otpBusy || !form.email.trim()}>{otpBusy ? "Please wait…" : otpSent ? "Send code again" : "Send email code"}</button>
-                      {otpSent && <div className="otp-actions"><input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\s/g,""))} maxLength={8} placeholder="Enter email code"/><button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button></div>}
+                      {otpSent && <div className="otp-actions"><input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\s/g,""))} maxLength={8} placeholder="Enter email code"/><button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button></div>}
                     </>
                   ) : <p className="notice notice-success">Email verified: {verifiedEmail}</p>}
                 </div>
