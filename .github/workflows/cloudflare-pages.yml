@@ -2,7 +2,7 @@ name: Build and deploy Cloudflare Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/upi-dynamic-payment-portal]
   workflow_dispatch:
 
 permissions:
