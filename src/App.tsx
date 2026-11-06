@@ -2201,23 +2201,31 @@ function AdminPage() {
   useEffect(() => {
     if (!supabase || !user) return;
     let current = true;
-    void supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "owner")
-      .maybeSingle()
-      .then(({ data, error: roleError }) => {
-        if (!current) return;
-        setIsOwner(Boolean(data?.role === "owner"));
-        setError(
-          roleError?.message ??
-            (data?.role === "owner"
-              ? ""
-              : "This account does not have owner access."),
-        );
+    void (async () => {
+      const { data, error: roleError } = await supabase!
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "owner")
+        .maybeSingle();
+      if (!current) return;
+      if (data?.role === "owner") {
+        setIsOwner(true);
+        setError(roleError?.message ?? "");
         setReady(true);
-      });
+        return;
+      }
+      const { data: sessionData } = await supabase!.auth.getSession();
+      try {
+        await callFunction("investigation-overview", {}, sessionData.session?.access_token);
+        if (current) window.location.replace("/investigation");
+      } catch {
+        if (!current) return;
+        setIsOwner(false);
+        setError(roleError?.message ?? "This account does not have owner or investigator access.");
+        setReady(true);
+      }
+    })();
     return () => {
       current = false;
     };
