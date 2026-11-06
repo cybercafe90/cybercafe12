@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
-import { tokenHasAal2 } from "../_shared/auth.ts";
 const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in", "https://security-audit-working-2026.babacybercafe.pages.dev"];
 function cors(req: Request): HeadersInit {
   const origin = req.headers.get("origin") ?? "";
@@ -20,7 +19,6 @@ Deno.serve(async (req: Request) => {
     const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
     const { data: { user }, error: userError } = await userClient.auth.getUser(token);
     if (userError || !user || !(user.email_confirmed_at || user.confirmed_at)) return reply(req, { error: "Verified owner sign-in required." }, 401);
-    if (!tokenHasAal2(token)) return reply(req, { error: "Google Authenticator verification is required." }, 403);
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { data: owner } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
     if (owner?.role !== "owner") return reply(req, { error: "Owner authorization required." }, 403);
