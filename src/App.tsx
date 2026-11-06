@@ -937,6 +937,11 @@ function ApplicationPage() {
   const [documents, setDocuments] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
     trackingId: string;
@@ -964,6 +969,36 @@ function ApplicationPage() {
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
 
+  async function sendCustomerOtp() {
+    if (!supabase) return setError("Secure email verification is unavailable.");
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
+    setOtpBusy(true); setError("");
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
+      if (otpError) throw otpError;
+      setOtpSent(true); setOtpVerified(false); setVerifiedEmail(""); setOtpCode("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "We could not send your verification code.");
+    } finally { setOtpBusy(false); }
+  }
+
+  async function verifyCustomerOtp() {
+    if (!supabase) return;
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!otpCode.trim()) return setError("Enter the one-time code sent to your email.");
+    setOtpBusy(true); setError("");
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({ email: normalizedEmail, token: otpCode.trim(), type: "email" });
+      if (verifyError) throw verifyError;
+      if (!data.session || !data.user?.email_confirmed_at || data.user.email?.toLowerCase() !== normalizedEmail) throw new Error("Email verification could not be confirmed. Request a new code.");
+      setOtpVerified(true); setVerifiedEmail(normalizedEmail);
+    } catch (reason) {
+      setOtpVerified(false); setVerifiedEmail("");
+      setError(reason instanceof Error ? reason.message : "The verification code is invalid or expired.");
+    } finally { setOtpBusy(false); }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -977,10 +1012,18 @@ function ApplicationPage() {
       setError("Please confirm the privacy notice before continuing.");
       return;
     }
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!otpVerified || verifiedEmail !== normalizedEmail) {
+      setError("Verify your email address with the one-time code before submitting.");
+      return;
+    }
     setBusy(true);
     const whatsappWindow = window.open("", "_blank");
     try {
       const { data: sessionData } = await supabase!.auth.getSession();
+      if (!sessionData.session?.user?.email_confirmed_at || sessionData.session.user.email?.toLowerCase() !== normalizedEmail) {
+        throw new Error("Your verified email session has expired. Please verify your email again.");
+      }
       const response = await callFunction<{
         trackingId: string;
         emailSent: boolean;
@@ -1117,6 +1160,25 @@ function ApplicationPage() {
                 autoComplete="email"
               />
             </label>
+            <div className="field field-wide">
+              <span>Email verification <i>*</i></span>
+              {!otpVerified ? (
+                <>
+                  <div className="otp-actions">
+                    <button type="button" className="button button-outline" onClick={() => void sendCustomerOtp()} disabled={otpBusy || !customerEmail.trim()}>
+                      {otpBusy ? "Please wait…" : otpSent ? "Send code again" : "Send email code"}
+                    </button>
+                    {otpSent && <span className="form-footnote">Enter the code sent to your email address.</span>}
+                  </div>
+                  {otpSent && (
+                    <div className="otp-actions">
+                      <input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\\s/g, ""))} maxLength={8} placeholder="Enter email code" />
+                      <button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button>
+                    </div>
+                  )}
+                </>
+              ) : <p className="notice notice-success"><ShieldCheck size={15} /> Email verified: {verifiedEmail}</p>}
+            </div>
           </div>
           <div className="form-section-title">
             <span>02</span>
