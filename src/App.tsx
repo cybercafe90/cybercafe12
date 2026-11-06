@@ -1622,7 +1622,7 @@ function CustomerDashboard() {
     setMessage("");
     if (!supabase) return;
     const normalizedEmail = customerEmail.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setMessage("Enter a valid email address.");
       return;
     }
@@ -1643,7 +1643,7 @@ function CustomerDashboard() {
     if (!supabase) return;
     const normalizedEmail = customerEmail.trim().toLowerCase();
     const token = otpCode.trim();
-    if (!/^\\d{6,8}$/.test(token)) {
+    if (!/^\d{6,8}$/.test(token)) {
       setMessage("Enter the numeric verification code from your email.");
       return;
     }
@@ -1883,7 +1883,7 @@ function CustomerDashboard() {
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={otpCode}
-                    onChange={(event) => setOtpCode(event.target.value.replace(/\\D/g, "").slice(0, 8))}
+                    onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
                     required
                     minLength={6}
                     maxLength={8}
