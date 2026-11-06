@@ -1520,6 +1520,7 @@ function CustomerDashboard() {
   const categoryList = useCategoryList();
   const [customerEmail, setCustomerEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   const [message, setMessage] = useState("");
   const [profile, setProfile] = useState({
     fullName: "",
@@ -1616,16 +1617,42 @@ function CustomerDashboard() {
     }
   }
 
-  async function requestLink(event: FormEvent<HTMLFormElement>) {
+  async function requestOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     if (!supabase) return;
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      setMessage("Enter a valid email address.");
+      return;
+    }
     const { error } = await supabase.auth.signInWithOtp({
-      email: customerEmail,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      email: normalizedEmail,
     });
     if (error) setMessage(error.message);
-    else setSent(true);
+    else {
+      setCustomerEmail(normalizedEmail);
+      setOtpCode("");
+      setSent(true);
+    }
+  }
+
+  async function verifyDashboardOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!supabase) return;
+    const normalizedEmail = customerEmail.trim().toLowerCase();
+    const token = otpCode.trim();
+    if (!/^\\d{6,8}$/.test(token)) {
+      setMessage("Enter the numeric verification code from your email.");
+      return;
+    }
+    const { error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token,
+      type: "email",
+    });
+    if (error) setMessage(error.message);
   }
   async function signOut() {
     await supabase?.auth.signOut();
@@ -1642,7 +1669,7 @@ function CustomerDashboard() {
             ? "Your applications, together."
             : "Your applications, in one place."
         }
-        copy="Sign in using a secure email link to see requests connected to your account. You can also track any reference with your registered mobile number."
+        copy="Sign in with a one-time email code to see requests connected to your account. You can also track any reference with your registered mobile number."
       />
       {!isSupabaseConfigured && <ConfigurationNote />}
       {sessionUser ? (
@@ -1822,36 +1849,71 @@ function CustomerDashboard() {
             <ShieldCheck size={25} />
           </div>
           <span className="eyebrow">PASSWORDLESS SIGN-IN</span>
-          <h2>Secure link. No password to remember.</h2>
+          <h2>One-time code. No password to remember.</h2>
           <p>
-            We will email you a one-time sign-in link. For security, only
-            applications submitted while signed in are linked to this dashboard.
+            We will email you a numeric verification code. Enter it here to
+            securely access your dashboard. Only applications submitted while
+            signed in are linked to this dashboard.
           </p>
-          {sent ? (
-            <div className="notice notice-success">
-              <Check size={17} /> Check your inbox for the sign-in link.
-            </div>
-          ) : (
-            <form onSubmit={requestLink}>
-              <label className="field">
-                <span>Email address</span>
-                <input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-              {message && <div className="notice notice-error">{message}</div>}
+          <form onSubmit={sent ? verifyDashboardOtp : requestOtp}>
+            <label className="field">
+              <span>Email address</span>
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(event) => {
+                  setCustomerEmail(event.target.value);
+                  setSent(false);
+                  setOtpCode("");
+                  setMessage("");
+                }}
+                required
+                autoComplete="email"
+                readOnly={sent}
+              />
+            </label>
+            {sent && (
+              <>
+                <div className="notice notice-success">
+                  <Check size={17} /> A verification code has been sent. Check your inbox.
+                </div>
+                <label className="field">
+                  <span>Verification code</span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value.replace(/\\D/g, "").slice(0, 8))}
+                    required
+                    minLength={6}
+                    maxLength={8}
+                    pattern="[0-9]{6,8}"
+                    placeholder="Enter your email code"
+                  />
+                </label>
+              </>
+            )}
+            {message && <div className="notice notice-error">{message}</div>}
+            <button
+              className="button button-dark"
+              disabled={!isSupabaseConfigured}
+            >
+              {sent ? "Verify code and sign in" : "Email me a verification code"} <ArrowRight size={16} />
+            </button>
+            {sent && (
               <button
-                className="button button-dark"
-                disabled={!isSupabaseConfigured}
+                className="button button-outline"
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setOtpCode("");
+                  setMessage("");
+                }}
               >
-                Email me a secure link <ArrowRight size={16} />
+                Use a different email or resend a code
               </button>
-            </form>
-          )}
+            )}
+          </form>
         </div>
       )}
     </main>
