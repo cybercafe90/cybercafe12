@@ -280,6 +280,7 @@ function Footer() {
           <Link to="/track">Track an application</Link>
           <Link to="/dashboard">Customer dashboard</Link>
           <Link to="/admin/login">Admin sign-in</Link>
+          <Link to="/investigation">Investigation portal</Link>
         </div>
         <div>
           <h3>Reach us</h3>
