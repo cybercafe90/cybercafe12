@@ -56,3 +56,9 @@ verify_jwt = true
 
 [functions.notify-customer]
 verify_jwt = true
+
+[functions.investigation-overview]
+verify_jwt = true
+
+[functions.investigation-update-event]
+verify_jwt = true
