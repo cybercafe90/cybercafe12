@@ -57,6 +57,6 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const status = message === "UNAUTHENTICATED" ? 401 : message === "FORBIDDEN" ? 403 : 500;
-    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? "Investigation permission required." : "Incident update failed; no unlogged change was retained." }, status);
+    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? "Investigation permission required." : "Incident update failed. Check the incident status and audit history before retrying." }, status);
   }
 });
