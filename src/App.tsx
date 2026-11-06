@@ -55,6 +55,7 @@ import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
 import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
+import PaymentPortal from "./pages/PaymentPortal";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -3670,6 +3671,8 @@ function RoutedApp() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<LegalPage privacy />} />
         <Route path="/terms" element={<LegalPage />} />
+        <Route path="/pay" element={<PaymentPortal />} />
+        <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/investigation" element={<InvestigationPage />} />
