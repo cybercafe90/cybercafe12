@@ -2349,8 +2349,8 @@ function AdminPage() {
     setNotice("");
     if (!supabase) return;
     const normalizedEmail = adminEmail.trim().toLowerCase();
-    const token = recoveryCode.replace(/\\s/g, "");
-    if (!normalizedEmail || !/^\\d{6}$/.test(token)) {
+    const token = recoveryCode.replace(/\s/g, "");
+    if (!normalizedEmail || !/^\d{6}$/.test(token)) {
       setError("Enter the six-digit code from the latest recovery email.");
       return;
     }
@@ -2806,7 +2806,7 @@ function AdminPage() {
               inputMode="numeric"
               autoComplete="one-time-code"
               value={recoveryCode}
-              onChange={(event) => setRecoveryCode(event.target.value.replace(/\\D/g, "").slice(0, 6))}
+              onChange={(event) => setRecoveryCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               required
               minLength={6}
               maxLength={6}
