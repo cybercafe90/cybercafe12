@@ -1,5 +1,5 @@
 import { serviceClient } from '../_shared/auth.ts'
-import { preflight, response } from '../_shared/http.ts'
+import { response } from '../_shared/http.ts'
 
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
