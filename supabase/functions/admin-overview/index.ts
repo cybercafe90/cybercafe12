@@ -41,8 +41,8 @@ Deno.serve(async (request) => {
     }, 200, { 'Cache-Control': 'no-store' })
   } catch (reason) {
     const message = reason instanceof Error ? reason.message : ''
-    const status = message.includes('Unauthorized') || message.includes('Verified owner') ? 401 : message.includes('Owner authorization') ? 403 : 500
+    const status = message.includes('Unauthorized') || message.includes('Verified owner') ? 401 : message.includes('Owner authorization') || message.includes('Owner MFA') ? 403 : 500
     console.error('admin-overview failed:', status, message.slice(0, 120))
-    return response(request, { error: status === 401 ? 'Verified owner sign-in required.' : status === 403 ? 'Owner authorization required.' : 'Admin overview could not be loaded.' }, status)
+    return response(request, { error: status === 401 ? 'Verified owner sign-in required.' : status === 403 ? (message.includes('Owner MFA') ? 'Google Authenticator verification is required.' : 'Owner authorization required.') : 'Admin overview could not be loaded.' }, status)
   }
 })
