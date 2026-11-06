@@ -1,8 +1,9 @@
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
 import { checkRateLimit, serviceClient, verifyCustomerEmail } from '../_shared/auth.ts'
 import { sendCustomerEmail } from '../_shared/email.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
 
-async function recordSecurityEvent(admin: any, request: Request, eventType: string, summary: string, route: string) {
+async function recordSecurityEvent(admin: SupabaseClient, request: Request, eventType: string, summary: string, route: string) {
   try {
     const ip = request.headers.get("cf-connecting-ip");
     const sourceIp = ip && ip.length <= 45 && /^[0-9a-fA-F:.]+$/.test(ip) ? ip : null;
