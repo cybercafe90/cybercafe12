@@ -21,7 +21,7 @@ export function tokenHasAal2(token: string): boolean {
 }
 
 export async function verifyCustomerEmail(request: Request, expectedEmail: string): Promise<User> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const url = Deno.env.get("SUPABASE_URL");
   if (!token || !anonKey || !url) throw new Error("Verified customer email sign-in required.");
