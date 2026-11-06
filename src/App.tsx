@@ -2980,7 +2980,7 @@ function AdminPage() {
               <p>Scan this QR code with Google Authenticator. If scanning is unavailable, enter the setup key manually. Keep this key private.</p>
               {mfaQr ? (
                 <>
-                  <img className="mfa-qr" src={`data:image/svg+xml;utf8,${encodeURIComponent(mfaQr)}`} alt="Google Authenticator setup QR code" />
+                  <img className="mfa-qr" src={mfaQr} alt="Google Authenticator setup QR code" />
                   <label className="field"><span>Manual setup key</span><input readOnly value={mfaSecret} /></label>
                   <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
                   <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and secure account"}</button>
