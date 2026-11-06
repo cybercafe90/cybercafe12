@@ -709,3 +709,74 @@ body { overflow-x: hidden; }
     transform: none !important;
   }
 }
+
+
+/* Clearer portal motion: visible on page entry and responsive on interaction. */
+.grievance-panel,
+.grievance-form,
+.grievance-success,
+.incident-card,
+.investigator-management,
+.signin-panel,
+.admin-modal,
+.track-form,
+.tracking-result {
+  animation: portal-panel-enter .72s cubic-bezier(.2,.75,.25,1) both;
+}
+.grievance-panel:nth-child(2),
+.incident-card:nth-child(2),
+.investigator-management:nth-child(2) { animation-delay: .09s; }
+.grievance-panel:nth-child(3),
+.incident-card:nth-child(3) { animation-delay: .16s; }
+.grievance-tabs button,
+.grievance-form button,
+.investigation-page button,
+.admin-modal button,
+.track-form button {
+  transition: transform .24s cubic-bezier(.2,.75,.25,1), box-shadow .24s ease, background-color .24s ease, border-color .24s ease;
+}
+.grievance-tabs button:hover,
+.grievance-form button:hover,
+.investigation-page button:hover,
+.admin-modal button:hover,
+.track-form button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 22px rgba(31,29,23,.11);
+}
+.grievance-panel:focus-within,
+.grievance-form:focus-within,
+.track-form:focus-within,
+.signin-panel:focus-within {
+  border-color: rgba(179,139,70,.72);
+  box-shadow: 0 12px 34px rgba(31,29,23,.08);
+}
+.sound-control { animation: sound-control-enter .65s .35s cubic-bezier(.2,.75,.25,1) both; }
+@keyframes portal-panel-enter {
+  from { opacity: 0; transform: translateY(22px) scale(.985); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes sound-control-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grievance-panel,
+  .grievance-form,
+  .grievance-success,
+  .incident-card,
+  .investigator-management,
+  .signin-panel,
+  .admin-modal,
+  .track-form,
+  .tracking-result,
+  .sound-control {
+    animation: none !important;
+  }
+  .grievance-tabs button,
+  .grievance-form button,
+  .investigation-page button,
+  .admin-modal button,
+  .track-form button {
+    transition: none !important;
+  }
+}
