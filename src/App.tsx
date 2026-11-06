@@ -51,7 +51,7 @@ import {
   type Category,
   type ServiceRecord,
 } from "./data";
-import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
+import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
@@ -1853,15 +1853,6 @@ function AdminPage() {
 
   useEffect(() => {
     if (!supabase) return;
-    void supabase.auth
-      .getSession()
-      .then(({ data }) =>
-        setUser(
-          data.session?.user
-            ? { id: data.session.user.id, email: data.session.user.email }
-            : null,
-        ),
-      );
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === "PASSWORD_RECOVERY") setPasswordRecovery(true);
@@ -1874,6 +1865,16 @@ function AdminPage() {
         setReady(!session?.user);
       },
     );
+    // Supabase may process the recovery redirect before this route mounts.
+    // Read the captured flag after the asynchronous session lookup completes.
+    void supabase.auth.getSession().then(({ data }) => {
+      setUser(
+        data.session?.user
+          ? { id: data.session.user.id, email: data.session.user.email }
+          : null,
+      );
+      if (hasPendingPasswordRecovery()) setPasswordRecovery(true);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
   useEffect(() => {
@@ -2102,6 +2103,7 @@ function AdminPage() {
     if (updateError) setError(updateError.message);
     else {
       setPasswordRecovery(false);
+      clearPasswordRecoveryPending();
       setNewPassword("");
       setConfirmNewPassword("");
       setNotice("Password updated. Sign in with your new password.");
