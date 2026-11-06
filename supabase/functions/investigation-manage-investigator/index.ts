@@ -14,7 +14,7 @@ Deno.serve(async (req: Request) => {
   if (origin && !allowedOrigins.includes(origin)) return reply(req, { error: "Origin not allowed." }, 403);
   try {
     const url = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const token = req.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+    const token = req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!url || !serviceKey || !anonKey || !token) return reply(req, { error: "Verified owner sign-in required." }, 401);
     const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
     const { data: { user }, error: userError } = await userClient.auth.getUser(token);
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "grant") {
       const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return reply(req, { error: "Enter a valid existing account email." }, 400);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply(req, { error: "Enter a valid existing account email." }, 400);
       const requested = Array.isArray(body.permissions) ? body.permissions : ["view_events", "investigate"];
       const permissions = [...new Set(requested.filter((value: unknown) => value === "view_events" || value === "investigate"))];
       if (!permissions.includes("view_events")) return reply(req, { error: "view_events permission is required." }, 400);
