@@ -7,36 +7,6 @@ export function serviceClient(): SupabaseClient {
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
 }
 
-export function tokenHasAal2(token: string): boolean {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return false;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
-    const claims = JSON.parse(decoded);
-    return claims.aal === "aal2";
-  } catch {
-    return false;
-  }
-}
-
-export async function verifyCustomerEmail(request: Request, expectedEmail: string): Promise<User> {
-  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const url = Deno.env.get("SUPABASE_URL");
-  if (!token || !anonKey || !url) throw new Error("Verified customer email sign-in required.");
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: { user }, error } = await userClient.auth.getUser(token);
-  if (error || !user || !(user.email_confirmed_at || user.confirmed_at) ||
-      user.email?.trim().toLowerCase() !== expectedEmail.trim().toLowerCase()) {
-    throw new Error("Verified customer email sign-in required.");
-  }
-  return user;
-}
-
 export async function verifyOwner(request: Request, admin: SupabaseClient): Promise<User> {
   const authorization = request.headers.get('authorization')
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
@@ -48,7 +18,6 @@ export async function verifyOwner(request: Request, admin: SupabaseClient): Prom
   })
   const { data: { user }, error } = await userClient.auth.getUser(token)
   if (error || !user || !(user.email_confirmed_at || user.confirmed_at)) throw new Error('Verified owner sign-in required.')
-  if (!tokenHasAal2(token)) throw new Error('Owner MFA verification required.')
   const { data: role, error: roleError } = await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'owner').maybeSingle()
   if (roleError || role?.role !== 'owner') throw new Error('Owner authorization required.')
   return user
