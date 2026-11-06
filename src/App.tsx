@@ -2272,7 +2272,7 @@ function AdminPage() {
       },
     );
     // Supabase may process the recovery redirect before this route mounts.
-    if (hasPendingPasswordRecovery()) setPasswordRecovery(true);
+    // Read the captured flag after the asynchronous session lookup completes.
     void supabase.auth.getSession().then(({ data }) => {
       setUser(
         data.session?.user
