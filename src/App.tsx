@@ -63,6 +63,7 @@ const email = "support@babacybercafe.in";
 const whatsapp = "917006865909";
 const facebook = "https://www.facebook.com/share/1cKyxm9dZ/";
 const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
+const instagramProfile = "https://www.instagram.com/babascybercafe/";
 
 function useCategoryList(activeOnly = true) {
   const [items, setItems] = useState<Category[]>(categories);
@@ -110,7 +111,7 @@ const defaultSiteSettings: SiteSettings = {
       "Friendly help with digital applications, documents and service enquiries, all in one place.",
   },
   contact: { phone, whatsapp, email },
-  social: { facebook, business_profile: businessProfile, instagram: "" },
+  social: { facebook, business_profile: businessProfile, instagram: instagramProfile },
 };
 
 function useSiteSettings() {
@@ -170,7 +171,9 @@ function useSiteSettings() {
               ? social.business_profile
               : businessProfile,
           instagram:
-            typeof social.instagram === "string" ? social.instagram : "",
+            typeof social.instagram === "string" && social.instagram.trim()
+              ? social.instagram
+              : instagramProfile,
         },
       });
     };
@@ -553,9 +556,89 @@ function HomePage() {
           </div>
           <span className="cta-watermark">B</span>
         </section>
+        <SocialPreviewSection />
         <ContactBand />
       </main>
     </>
+  );
+}
+
+
+function SocialPreviewSection() {
+  const settings = useSiteSettings();
+  const facebookEmbed = `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(settings.social.facebook)}&tabs=timeline&width=500&height=520&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true`;
+  const mapsEmbed = "https://www.google.com/maps?q=BABA%27S%20CYBER%20CAFE%2C%20Srinagar%2C%20Jammu%20and%20Kashmir&output=embed";
+  return (
+    <section className="social-preview-section">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">FOLLOW &amp; FIND US</span>
+          <h2>Our pages, in one place.</h2>
+        </div>
+        <p>Visit our social pages or find BABA'S CYBER CAFE on Google.</p>
+      </div>
+      <div className="social-preview-grid">
+        <article className="social-preview-card facebook-preview">
+          <div className="social-preview-head">
+            <span className="social-preview-icon facebook-icon">f</span>
+            <div><b>Facebook</b><small>BABA'S CYBER CAFE</small></div>
+            <a href={settings.social.facebook} target="_blank" rel="noreferrer">Open page <ArrowUpRight size={14} /></a>
+          </div>
+          <div className="social-embed-frame facebook-frame">
+            <iframe
+              title="BABA'S CYBER CAFE Facebook page preview"
+              src={facebookEmbed}
+              loading="lazy"
+              scrolling="no"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+          <p className="social-preview-note">Facebook controls which public page content can be embedded here.</p>
+        </article>
+        <article className="social-preview-card instagram-preview">
+          <div className="social-preview-head">
+            <span className="social-preview-icon instagram-icon"><Instagram size={21} /></span>
+            <div><b>Instagram</b><small>@babascybercafe</small></div>
+            <a href={settings.social.instagram} target="_blank" rel="noreferrer">Open profile <ArrowUpRight size={14} /></a>
+          </div>
+          <a className="instagram-live-card" href={settings.social.instagram} target="_blank" rel="noreferrer">
+            <div className="instagram-live-top">
+              <span className="instagram-avatar">B</span>
+              <span><b>babascybercafe</b><small>BABA'S CYBER CAFE · Srinagar</small></span>
+            </div>
+            <div className="instagram-preview-art">
+              <Instagram size={38} strokeWidth={1.4} />
+              <b>Follow our updates</b>
+              <span>Services · Announcements · Customer information</span>
+            </div>
+            <span className="instagram-live-action">View live Instagram profile <ArrowUpRight size={15} /></span>
+          </a>
+          <p className="social-preview-note">Instagram does not provide a reliable public profile embed. This card opens your live profile.</p>
+        </article>
+        <article className="social-preview-card google-preview">
+          <div className="social-preview-head">
+            <span className="social-preview-icon google-icon"><Globe2 size={20} /></span>
+            <div><b>Google Business</b><small>BABA'S CYBER CAFE · Srinagar</small></div>
+            <a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open listing <ArrowUpRight size={14} /></a>
+          </div>
+          <div className="social-embed-frame maps-frame">
+            <iframe
+              title="Google Maps search preview for BABA'S CYBER CAFE in Srinagar"
+              src={mapsEmbed}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+          <a className="google-directions-link" href={settings.social.business_profile} target="_blank" rel="noreferrer">
+            View Google Business Profile &amp; directions <ArrowUpRight size={15} />
+          </a>
+          <p className="social-preview-note">Map preview is a Google search for the business name and city; confirm the correct pin on the listing.</p>
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -1515,7 +1598,9 @@ function WebsiteSettingsEditor() {
                 ? social.business_profile
                 : businessProfile,
             instagram:
-              typeof social.instagram === "string" ? social.instagram : "",
+              typeof social.instagram === "string" && social.instagram.trim()
+                ? social.instagram
+                : instagramProfile,
           },
         });
       });
@@ -3452,6 +3537,7 @@ function ContactPage() {
         title="A conversation is a good place to start."
         copy="Reach BABA'S CYBER CAFE in Srinagar for service enquiries, application assistance or help with an existing reference."
       />
+      <SocialPreviewSection />
       <div className="contact-grid">
         <a
           href={`tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`}
