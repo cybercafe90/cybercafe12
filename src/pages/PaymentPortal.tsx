@@ -199,7 +199,6 @@ function AdminPayments() {
   const [matchTargets, setMatchTargets] = useState<Record<string,string>>({});
   const [categories, setCategories] = useState<{slug: string; name: string}[]>([]);
   const [amounts, setAmounts] = useState<Record<string,string>>({});
-  const [utrs, setUtrs] = useState<Record<string,string>>({});
   const [reasons, setReasons] = useState<Record<string,string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
