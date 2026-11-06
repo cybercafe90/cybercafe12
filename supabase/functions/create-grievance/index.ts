@@ -1,4 +1,4 @@
-import {checkRateLimit,serviceClient} from '../_shared/auth.ts'
+import {checkRateLimit,serviceClient,verifyCustomerEmail} from '../_shared/auth.ts'
 import {normalizeMobile,preflight,response} from '../_shared/http.ts'
 async function sendMail(db:any, gid:string, to:string, type:string, subject:string, body:string){
  const key=Deno.env.get('RESEND_API_KEY'),from=Deno.env.get('EMAIL_FROM');
@@ -14,6 +14,8 @@ Deno.serve(async(req)=>{const early=preflight(req);if(early)return early;try{
  const raw=await req.text();if(raw.length>12000)return response(req,{error:'Request too large.'},413);const b=JSON.parse(raw);
  const name=typeof b.fullName==='string'?b.fullName.trim().replace(/\s+/g,' '):'',mobile=normalizeMobile(b.mobile),email=typeof b.email==='string'?b.email.trim().toLowerCase():'',subject=typeof b.subject==='string'?b.subject.trim():'',description=typeof b.description==='string'?b.description.trim():'';
  if(b.consent!==true||name.length<2||name.length>120||!mobile||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||subject.length<4||subject.length>160||description.length<20||description.length>4000)return response(req,{error:'Please check all fields and consent.'},400);
+ try { await verifyCustomerEmail(req,email); }
+ catch { return response(req,{error:'Verify your email address with the one-time code before submitting this grievance.'},401); }
  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',bytes=crypto.getRandomValues(new Uint8Array(10)),ref='GRV-'+Array.from(bytes,x=>alphabet[x&31]).join('');
  const {data:g,error}=await db.from('grievances').insert({reference_id:ref,full_name:name,mobile,email,subject,description,consent_at:new Date().toISOString()}).select('id,reference_id,status,created_at').single();if(error)throw error;
  const customer=await sendMail(db,g.id,email,'customer_confirmation','Grievance received · '+ref,'Hello '+name+',\n\nWe received your grievance: '+subject+'. Your reference is '+ref+'. Keep it safe and use it with your registered mobile number to track progress.\n\nBABA\'S CYBER CAFE');
