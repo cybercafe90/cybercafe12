@@ -245,6 +245,12 @@ function Header() {
           <NavLink to="/track" onClick={close}>
             Track application
           </NavLink>
+          <NavLink to="/grievance" onClick={close}>
+            Grievance portal
+          </NavLink>
+          <NavLink to="/investigation" onClick={close}>
+            Investigation
+          </NavLink>
           <NavLink to="/contact" onClick={close}>
             Contact
           </NavLink>
@@ -2715,6 +2721,12 @@ function AdminPage() {
           <span className="eyebrow">PRIVATE WORKSPACE</span>
           <h1>Owner dashboard</h1>
           <p>Manage enquiries, service listings and customer updates.</p>
+          {isOwner && (
+            <div className="admin-portal-shortcuts">
+              <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
+            </div>
+          )}
         </div>
         {user && (
           <button
