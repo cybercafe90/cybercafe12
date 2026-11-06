@@ -2131,6 +2131,8 @@ function AdminPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
+  const [recoveryCodeRequested, setRecoveryCodeRequested] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState("");
   const [error, setError] = useState("");
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
@@ -2324,30 +2326,70 @@ function AdminPage() {
     setError("");
     setNotice("");
     if (!supabase) return;
-    if (!adminEmail.trim()) {
+    const normalizedEmail = adminEmail.trim().toLowerCase();
+    if (!normalizedEmail) {
       setError("Enter your verified email address first.");
       return;
     }
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      adminEmail.trim(),
+      normalizedEmail,
       { redirectTo: `${window.location.origin}/admin/login` },
     );
     if (resetError) setError(resetError.message);
-    else setNotice("If the account exists, password reset instructions were sent.");
+    else {
+      setAdminEmail(normalizedEmail);
+      setRecoveryCodeRequested(true);
+      setRecoveryCode("");
+      setNotice("A six-digit recovery code has been requested. Enter the code from the latest email below.");
+    }
+  }
+  async function verifyRecoveryCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    if (!supabase) return;
+    const normalizedEmail = adminEmail.trim().toLowerCase();
+    const token = recoveryCode.replace(/\\s/g, "");
+    if (!normalizedEmail || !/^\\d{6}$/.test(token)) {
+      setError("Enter the six-digit code from the latest recovery email.");
+      return;
+    }
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token,
+      type: "recovery",
+    });
+    if (verifyError) {
+      setError("The recovery code is invalid or expired. Request a new code and use the newest email.");
+      return;
+    }
+    setPasswordRecovery(true);
+    setNotice("Email verified. Choose a new password below.");
   }
   async function updateRecoveredPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
     if (!supabase) return;
+    if (newPassword.length < 12) {
+      setError("Choose a password with at least 12 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
     const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword,
     });
     if (updateError) setError(updateError.message);
     else {
       setPasswordRecovery(false);
+      setRecoveryCodeRequested(false);
+      setRecoveryCode("");
       setNewPassword("");
-      setNotice("Password updated.");
+      setConfirmNewPassword("");
+      setNotice("Password updated. Sign in with your new password.");
     }
   }
   async function changeAdminPassword(event: FormEvent<HTMLFormElement>) {
@@ -2355,8 +2397,8 @@ function AdminPage() {
     setError("");
     setNotice("");
     if (!supabase || !isOwner) return;
-    if (newPassword.length !== 8) {
-      setError("Choose exactly 8 characters.");
+    if (newPassword.length < 12) {
+      setError("Choose at least 12 characters.");
       return;
     }
     if (
@@ -2742,6 +2784,45 @@ function AdminPage() {
           Admin authentication is unavailable until Supabase is configured.
         </ConfigurationNote>
       )}
+      {!user && !passwordRecovery && recoveryCodeRequested && (
+        <form
+          className="signin-panel admin-signin"
+          onSubmit={verifyRecoveryCode}
+        >
+          <div className="signin-icon">
+            <ShieldCheck size={25} />
+          </div>
+          <span className="eyebrow">PASSWORD RECOVERY</span>
+          <h2>Verify your email code</h2>
+          <p>Enter the six-digit code from the newest password-recovery email. Do not forward or share it.</p>
+          <label className="field">
+            <span>Verified email</span>
+            <input type="email" value={adminEmail} readOnly />
+          </label>
+          <label className="field">
+            <span>Six-digit recovery code</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={recoveryCode}
+              onChange={(event) => setRecoveryCode(event.target.value.replace(/\\D/g, "").slice(0, 6))}
+              required
+              minLength={6}
+              maxLength={6}
+              pattern="[0-9]{6}"
+            />
+          </label>
+          {error && <div className="notice notice-error">{error}</div>}
+          {notice && <div className="notice notice-success">{notice}</div>}
+          <button className="button button-dark" disabled={!isSupabaseConfigured || recoveryCode.length !== 6}>
+            Verify code <ArrowRight size={16} />
+          </button>
+          <button className="button button-outline" type="button" onClick={() => void requestPasswordReset()}>
+            Send a fresh code
+          </button>
+        </form>
+      )}
       {passwordRecovery && (
         <form
           className="signin-panel admin-signin"
@@ -2753,7 +2834,7 @@ function AdminPage() {
           <span className="eyebrow">PASSWORD RECOVERY</span>
           <h2>Choose a new password</h2>
           <label className="field">
-            <span>New password</span>
+            <span>New password (at least 12 characters)</span>
             <input
               type="password"
               value={newPassword}
@@ -2763,13 +2844,25 @@ function AdminPage() {
               autoComplete="new-password"
             />
           </label>
+          <label className="field">
+            <span>Confirm new password</span>
+            <input
+              type="password"
+              value={confirmNewPassword}
+              onChange={(event) => setConfirmNewPassword(event.target.value)}
+              required
+              minLength={12}
+              autoComplete="new-password"
+            />
+          </label>
           {error && <div className="notice notice-error">{error}</div>}
-          <button className="button button-dark" disabled={!isSupabaseConfigured}>
+          {notice && <div className="notice notice-success">{notice}</div>}
+          <button className="button button-dark" disabled={!isSupabaseConfigured || newPassword.length < 12 || newPassword !== confirmNewPassword}>
             Update password <ArrowRight size={16} />
           </button>
         </form>
       )}
-      {!user && !passwordRecovery && (
+      {!user && !passwordRecovery && !recoveryCodeRequested && (
         <form className="signin-panel admin-signin" onSubmit={signIn}>
           <div className="signin-icon">
             <ShieldCheck size={25} />
