@@ -603,3 +603,53 @@ td small { display: block; margin-top: 4px; color: #89887e; font-size: 8px; }
 .grievance-admin-grid .field span { color:var(--muted); font-size:9px; }
 .grievance-admin-grid .field textarea,.grievance-admin-grid .field select { padding:9px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-size:10px; }
 @media(max-width:720px) { .grievance-form-grid,.grievance-admin-grid { grid-template-columns:1fr; } .grievance-admin-toolbar,.grievance-track-heading,.grievance-admin-head { align-items:flex-start; flex-direction:column; } .grievance-panel,.grievance-admin-card { padding:16px; } }
+
+
+/* Premium motion and subtle interface sound control */
+html { scroll-behavior: smooth; }
+body { overflow-x: hidden; }
+.site-header { position: sticky; top: 0; backdrop-filter: blur(14px); }
+.brand-mark { transition: transform .35s ease, background .35s ease, color .35s ease; }
+.brand:hover .brand-mark { transform: rotate(-8deg) scale(1.06); color: var(--ink); background: var(--gold-light); }
+.main-nav > a:not(.nav-button)::after { transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+.main-nav > a:not(.nav-button):hover::after { position:absolute; right:0; bottom:1px; left:0; height:1px; background:var(--gold); content:""; transform:scaleX(1); }
+.nav-button, .button, .icon-button, .text-button, .category-card, .service-card, .contact-card, .track-form, .form-panel, .track-empty, .tracking-result, .signin-panel, .grievance-panel, .incident-card, .investigator-management, .admin-modal { transition: transform .24s cubic-bezier(.2,.75,.25,1), box-shadow .24s ease, border-color .24s ease, background-color .24s ease; }
+.button:hover, .nav-button:hover { box-shadow: 0 9px 24px rgba(32,29,21,.13); }
+.button:active, .nav-button:active, .icon-button:active { transform: translateY(1px) scale(.98); }
+.category-card:hover, .service-card:hover, .contact-card:hover, .incident-card:hover { transform: translateY(-5px); box-shadow: 0 16px 34px rgba(34,31,22,.08); }
+.category-icon, .contact-card > span { transition: transform .3s ease, background .3s ease, color .3s ease; }
+.category-card:hover .category-icon, .contact-card:hover > span { transform: translateY(-3px) rotate(-4deg); color: var(--ink); background: var(--gold-light); }
+.home-hero .hero-copy { animation: premium-rise .75s .05s both; }
+.home-hero .hero-visual { animation: premium-fade .95s .12s both; }
+.home-hero .hero-stamp { animation: stamp-pop .7s .65s both, emblem-breathe 5s 1.4s ease-in-out infinite; }
+.page-intro { animation: premium-rise .55s both; }
+.content-page > form, .content-page .form-layout, .content-page .track-layout, .content-page .contact-grid, .content-page .about-grid { animation: premium-rise .65s .08s both; }
+.category-grid > .category-card, .service-grid > .service-card, .contact-grid > .contact-card { animation: premium-rise .55s both; }
+.category-grid > :nth-child(2), .service-grid > :nth-child(2), .contact-grid > :nth-child(2) { animation-delay: .07s; }
+.category-grid > :nth-child(3), .service-grid > :nth-child(3), .contact-grid > :nth-child(3) { animation-delay: .13s; }
+.category-grid > :nth-child(4), .service-grid > :nth-child(4), .contact-grid > :nth-child(4) { animation-delay: .19s; }
+.insurance-feature { isolation: isolate; }
+.insurance-feature::before { position:absolute; z-index:-1; inset:-50% auto -50% -30%; width:35%; background:linear-gradient(90deg,transparent,rgba(211,182,116,.055),transparent); content:""; transform:skewX(-18deg); animation:gold-sweep 9s ease-in-out infinite; }
+.insurance-copy .button, .hero-actions .button { position:relative; overflow:hidden; }
+.button-gold::after { position:absolute; inset:0; background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.38) 48%,transparent 70%); content:""; transform:translateX(-120%); transition:transform .65s ease; }
+.button-gold:hover::after { transform:translateX(120%); }
+.field input, .field select, .field textarea, .admin-search, .incident-controls input, .incident-controls select { transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+.field input:focus, .field select:focus, .field textarea:focus, .incident-controls input:focus, .incident-controls select:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(179,139,70,.12); }
+.form-submit:not(:disabled) { animation: submit-glow 3.4s ease-in-out infinite; }
+.form-submit:disabled { animation:none; }
+.notice-success, .success-panel, .grievance-success { animation: success-arrive .45s both; }
+.sound-control { position:fixed; z-index:35; right:18px; bottom:18px; display:inline-flex; align-items:center; gap:8px; min-height:42px; padding:0 13px; border:1px solid rgba(211,182,116,.55); border-radius:999px; color:#f7f2e6; background:rgba(23,23,19,.92); box-shadow:0 8px 24px rgba(0,0,0,.18); backdrop-filter:blur(12px); font:600 10px var(--sans); cursor:pointer; transition:transform .2s ease,background .2s ease,border-color .2s ease; }
+.sound-control:hover { transform:translateY(-3px); border-color:var(--gold-light); background:#302e25; }
+.sound-control svg { color:var(--gold-light); }
+.sound-control:focus-visible { outline:2px solid var(--gold-light); outline-offset:4px; }
+@keyframes premium-rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes premium-fade { from { opacity:0; transform:scale(1.025); } to { opacity:1; transform:scale(1); } }
+@keyframes stamp-pop { from { opacity:0; transform:scale(.72) rotate(-12deg); } to { opacity:1; transform:scale(1) rotate(0); } }
+@keyframes gold-sweep { 0%,15% { transform:translateX(0) skewX(-18deg); opacity:0; } 35% { opacity:1; } 65%,100% { transform:translateX(430%) skewX(-18deg); opacity:0; } }
+@keyframes submit-glow { 0%,100% { box-shadow:0 0 0 0 rgba(179,139,70,0); } 50% { box-shadow:0 0 0 4px rgba(179,139,70,.11); } }
+@keyframes success-arrive { from { opacity:0; transform:translateY(8px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media (max-width:700px) { .sound-control { right:12px; bottom:12px; min-height:40px; } }
+@media (prefers-reduced-motion: reduce) {
+  .home-hero .hero-copy, .home-hero .hero-visual, .home-hero .hero-stamp, .page-intro, .content-page > form, .content-page .form-layout, .content-page .track-layout, .content-page .contact-grid, .content-page .about-grid, .category-grid > .category-card, .service-grid > .service-card, .contact-grid > .contact-card, .form-submit:not(:disabled), .insurance-feature::before { animation:none !important; }
+  .category-card:hover, .service-card:hover, .contact-card:hover, .sound-control:hover { transform:none; }
+}
