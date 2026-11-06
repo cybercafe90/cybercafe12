@@ -3026,13 +3026,12 @@ function AdminPage() {
             <form className="form-panel" onSubmit={changeAdminPassword}>
               <div className="field-grid">
                 <label className="field">
-                  <span>New 8-character password</span>
+                  <span>New password (at least 12 characters)</span>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(event) => setNewPassword(event.target.value)}
-                    minLength={8}
-                    maxLength={8}
+                    minLength={12}
                     required
                     autoComplete="new-password"
                   />
