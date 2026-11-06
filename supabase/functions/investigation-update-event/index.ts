@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
     if (readError || !current) return reply(req, { error: "Incident not found." }, 404);
     const { error: updateError } = await auth.admin.from("security_events").update({ status }).eq("id", id);
     if (updateError) throw new Error("EVENT_UPDATE_FAILED");
-    const actionType = status === "investigating" ? "mark_investigating" : status === "resolved" ? "mark_resolved" : status === "false_positive" ? "false_positive" : "mark_investigating";
+    const actionType = status === "new" ? "mark_new" : status === "investigating" ? "mark_investigating" : status === "contained" ? "mark_contained" : status === "resolved" ? "mark_resolved" : "false_positive";
     const { error: auditError } = await auth.admin.from("security_actions").insert({
       event_id: id, action_type: actionType, reason, provider: "manual",
       status: "applied", performed_by: auth.user.id, result: { previous_status: current.status, new_status: status, actor_role: auth.role },
