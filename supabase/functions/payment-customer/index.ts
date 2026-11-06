@@ -12,7 +12,7 @@ async function getRecord(admin: ReturnType<typeof serviceClient>, trackingId: st
   const { data: payment } = await admin.from('payment_orders')
     .select('id, amount, currency, status, claimed_utr, utr, paid_at, created_at')
     .eq('application_id', app.id).maybeSingle()
-  return { application: app, payment: payment ?? { amount: 0, currency: 'INR', status: 'pending', claimed_utr: null, utr: null, paid_at: null } }
+  return { application: app, payment: payment ?? { id: undefined, amount: 0, currency: 'INR', status: 'pending', claimed_utr: null, utr: null, paid_at: null } }
 }
 
 Deno.serve(async (request) => {
