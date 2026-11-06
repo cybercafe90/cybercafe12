@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { AlertCircle, CheckCircle2, FileText, Search } from "lucide-react";
 import { callFunction, isSupabaseConfigured } from "../lib/supabase";
 
@@ -16,7 +16,7 @@ export default function GrievancePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setSubmitted(null);
     try {
       const result = await callFunction<SubmitResult>("create-grievance", form);
@@ -27,7 +27,7 @@ export default function GrievancePage() {
     } finally { setBusy(false); }
   }
 
-  async function track(event: React.FormEvent<HTMLFormElement>) {
+  async function track(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setTracked(null);
     try {
       const result = await callFunction<TrackResult>("track-grievance", { referenceId, mobile: trackMobile });
