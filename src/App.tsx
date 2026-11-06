@@ -51,6 +51,8 @@ import {
 } from "./data";
 import { callFunction, isSupabaseConfigured, supabase } from "./lib/supabase";
 import InvestigationPage from "./pages/InvestigationPage";
+import GrievancePage from "./pages/GrievancePage";
+import AdminGrievancePage from "./pages/AdminGrievancePage";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -281,6 +283,7 @@ function Footer() {
           <Link to="/dashboard">Customer dashboard</Link>
           <Link to="/admin/login">Admin sign-in</Link>
           <Link to="/investigation">Investigation portal</Link>
+          <Link to="/grievance">Grievance redressal</Link>
         </div>
         <div>
           <h3>Reach us</h3>
@@ -3832,7 +3835,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/investigation"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/investigation", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3852,6 +3855,8 @@ function RoutedApp() {
       "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
       "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
       "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
+      "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
+      "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3891,6 +3896,8 @@ function RoutedApp() {
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/investigation" element={<InvestigationPage />} />
+        <Route path="/grievance" element={<GrievancePage />} />
+        <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
