@@ -19,7 +19,8 @@ function parseAmount(message: string) {
   return Number.isFinite(amount) && amount > 0 && amount <= 10000000 ? amount.toFixed(2) : null
 }
 function parseUtr(message: string) {
-  const match = message.match(/(?:UPI\s*[/:-]?\s*(?:REF|RRN)?\s*[/:-]?|(?:REF|RRN)\s*[/:-]?\s*)(\d{12})/i)
+  const match = message.match(/UPI[\s\S]{0,40}?(?:REF|RRN|REFERENCE)(?:\s*(?:NO|NUMBER))?\s*[:/#-]?\s*(\d{12})/i)
+    ?? message.match(/(?:REF|RRN)(?:\s*(?:NO|NUMBER))?\s*[:/#-]?\s*(\d{12})/i)
   return match?.[1] ?? null
 }
 function parseTracking(message: string) {
