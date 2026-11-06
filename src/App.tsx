@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -39,6 +39,8 @@ import {
   UsersRound,
   X,
   Zap,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import {
   categories,
@@ -3828,6 +3830,93 @@ function NotFound() {
         Back to home <ArrowRight size={16} />
       </Link>
     </main>
+  );
+}
+
+
+function SoundControls() {
+  const [enabled, setEnabled] = useState(() => {
+    try {
+      return window.localStorage.getItem("baba-site-sound") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const enabledRef = useRef(enabled);
+  const audioRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    enabledRef.current = enabled;
+    try {
+      window.localStorage.setItem("baba-site-sound", enabled ? "on" : "off");
+    } catch {
+      // Sound preference remains available for this page session.
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    const playTone = (kind: "tap" | "submit") => {
+      if (!enabledRef.current) return;
+      try {
+        const AudioContextClass = window.AudioContext;
+        if (!AudioContextClass) return;
+        const context = audioRef.current ?? new AudioContextClass();
+        audioRef.current = context;
+        if (context.state === "suspended") void context.resume();
+        const now = context.currentTime;
+        const notes = kind === "submit" ? [660, 880] : [520];
+        notes.forEach((frequency, index) => {
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          const start = now + index * 0.085;
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(frequency, start);
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(kind === "submit" ? 0.045 : 0.022, start + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.start(start);
+          oscillator.stop(start + 0.08);
+        });
+      } catch {
+        // Audio is an enhancement; it must never interrupt a customer action.
+      }
+    };
+    const onClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const control = target.closest("a,button,[role='button'],summary,input[type='submit'],input[type='button'],select");
+      if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
+      if (control.closest("[data-sound-control]")) return;
+      playTone("tap");
+    };
+    const onSubmit = (event: Event) => {
+      if (event.target instanceof HTMLFormElement) playTone("submit");
+    };
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("submit", onSubmit, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("submit", onSubmit, true);
+      void audioRef.current?.close();
+      audioRef.current = null;
+    };
+  }, []);
+
+  return (
+    <button
+      className="sound-control"
+      type="button"
+      data-sound-control
+      aria-label={enabled ? "Turn interface sounds off" : "Turn interface sounds on"}
+      aria-pressed={enabled}
+      title={enabled ? "Sound on · click to mute" : "Sound off · click to enable"}
+      onClick={() => setEnabled((value) => !value)}
+    >
+      {enabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+      <span>{enabled ? "Sound on" : "Sound off"}</span>
+    </button>
   );
 }
 
