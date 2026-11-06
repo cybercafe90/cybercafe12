@@ -1,6 +1,7 @@
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
 import {serviceClient,verifyOwner} from '../_shared/auth.ts'
 import {preflight,response} from '../_shared/http.ts'
-async function sendMail(db:any, gid:string, to:string, type:string, subject:string, body:string){
+async function sendMail(db:SupabaseClient, gid:string, to:string, type:string, subject:string, body:string){
  const key=Deno.env.get('RESEND_API_KEY'),from=Deno.env.get('EMAIL_FROM');
  if(!key||!from){await db.from('grievance_email_notifications').insert({grievance_id:gid,recipient_email:to,notification_type:type,status:'not_configured',error_message:'Set RESEND_API_KEY and EMAIL_FROM.'});return false}
  try{const res=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({from,to:[to],subject,text:body})});const result=await res.json().catch(()=>({}));if(!res.ok)throw new Error(typeof result.message==='string'?result.message:'Provider returned '+res.status);await db.from('grievance_email_notifications').insert({grievance_id:gid,recipient_email:to,notification_type:type,status:'sent',provider_id:result.id??null});return true}catch(e){await db.from('grievance_email_notifications').insert({grievance_id:gid,recipient_email:to,notification_type:type,status:'failed',error_message:e instanceof Error?e.message.slice(0,350):'Email failed'});return false}
