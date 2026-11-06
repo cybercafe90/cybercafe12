@@ -937,11 +937,6 @@ function ApplicationPage() {
   const [documents, setDocuments] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState("");
-  const [otpBusy, setOtpBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{
     trackingId: string;
@@ -969,36 +964,6 @@ function ApplicationPage() {
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
 
-  async function sendCustomerOtp() {
-    if (!supabase) return setError("Secure email verification is unavailable.");
-    const normalizedEmail = customerEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
-    setOtpBusy(true); setError("");
-    try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
-      if (otpError) throw otpError;
-      setOtpSent(true); setOtpVerified(false); setVerifiedEmail(""); setOtpCode("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We could not send your verification code.");
-    } finally { setOtpBusy(false); }
-  }
-
-  async function verifyCustomerOtp() {
-    if (!supabase) return;
-    const normalizedEmail = customerEmail.trim().toLowerCase();
-    if (!otpCode.trim()) return setError("Enter the one-time code sent to your email.");
-    setOtpBusy(true); setError("");
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({ email: normalizedEmail, token: otpCode.trim(), type: "email" });
-      if (verifyError) throw verifyError;
-      if (!data.session || !data.user?.email_confirmed_at || data.user.email?.toLowerCase() !== normalizedEmail) throw new Error("Email verification could not be confirmed. Request a new code.");
-      setOtpVerified(true); setVerifiedEmail(normalizedEmail);
-    } catch (reason) {
-      setOtpVerified(false); setVerifiedEmail("");
-      setError(reason instanceof Error ? reason.message : "The verification code is invalid or expired.");
-    } finally { setOtpBusy(false); }
-  }
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -1012,18 +977,9 @@ function ApplicationPage() {
       setError("Please confirm the privacy notice before continuing.");
       return;
     }
-    const normalizedEmail = customerEmail.trim().toLowerCase();
-    if (!otpVerified || verifiedEmail !== normalizedEmail) {
-      setError("Verify your email address with the one-time code before submitting.");
-      return;
-    }
     setBusy(true);
     const whatsappWindow = window.open("", "_blank");
     try {
-      const { data: sessionData } = await supabase!.auth.getSession();
-      if (!sessionData.session?.user?.email_confirmed_at || sessionData.session.user.email?.toLowerCase() !== normalizedEmail) {
-        throw new Error("Your verified email session has expired. Please verify your email again.");
-      }
       const response = await callFunction<{
         trackingId: string;
         emailSent: boolean;
@@ -1040,7 +996,6 @@ function ApplicationPage() {
           requiredDocuments: documents,
           consent,
         },
-        sessionData.session?.access_token,
       );
       setResult(response);
       const message = `Hello BABA'S CYBER CAFE, I have submitted an enquiry. Reference: ${response.trackingId}. Please let me know the next steps.`;
@@ -1154,31 +1109,12 @@ function ApplicationPage() {
               <input
                 type="email"
                 value={customerEmail}
-                onChange={(event) => { setCustomerEmail(event.target.value); setOtpSent(false); setOtpVerified(false); setVerifiedEmail(""); setOtpCode(""); }}
+                onChange={(event) => setCustomerEmail(event.target.value)}
                 required
                 maxLength={254}
                 autoComplete="email"
               />
             </label>
-            <div className="field field-wide">
-              <span>Email verification <i>*</i></span>
-              {!otpVerified ? (
-                <>
-                  <div className="otp-actions">
-                    <button type="button" className="button button-outline" onClick={() => void sendCustomerOtp()} disabled={otpBusy || !customerEmail.trim()}>
-                      {otpBusy ? "Please wait…" : otpSent ? "Send code again" : "Send email code"}
-                    </button>
-                    {otpSent && <span className="form-footnote">Enter the code sent to your email address.</span>}
-                  </div>
-                  {otpSent && (
-                    <div className="otp-actions">
-                      <input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\s/g, ""))} maxLength={8} placeholder="Enter email code" />
-                      <button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button>
-                    </div>
-                  )}
-                </>
-              ) : <p className="notice notice-success"><ShieldCheck size={15} /> Email verified: {verifiedEmail}</p>}
-            </div>
           </div>
           <div className="form-section-title">
             <span>02</span>
@@ -1517,343 +1453,18 @@ type CustomerDashboardData = {
 };
 
 function CustomerDashboard() {
-  const categoryList = useCategoryList();
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [sent, setSent] = useState(false);
-  const [message, setMessage] = useState("");
-  const [profile, setProfile] = useState({
-    fullName: "",
-    mobile: "",
-    email: "",
-  });
-  const [profileName, setProfileName] = useState("");
-  const [profileMobile, setProfileMobile] = useState("");
-  const [sessionUser, setSessionUser] = useState<{
-    id: string;
-    email?: string;
-  } | null>(null);
-  const [applications, setApplications] = useState<CustomerApplication[]>([]);
-  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
-  const [refreshVersion, setRefreshVersion] = useState(0);
-  const loading = Boolean(sessionUser && loadedUserId !== sessionUser.id);
-
-  useEffect(() => {
-    if (!supabase) return;
-    void supabase.auth
-      .getSession()
-      .then(({ data }) =>
-        setSessionUser(
-          data.session?.user
-            ? { id: data.session.user.id, email: data.session.user.email }
-            : null,
-        ),
-      );
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSessionUser(
-          session?.user
-            ? { id: session.user.id, email: session.user.email }
-            : null,
-        );
-        if (!session?.user) {
-          setApplications([]);
-          setLoadedUserId(null);
-        }
-      },
-    );
-    return () => listener.subscription.unsubscribe();
-  }, []);
-  useEffect(() => {
-    if (!supabase || !sessionUser) return;
-    let current = true;
-    void (async () => {
-      const { data } = await supabase!.auth.getSession();
-      const dashboard = await callFunction<CustomerDashboardData>(
-        "customer-dashboard",
-        {},
-        data.session?.access_token,
-      );
-      if (!current) return;
-      setProfile(dashboard.profile);
-      setProfileName(dashboard.profile.fullName);
-      setProfileMobile(dashboard.profile.mobile);
-      setApplications(dashboard.applications);
-      setMessage("");
-      setLoadedUserId(sessionUser.id);
-    })().catch((reason) => {
-      if (!current) return;
-      setMessage(
-        reason instanceof Error
-          ? reason.message
-          : "Customer records could not be loaded.",
-      );
-      setLoadedUserId(sessionUser.id);
-    });
-    return () => {
-      current = false;
-    };
-  }, [refreshVersion, sessionUser]);
-
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-    if (!supabase || !sessionUser) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: profileName.trim(),
-        mobile: profileMobile.trim() || null,
-      })
-      .eq("id", sessionUser.id);
-    if (error) setMessage(error.message);
-    else {
-      setProfile((current) => ({
-        ...current,
-        fullName: profileName.trim(),
-        mobile: profileMobile.trim(),
-      }));
-      setMessage("Profile details updated.");
-    }
-  }
-
-  async function requestLink(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-    if (!supabase) return;
-    const { error } = await supabase.auth.signInWithOtp({
-      email: customerEmail,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-    });
-    if (error) setMessage(error.message);
-    else setSent(true);
-  }
-  async function signOut() {
-    await supabase?.auth.signOut();
-    setApplications([]);
-    setProfile({ fullName: "", mobile: "", email: "" });
-  }
-
   return (
-    <main className="content-page">
+    <main className="content-page narrow-page">
       <PageIntro
-        eyebrow="CUSTOMER DASHBOARD"
-        title={
-          sessionUser
-            ? "Your applications, together."
-            : "Your applications, in one place."
-        }
-        copy="Sign in using a secure email link to see requests connected to your account. You can also track any reference with your registered mobile number."
+        eyebrow="CUSTOMER PORTAL"
+        title="Track your application securely."
+        copy="Email OTP sign-in has been removed. Use your tracking reference and registered mobile number to view the latest status and customer-visible updates."
       />
-      {!isSupabaseConfigured && <ConfigurationNote />}
-      {sessionUser ? (
-        <section className="dashboard-panel">
-          <div className="dashboard-heading">
-            <div>
-              <span className="eyebrow">SIGNED IN AS</span>
-              <h2>{profile.email || sessionUser.email}</h2>
-            </div>
-            <div className="dashboard-actions">
-              <button
-                className="icon-button"
-                title="Refresh secure links"
-                aria-label="Refresh dashboard and document links"
-                onClick={() => setRefreshVersion((version) => version + 1)}
-              >
-                <ArrowDown size={16} />
-              </button>
-              <button
-                className="button button-outline"
-                onClick={() => void signOut()}
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-          {message && (
-            <div
-              className={
-                message.includes("updated")
-                  ? "notice notice-success"
-                  : "notice notice-error"
-              }
-            >
-              {message}
-            </div>
-          )}
-          {loading ? (
-            <p>Loading your applications…</p>
-          ) : (
-            <div className="customer-dashboard-grid">
-              <aside className="profile-panel">
-                <span className="eyebrow">PROFILE &amp; CONTACT</span>
-                <h3>Your details</h3>
-                <form onSubmit={saveProfile}>
-                  <label className="field">
-                    <span>Full name</span>
-                    <input
-                      value={profileName}
-                      onChange={(event) => setProfileName(event.target.value)}
-                      required
-                      minLength={2}
-                      maxLength={120}
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Mobile number</span>
-                    <input
-                      type="tel"
-                      value={profileMobile}
-                      onChange={(event) => setProfileMobile(event.target.value)}
-                      pattern="[+0-9 ()-]{8,18}"
-                      placeholder="Add a contact number"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Verified email</span>
-                    <input
-                      value={profile.email || sessionUser.email || ""}
-                      readOnly
-                    />
-                  </label>
-                  <button className="button button-dark">Save profile</button>
-                </form>
-                <p className="profile-note">
-                  Updating your profile does not change the mobile number
-                  already registered with an application.
-                </p>
-              </aside>
-              <div className="customer-applications">
-                <div className="customer-list-heading">
-                  <div>
-                    <span className="eyebrow">APPLICATION HISTORY</span>
-                    <h2>Your requests</h2>
-                  </div>
-                  <Link className="text-link" to="/apply">
-                    New enquiry <ArrowRight size={15} />
-                  </Link>
-                </div>
-                {applications.length ? (
-                  applications.map((application) => (
-                    <article
-                      className="customer-app-card"
-                      key={application.trackingId}
-                    >
-                      <div className="customer-app-head">
-                        <div>
-                          <span className="eyebrow">
-                            {application.trackingId}
-                          </span>
-                          <h3>{application.service}</h3>
-                          <small>
-                            {categoryLabel(application.category, categoryList)}{" "}
-                            ·{" "}
-                            {new Date(
-                              application.submittedAt,
-                            ).toLocaleDateString("en-IN")}
-                          </small>
-                        </div>
-                        <StatusTag status={application.status} />
-                      </div>
-                      {application.remarks.length > 0 && (
-                        <div className="customer-update">
-                          <span>SECURE UPDATE</span>
-                          <p>{application.remarks[0].body}</p>
-                          <small>
-                            {new Date(
-                              application.remarks[0].created_at,
-                            ).toLocaleString("en-IN")}
-                          </small>
-                        </div>
-                      )}
-                      {application.history.length > 0 && (
-                        <div className="mini-history">
-                          {application.history.slice(-3).map((item) => (
-                            <span key={`${item.status}-${item.created_at}`}>
-                              <i />
-                              {item.status}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {application.documents.length > 0 && (
-                        <div className="customer-downloads">
-                          <b>Approved documents</b>
-                          {application.documents.map((document) => (
-                            <a
-                              href={document.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              key={document.name}
-                            >
-                              <FileCheck2 size={15} />
-                              {document.name}
-                              <ArrowUpRight size={14} />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <FileText size={22} />
-                    <h2>No linked applications yet</h2>
-                    <p>
-                      Only enquiries submitted while signed in appear here.
-                      Other references can be checked on the tracking page.
-                    </p>
-                    <Link className="text-link" to="/apply">
-                      Start an enquiry <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                )}
-                {applications.length >= 50 && (
-                  <p className="profile-note">
-                    Showing your 50 most recent applications.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      ) : (
-        <div className="signin-panel">
-          <div className="signin-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span className="eyebrow">PASSWORDLESS SIGN-IN</span>
-          <h2>Secure link. No password to remember.</h2>
-          <p>
-            We will email you a one-time sign-in link. For security, only
-            applications submitted while signed in are linked to this dashboard.
-          </p>
-          {sent ? (
-            <div className="notice notice-success">
-              <Check size={17} /> Check your inbox for the sign-in link.
-            </div>
-          ) : (
-            <form onSubmit={requestLink}>
-              <label className="field">
-                <span>Email address</span>
-                <input
-                  type="email"
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-              {message && <div className="notice notice-error">{message}</div>}
-              <button
-                className="button button-dark"
-                disabled={!isSupabaseConfigured}
-              >
-                Email me a secure link <ArrowRight size={16} />
-              </button>
-            </form>
-          )}
-        </div>
-      )}
+      <div className="signin-panel">
+        <h2>Continue to application tracking</h2>
+        <p>Keep your tracking reference private. Your registered mobile number is required to look up the request.</p>
+        <Link className="button button-dark" to="/track">Open tracking portal <ArrowRight size={16} /></Link>
+      </div>
     </main>
   );
 }
@@ -2193,13 +1804,6 @@ function AdminPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
-  const [mfaMode, setMfaMode] = useState<"none" | "enroll" | "challenge">("none");
-  const [mfaFactorId, setMfaFactorId] = useState("");
-  const [mfaPendingFactorId, setMfaPendingFactorId] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaQr, setMfaQr] = useState("");
-  const [mfaSecret, setMfaSecret] = useState("");
-  const [mfaBusy, setMfaBusy] = useState(false);
   const [error, setError] = useState("");
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
@@ -2273,10 +1877,6 @@ function AdminPage() {
             : null,
         );
         setIsOwner(false);
-        setMfaMode("none");
-        setMfaCode("");
-        setMfaQr("");
-        setMfaSecret("");
         setReady(!session?.user);
       },
     );
@@ -2287,31 +1887,6 @@ function AdminPage() {
     let current = true;
     void (async () => {
       try {
-        const [{ data: aalData, error: aalError }, { data: factorData, error: factorError }] = await Promise.all([
-          supabase!.auth.mfa.getAuthenticatorAssuranceLevel(),
-          supabase!.auth.mfa.listFactors(),
-        ]);
-        if (aalError) throw aalError;
-        if (factorError) throw factorError;
-        if (!current) return;
-        const verifiedTotp = factorData.totp.find((factor) => factor.status === "verified");
-        const pendingTotp = factorData.totp.find((factor) => factor.status !== "verified");
-        if (!verifiedTotp) {
-          setMfaFactorId("");
-          setMfaPendingFactorId(pendingTotp?.id ?? "");
-          setMfaMode("enroll");
-          setReady(true);
-          return;
-        }
-        setMfaPendingFactorId("");
-        setMfaFactorId(verifiedTotp.id);
-        if (aalData.currentLevel !== "aal2" && aalData.nextLevel === "aal2") {
-          setMfaMode("challenge");
-          setReady(true);
-          return;
-        }
-        if (aalData.currentLevel !== "aal2") throw new Error("Google Authenticator verification is required.");
-        setMfaMode("none");
         const { data, error: roleError } = await supabase!
           .from("user_roles")
           .select("role")
@@ -2402,40 +1977,6 @@ function AdminPage() {
       window.clearTimeout(timer);
     };
   }, [catalogVersion, isOwner, servicePage, serviceSearch]);
-
-  async function beginMfaEnrollment() {
-    if (!supabase) return;
-    setMfaBusy(true); setError("");
-    try {
-      if (mfaPendingFactorId) {
-        const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: mfaPendingFactorId });
-        if (removeError) throw removeError;
-        setMfaPendingFactorId("");
-      }
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "BABA'S CYBER CAFE Admin" });
-      if (enrollError) throw enrollError;
-      setMfaFactorId(data.id);
-      setMfaQr(data.totp.qr_code);
-      setMfaSecret(data.totp.secret);
-      setMfaMode("enroll");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Google Authenticator setup could not start.");
-    } finally { setMfaBusy(false); }
-  }
-
-  async function verifyAdminMfa() {
-    if (!supabase || !mfaFactorId || !mfaCode.trim()) return;
-    setMfaBusy(true); setError("");
-    try {
-      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
-      if (challengeError) throw challengeError;
-      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.id, code: mfaCode.trim() });
-      if (verifyError) throw verifyError;
-      window.location.reload();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The authenticator code could not be verified.");
-    } finally { setMfaBusy(false); }
-  }
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2969,37 +2510,6 @@ function AdminPage() {
             Forgot password?
           </button>
         </form>
-      )}
-      {!passwordRecovery && user && ready && mfaMode !== "none" && (
-        <section className="signin-panel admin-signin">
-          <div className="signin-icon"><ShieldCheck size={25} /></div>
-          <span className="eyebrow">ADMIN TWO-FACTOR SECURITY</span>
-          {mfaMode === "enroll" ? (
-            <>
-              <h2>Set up Google Authenticator</h2>
-              <p>Scan this QR code with Google Authenticator. If scanning is unavailable, enter the setup key manually. Keep this key private.</p>
-              {mfaQr ? (
-                <>
-                  <img className="mfa-qr" src={mfaQr} alt="Google Authenticator setup QR code" />
-                  <label className="field"><span>Manual setup key</span><input readOnly value={mfaSecret} /></label>
-                  <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
-                  <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and secure account"}</button>
-                </>
-              ) : (
-                <button className="button button-dark" type="button" disabled={mfaBusy} onClick={() => void beginMfaEnrollment()}>{mfaBusy ? "Preparing…" : mfaPendingFactorId ? "Restart authenticator setup" : "Set up authenticator"}</button>
-              )}
-            </>
-          ) : (
-            <>
-              <h2>Verify your authenticator</h2>
-              <p>Enter the current 6-digit code from Google Authenticator to continue to the secure portal.</p>
-              <label className="field"><span>Authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
-              <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and continue"}</button>
-            </>
-          )}
-          {error && <div className="notice notice-error" role="alert">{error}</div>}
-          <button className="button button-outline" type="button" disabled={mfaBusy} onClick={() => void signOut()}>Sign out</button>
-        </section>
       )}
       {!passwordRecovery && user && !ready && <p>Checking secure portal access…</p>}
       {!passwordRecovery && user && ready && !isOwner && (
