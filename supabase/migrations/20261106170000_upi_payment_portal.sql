@@ -56,3 +56,31 @@ alter table public.payment_audit_events enable row level security;
 
 revoke all on public.payment_orders, public.bank_sms_alerts, public.payment_audit_events from anon, authenticated;
 grant all on public.payment_orders, public.bank_sms_alerts, public.payment_audit_events to service_role;
+
+create or replace function public.prevent_duplicate_payment_reference()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(81421, 90017);
+  if new.claimed_utr is not null and exists (
+    select 1 from public.payment_orders p
+    where p.id <> new.id and (p.claimed_utr = new.claimed_utr or p.utr = new.claimed_utr)
+  ) then
+    raise exception 'UPI reference already exists' using errcode = '23505';
+  end if;
+  if new.utr is not null and exists (
+    select 1 from public.payment_orders p
+    where p.id <> new.id and (p.utr = new.utr or p.claimed_utr = new.utr)
+  ) then
+    raise exception 'UPI reference already exists' using errcode = '23505';
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.prevent_duplicate_payment_reference() from public, anon, authenticated;
+
+create trigger payment_orders_unique_reference_guard
+before insert or update of claimed_utr, utr on public.payment_orders
+for each row execute function public.prevent_duplicate_payment_reference();
