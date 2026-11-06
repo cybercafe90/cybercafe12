@@ -74,3 +74,12 @@ verify_jwt = false
 
 [functions.admin-grievances]
 verify_jwt = true
+
+
+[auth.email.template.confirmation]
+subject = "Your BABA'S CYBER CAFE verification code"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Your BABA'S CYBER CAFE sign-in code"
+content_path = "./supabase/templates/magic_link.html"
