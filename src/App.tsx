@@ -3990,6 +3990,7 @@ function RoutedApp() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
+      <SoundControls />
     </>
   );
 }
