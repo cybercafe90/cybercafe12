@@ -788,3 +788,26 @@ body { overflow-x: hidden; }
 .field-wide .otp-actions .button { flex:0 0 auto; }
 .mfa-qr { display:block; width:min(220px, 100%); height:auto; margin:12px auto; padding:12px; background:#fff; border:1px solid var(--line, #ddd); border-radius:12px; }
 .signin-panel .field input[readonly] { font-size:12px; letter-spacing:.08em; }
+
+
+.admin-mfa-qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line, #dedbd4);
+  border-radius: 1rem;
+  background: #fff;
+}
+.admin-mfa-qr img {
+  display: block;
+  width: min(100%, 17rem);
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+.admin-mfa-qr p {
+  margin: 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
