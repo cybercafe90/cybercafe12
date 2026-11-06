@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:edge": "npx --yes deno test supabase/functions/_shared/http_test.ts",
+    "test:edge": "npx --yes deno test supabase/functions/_shared/*_test.ts",
     "check:edge": "npx --yes deno check supabase/functions/*/index.ts"
   },
   "engines": {
