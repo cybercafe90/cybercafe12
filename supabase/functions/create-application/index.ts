@@ -1,5 +1,5 @@
 import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
-import { checkRateLimit, serviceClient, verifyCustomerEmail } from '../_shared/auth.ts'
+import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
 import { sendCustomerEmail } from '../_shared/email.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
 
@@ -52,13 +52,7 @@ Deno.serve(async (request) => {
       if (!serviceRecord) return response(request, { error: 'The selected service is unavailable. Refresh the catalogue and try again.' }, 400)
     }
 
-    let verifiedUser
-    try {
-      verifiedUser = await verifyCustomerEmail(request, email)
-    } catch {
-      return response(request, { error: 'Verify your email address with the one-time code before submitting this enquiry.' }, 401)
-    }
-    const userId: string = verifiedUser.id
+    const userId: string | null = null
 
     let saved: { id: string; tracking_id: string; email: string; full_name: string; service_name: string } | null = null
     for (let attempt = 0; attempt < 2 && !saved; attempt += 1) {
