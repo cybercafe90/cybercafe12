@@ -972,7 +972,7 @@ function ApplicationPage() {
   async function sendCustomerOtp() {
     if (!supabase) return setError("Secure email verification is unavailable.");
     const normalizedEmail = customerEmail.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setError("Enter a valid email address first.");
     setOtpBusy(true); setError("");
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({ email: normalizedEmail, options: { shouldCreateUser: true } });
@@ -1154,7 +1154,7 @@ function ApplicationPage() {
               <input
                 type="email"
                 value={customerEmail}
-                onChange={(event) => setCustomerEmail(event.target.value)}
+                onChange={(event) => { setCustomerEmail(event.target.value); setOtpSent(false); setOtpVerified(false); setVerifiedEmail(""); setOtpCode(""); }}
                 required
                 maxLength={254}
                 autoComplete="email"
@@ -1172,7 +1172,7 @@ function ApplicationPage() {
                   </div>
                   {otpSent && (
                     <div className="otp-actions">
-                      <input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\\s/g, ""))} maxLength={8} placeholder="Enter email code" />
+                      <input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\s/g, ""))} maxLength={8} placeholder="Enter email code" />
                       <button type="button" className="button button-dark" onClick={() => void verifyCustomerOtp()} disabled={otpBusy || !otpCode.trim()}>Verify code</button>
                     </div>
                   )}
@@ -2983,7 +2983,7 @@ function AdminPage() {
                 <>
                   <img className="mfa-qr" src={`data:image/svg+xml;utf8,${encodeURIComponent(mfaQr)}`} alt="Google Authenticator setup QR code" />
                   <label className="field"><span>Manual setup key</span><input readOnly value={mfaSecret} /></label>
-                  <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} maxLength={6} /></label>
+                  <label className="field"><span>6-digit authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
                   <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and secure account"}</button>
                 </>
               ) : (
@@ -2994,7 +2994,7 @@ function AdminPage() {
             <>
               <h2>Verify your authenticator</h2>
               <p>Enter the current 6-digit code from Google Authenticator to continue to the secure portal.</p>
-              <label className="field"><span>Authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))} maxLength={6} /></label>
+              <label className="field"><span>Authenticator code</span><input inputMode="numeric" autoComplete="one-time-code" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))} maxLength={6} /></label>
               <button className="button button-dark" type="button" disabled={mfaBusy || mfaCode.length !== 6} onClick={() => void verifyAdminMfa()}>{mfaBusy ? "Verifying…" : "Verify and continue"}</button>
             </>
           )}
