@@ -553,3 +553,13 @@ td small { display: block; margin-top: 4px; color: #89887e; font-size: 8px; }
   .incident-controls { grid-template-columns:1fr; }
   .incident-topline time { width:100%; margin-left:0; }
 }
+
+.investigator-management { margin:30px 0; padding:20px; border:1px solid var(--line); background:var(--white); }
+.investigator-management > p { margin:0 0 14px; color:#77766d; font-size:10px; line-height:1.7; }
+.investigator-grant-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:15px; }
+.investigator-grant-form input { min-height:42px; min-width:0; padding:0 11px; border:1px solid var(--line); background:#fff; font:inherit; font-size:10px; }
+.investigator-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
+.investigator-row > div { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.investigator-row strong { overflow-wrap:anywhere; color:var(--ink); font-size:10px; }
+.investigator-row small,.investigator-empty-note { color:var(--muted); font-size:9px; }
+@media(max-width:600px) { .investigator-grant-form { grid-template-columns:1fr; } .investigator-row { align-items:flex-start; flex-direction:column; } }
