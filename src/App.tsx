@@ -2285,7 +2285,6 @@ function AdminPage() {
   useEffect(() => {
     if (!supabase || !user) return;
     let current = true;
-    setReady(false);
     void (async () => {
       try {
         const [{ data: aalData, error: aalError }, { data: factorData, error: factorError }] = await Promise.all([
