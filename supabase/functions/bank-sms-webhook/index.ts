@@ -48,7 +48,7 @@ Deno.serve(async (request) => {
     const utr = parseUtr(message)
     const trackingId = parseTracking(message)
     const admin = serviceClient()
-    const messageHash = await sha256(sender + '|' + message + '|' + bankTime.toISOString())
+    const messageHash = await sha256(sender + '|' + message)
     const { data: alert, error: insertError } = await admin.from('bank_sms_alerts').insert({
       sender, message, bank_timestamp: bankTime.toISOString(), parsed_amount: amount,
       parsed_utr: utr, parsed_tracking_id: trackingId, message_hash: messageHash,
