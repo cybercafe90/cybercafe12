@@ -1,4 +1,4 @@
-import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
+import { checkRateLimit, serviceClient, verifyCustomerEmail } from '../_shared/auth.ts'
 import { sendCustomerEmail } from '../_shared/email.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
 
@@ -51,17 +51,13 @@ Deno.serve(async (request) => {
       if (!serviceRecord) return response(request, { error: 'The selected service is unavailable. Refresh the catalogue and try again.' }, 400)
     }
 
-    let userId: string | null = null
-    const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]
-    if (token) {
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-      if (!anonKey) return response(request, { error: 'Secure authentication is not configured.' }, 503)
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.0')
-      const userClient = createClient(Deno.env.get('SUPABASE_URL')!, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } })
-      const { data: { user }, error } = await userClient.auth.getUser(token)
-      if (error || !user || !(user.email_confirmed_at || user.confirmed_at) || user.email?.toLowerCase() !== email) return response(request, { error: 'Your signed-in email must match the email on this enquiry.' }, 403)
-      userId = user.id
+    let verifiedUser
+    try {
+      verifiedUser = await verifyCustomerEmail(request, email)
+    } catch {
+      return response(request, { error: 'Verify your email address with the one-time code before submitting this enquiry.' }, 401)
     }
+    const userId: string = verifiedUser.id
 
     let saved: { id: string; tracking_id: string; email: string; full_name: string; service_name: string } | null = null
     for (let attempt = 0; attempt < 2 && !saved; attempt += 1) {
