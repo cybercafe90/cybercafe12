@@ -12,7 +12,7 @@ Deno.serve(async (request) => {
     if (!token || !anonKey || !url) return response(request, { error: 'Verified customer sign-in required.' }, 401)
     const authClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } })
     const { data: { user }, error: authError } = await authClient.auth.getUser(token)
-    if (authError || !user || !(user.email_confirmed_at || user.confirmed_at)) return response(request, { error: 'Verified customer sign-in required.' }, 401, { 'Cache-Control': 'no-store' })
+    if (authError || !user) return response(request, { error: 'Verified customer sign-in required.' }, 401, { 'Cache-Control': 'no-store' })
 
     const admin = serviceClient()
     const [{ data: profile }, { data: applications, error }] = await Promise.all([
