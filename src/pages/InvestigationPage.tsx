@@ -20,6 +20,7 @@ type Overview = {
   actor: { role: "owner" | "investigator"; permissions: string[] };
   monitoring: { event_count: number; note: string; telemetry_sources: string[] };
 };
+type Investigator = { user_id: string; email: string; enabled: boolean; permissions: string[]; granted_at: string; revoked_at: string | null };
 
 const severityClass = (severity: SecurityEvent["severity"]) => `incident-severity severity-${severity}`;
 
@@ -30,6 +31,9 @@ export default function InvestigationPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [investigators, setInvestigators] = useState<Investigator[]>([]);
+  const [investigatorEmail, setInvestigatorEmail] = useState("");
+  const [grantBusy, setGrantBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,6 +48,12 @@ export default function InvestigationPage() {
       }
       const overview = await callFunction<Overview>("investigation-overview", {}, sessionData.session.access_token);
       setData(overview);
+      if (overview.actor.role === "owner") {
+        const grants = await callFunction<{ investigators: Investigator[] }>("investigation-manage-investigator", { action: "list" }, sessionData.session.access_token);
+        setInvestigators(grants.investigators);
+      } else {
+        setInvestigators([]);
+      }
     } catch (reason) {
       setData(null);
       setError(reason instanceof Error ? reason.message : "Investigation data could not be loaded.");
@@ -53,6 +63,27 @@ export default function InvestigationPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  async function manageInvestigator(action: "grant" | "revoke", target?: Investigator) {
+    if (!supabase) return;
+    setGrantBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const payload = action === "grant"
+        ? { action, email: investigatorEmail, permissions: ["view_events", "investigate"] }
+        : { action, user_id: target?.user_id };
+      await callFunction("investigation-manage-investigator", payload, sessionData.session?.access_token);
+      setMessage(action === "grant" ? "Verified account granted investigator access." : "Investigator access revoked.");
+      setInvestigatorEmail("");
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Investigator access could not be updated.");
+    } finally {
+      setGrantBusy(false);
+    }
+  }
 
   async function updateStatus(event: SecurityEvent, status: SecurityEvent["status"]) {
     const reason = (reasons[event.id] ?? "").trim();
@@ -102,6 +133,22 @@ export default function InvestigationPage() {
             <div><span className="eyebrow">EVENT SOURCES</span><strong>{data.monitoring.telemetry_sources.length}</strong><small>Configured source types, not live connection status</small></div>
           </section>
           <div className="notice notice-warn investigation-warning"><AlertTriangle size={17} /> {data.monitoring.note} Cloudflare log collection, Supabase audit streaming and automated alert delivery are not confirmed by this event feed.</div>
+          {data.actor.role === "owner" && (
+            <section className="investigator-management">
+              <div className="admin-section-head"><div><span className="eyebrow">OWNER CONTROL</span><h2>Investigator access</h2></div></div>
+              <p>Only an existing, email-verified account can be granted access. This does not create accounts or permit public registration.</p>
+              <form className="investigator-grant-form" onSubmit={(event) => { event.preventDefault(); void manageInvestigator("grant"); }}>
+                <input type="email" value={investigatorEmail} onChange={(event) => setInvestigatorEmail(event.target.value)} required maxLength={254} placeholder="Existing verified account email" />
+                <button className="button button-dark" disabled={grantBusy}>{grantBusy ? "Saving…" : "Grant access"}</button>
+              </form>
+              {investigators.length === 0 ? <p className="investigator-empty-note">No investigator grants exist.</p> : investigators.map((person) => (
+                <div className="investigator-row" key={person.user_id}>
+                  <div><strong>{person.email}</strong><small>{person.permissions.join(" · ") || "No permissions"} · {person.enabled ? "Enabled" : "Revoked"}</small></div>
+                  {person.enabled && <button className="button button-outline" disabled={grantBusy} onClick={() => void manageInvestigator("revoke", person)}>Revoke</button>}
+                </div>
+              ))}
+            </section>
+          )}
           <section className="investigation-events">
             <div className="admin-section-head">
               <div><span className="eyebrow">INCIDENT REGISTER</span><h2>Security events</h2></div>
