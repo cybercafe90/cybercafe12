@@ -65,3 +65,12 @@ verify_jwt = true
 
 [functions.investigation-manage-investigator]
 verify_jwt = true
+
+[functions.create-grievance]
+verify_jwt = false
+
+[functions.track-grievance]
+verify_jwt = false
+
+[functions.admin-grievances]
+verify_jwt = true
