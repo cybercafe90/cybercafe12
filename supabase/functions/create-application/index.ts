@@ -27,7 +27,10 @@ Deno.serve(async (request) => {
   let admin
   try {
     admin = serviceClient()
-    if (!await checkRateLimit(admin, request, 'application-submit', 'all', 8, 15)) return response(request, { error: 'Too many requests. Please wait before trying again.' }, 429)
+    if (!await checkRateLimit(admin, request, 'application-submit', 'all', 8, 15)) {
+      await recordSecurityEvent(admin, request, 'application_submit_rate_limited', 'Application submission rate limit exceeded.', '/apply')
+      return response(request, { error: 'Too many requests. Please wait before trying again.' }, 429)
+    }
     const raw = await request.text()
     if (raw.length > 12_000) return response(request, { error: 'Request is too large.' }, 413)
     const body = JSON.parse(raw)
