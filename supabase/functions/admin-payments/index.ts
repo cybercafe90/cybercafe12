@@ -16,15 +16,16 @@ Deno.serve(async (request) => {
     const action = typeof body.action === 'string' ? body.action : 'list'
 
     if (action === 'list') {
-      const [apps, alerts] = await Promise.all([
+      const [apps, alerts, audit] = await Promise.all([
         admin.from('applications').select('id, tracking_id, full_name, mobile, service_name, created_at').order('created_at', { ascending: false }).limit(200),
         admin.from('bank_sms_alerts').select('id, sender, message, bank_timestamp, received_at, parsed_amount, parsed_utr, parsed_tracking_id, status, processing_note').order('received_at', { ascending: false }).limit(50),
+        admin.from('payment_audit_events').select('id, payment_id, action, metadata, created_at').order('created_at', { ascending: false }).limit(50),
       ])
-      if (apps.error || alerts.error) throw new Error('Payment dashboard could not be loaded.')
+      if (apps.error || alerts.error || audit.error) throw new Error('Payment dashboard could not be loaded.')
       const ids = (apps.data ?? []).map(item => item.id)
       const { data: orders } = ids.length ? await admin.from('payment_orders').select('id, application_id, amount, status, claimed_utr, utr, paid_at, created_at').in('application_id', ids) : { data: [] }
       const byApp = new Map((orders ?? []).map(item => [item.application_id, item]))
-      return response(request, { applications: (apps.data ?? []).map(item => ({ ...item, payment: byApp.get(item.id) ?? null })), alerts: alerts.data ?? [] }, 200, { 'Cache-Control': 'no-store' })
+      return response(request, { applications: (apps.data ?? []).map(item => ({ ...item, payment: byApp.get(item.id) ?? null })), alerts: alerts.data ?? [], audit: audit.data ?? [] }, 200, { 'Cache-Control': 'no-store' })
     }
 
     if (action === 'create_application') {
@@ -80,6 +81,19 @@ Deno.serve(async (request) => {
       const { error } = await admin.from('payment_orders').update({ status: 'pending', utr: null, paid_at: null, claimed_utr: null }).eq('id', payment.id)
       if (error) throw error
       await admin.from('payment_audit_events').insert({ payment_id: payment.id, actor_id: actor.id, action: 'admin_reopened_payment', metadata: { reason: body.reason.trim() } })
+      return response(request, { updated: true }, 200)
+    }
+
+    if (action === 'manual_match') {
+      if (!validId(body.alertId) || !validId(body.applicationId) || typeof body.reason !== 'string' || body.reason.trim().length < 10) return response(request, { error: 'Select an application and provide a review note.' }, 400)
+      const { data: alert } = await admin.from('bank_sms_alerts').select('id, parsed_amount, parsed_utr, status').eq('id', body.alertId).maybeSingle()
+      if (!alert || !alert.parsed_amount || !alert.parsed_utr || alert.status === 'matched') return response(request, { error: 'This alert is not ready for manual matching.' }, 409)
+      const { data: payment } = await admin.from('payment_orders').select('id, amount').eq('application_id', body.applicationId).maybeSingle()
+      if (!payment || Number(payment.amount).toFixed(2) !== Number(alert.parsed_amount).toFixed(2)) return response(request, { error: 'The selected application amount does not match this bank alert.' }, 409)
+      const { data: updated, error } = await admin.from('payment_orders').update({ status: 'paid', utr: alert.parsed_utr, paid_at: new Date().toISOString() }).eq('id', payment.id).in('status', ['pending','claimed','needs_review']).is('utr', null).select('id').maybeSingle()
+      if (error || !updated) return response(request, { error: 'The payment could not be matched; the UTR may already be used.' }, 409)
+      await admin.from('bank_sms_alerts').update({ status: 'matched', matched_payment_id: payment.id, processing_note: 'Manually matched by owner after reviewing bank statement: ' + body.reason.trim().slice(0, 300) }).eq('id', alert.id)
+      await admin.from('payment_audit_events').insert({ payment_id: payment.id, actor_id: actor.id, action: 'admin_manually_matched_bank_alert', metadata: { alert_id: alert.id, utr: alert.parsed_utr, reason: body.reason.trim() } })
       return response(request, { updated: true }, 200)
     }
 
