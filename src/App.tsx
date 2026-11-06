@@ -566,7 +566,6 @@ function HomePage() {
 
 function SocialPreviewSection() {
   const settings = useSiteSettings();
-  const facebookEmbed = `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(settings.social.facebook)}&tabs=timeline&width=500&height=520&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true`;
   const mapsEmbed = "https://www.google.com/maps?q=BABA%27S%20CYBER%20CAFE%2C%20Srinagar%2C%20Jammu%20and%20Kashmir&output=embed";
   return (
     <section className="social-preview-section">
