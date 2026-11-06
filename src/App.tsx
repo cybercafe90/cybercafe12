@@ -3846,7 +3846,7 @@ function AskUsQuestionWidget() {
       `Question: ${question.trim()}`,
       "",
       "Sent from the website Ask Us a Question window.",
-    ].join("\\n");
+    ].join("\n");
     window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
     setOpen(false);
     setName("");
