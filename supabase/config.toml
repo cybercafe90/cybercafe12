@@ -62,3 +62,6 @@ verify_jwt = true
 
 [functions.investigation-update-event]
 verify_jwt = true
+
+[functions.investigation-manage-investigator]
+verify_jwt = true
