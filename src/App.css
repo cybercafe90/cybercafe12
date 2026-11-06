@@ -780,3 +780,11 @@ body { overflow-x: hidden; }
     transition: none !important;
   }
 }
+
+
+/* Customer email OTP and admin authenticator controls. */
+.otp-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.otp-actions input { min-width:180px; flex:1; }
+.field-wide .otp-actions .button { flex:0 0 auto; }
+.mfa-qr { display:block; width:min(220px, 100%); height:auto; margin:12px auto; padding:12px; background:#fff; border:1px solid var(--line, #ddd); border-radius:12px; }
+.signin-panel .field input[readonly] { font-size:12px; letter-spacing:.08em; }
