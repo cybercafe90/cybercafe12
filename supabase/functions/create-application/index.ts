@@ -2,6 +2,25 @@ import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
 import { sendCustomerEmail } from '../_shared/email.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
 
+async function recordSecurityEvent(admin: any, request: Request, eventType: string, summary: string, route: string) {
+  try {
+    const ip = request.headers.get("cf-connecting-ip");
+    const sourceIp = ip && ip.length <= 45 && /^[0-9a-fA-F:.]+$/.test(ip) ? ip : null;
+    await admin.from("security_events").insert({
+      source: "application",
+      event_type: eventType,
+      severity: "medium",
+      status: "new",
+      source_ip: sourceIp,
+      route,
+      summary,
+      details: { detection: "server_rate_limit" },
+    });
+  } catch {
+    // Telemetry must never interrupt the customer-facing request path.
+  }
+}
+
 Deno.serve(async (request) => {
   const early = preflight(request)
   if (early) return early
