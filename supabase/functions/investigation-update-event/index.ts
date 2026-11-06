@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
-import { tokenHasAal2 } from "../_shared/auth.ts";
 
 const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in", "https://security-audit-working-2026.babacybercafe.pages.dev"];
 function cors(req: Request): HeadersInit {
@@ -16,7 +15,6 @@ async function authorize(req: Request) {
   const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
   const { data: { user }, error } = await userClient.auth.getUser(token);
   if (error || !user || !(user.email_confirmed_at || user.confirmed_at)) throw new Error("UNAUTHENTICATED");
-  if (!tokenHasAal2(token)) throw new Error("MFA_REQUIRED");
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: owner } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
   if (owner?.role === "owner") return { admin, user, permissions: ["view_events", "investigate", "manage_investigators"], role: "owner" };
