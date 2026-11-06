@@ -61,7 +61,7 @@ import "./App.css";
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
 const whatsapp = "917006865909";
-const facebook = "https://www.facebook.com/share/1cKyxm9dZ/";
+const facebook = "https://www.facebook.com/babascybercafe";
 const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
 const instagramProfile = "https://www.instagram.com/babascybercafe/";
 
