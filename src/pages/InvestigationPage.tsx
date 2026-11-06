@@ -62,6 +62,8 @@ export default function InvestigationPage() {
     }
   }, []);
 
+  // The load callback synchronizes remote data into this page's state.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   async function manageInvestigator(action: "grant" | "revoke", target?: Investigator) {
