@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { AlertCircle, CheckCircle2, FileText, Search } from "lucide-react";
-import { callFunction, isSupabaseConfigured, supabase } from "../lib/supabase";
+import { callFunction, isSupabaseConfigured } from "../lib/supabase";
 
 type GrievanceUpdate = { status: string; public_remark: string | null; created_at: string };
 type TrackResult = { referenceId: string; subject: string; status: string; submittedAt: string; updatedAt: string; updates: GrievanceUpdate[] };
