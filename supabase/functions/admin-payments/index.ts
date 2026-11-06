@@ -54,8 +54,8 @@ Deno.serve(async (request) => {
       if (!validId(body.applicationId)) return response(request, { error: 'Invalid application.' }, 400)
       const amount = Number(body.amount)
       if (!Number.isFinite(amount) || amount < 0 || amount > 10000000) return response(request, { error: 'Enter a valid amount.' }, 400)
-      const { data: existing } = await admin.from('payment_orders').select('id, status').eq('application_id', body.applicationId).maybeSingle()
-      if (existing?.status === 'paid' && amount === 0) return response(request, { error: 'A paid payment cannot be cleared. Use the audited reversal action.' }, 409)
+      const { data: existing } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
+      if (existing && ['paid','claimed'].includes(existing.status) && amount !== Number(existing.amount)) return response(request, { error: 'Reopen or resolve the existing payment before changing its amount.' }, 409)
       const result = existing
         ? await admin.from('payment_orders').update({ amount }).eq('id', existing.id).select('id').single()
         : await admin.from('payment_orders').insert({ application_id: body.applicationId, amount, created_by: actor.id }).select('id').single()
@@ -66,8 +66,8 @@ Deno.serve(async (request) => {
 
     if (action === 'manual_mark_paid') {
       if (!validId(body.applicationId) || !validUtr(body.utr) || typeof body.reason !== 'string' || body.reason.trim().length < 10) return response(request, { error: 'A 12-digit UTR and a short verification note are required.' }, 400)
-      const { data: payment } = await admin.from('payment_orders').select('id, status').eq('application_id', body.applicationId).maybeSingle()
-      if (!payment) return response(request, { error: 'Assign an amount before recording payment.' }, 409)
+      const { data: payment } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
+      if (!payment || Number(payment.amount) <= 0) return response(request, { error: 'Assign a positive amount before recording payment.' }, 409)
       const { data, error } = await admin.from('payment_orders').update({ status: 'paid', utr: body.utr.trim(), paid_at: new Date().toISOString() }).eq('id', payment.id).in('status', ['pending','claimed','needs_review']).is('utr', null).select('id').maybeSingle()
       if (error || !data) return response(request, { error: 'Payment could not be marked paid. Check whether the UTR is already used.' }, 409)
       await admin.from('payment_audit_events').insert({ payment_id: payment.id, actor_id: actor.id, action: 'admin_marked_paid', metadata: { utr: body.utr.trim(), reason: body.reason.trim() } })
