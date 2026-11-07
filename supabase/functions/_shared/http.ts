@@ -1,4 +1,4 @@
-const defaultOrigins = ['https://babacybercafe.in', 'https://www.babacybercafe.in', 'https://4e29db8c.babacybercafe.pages.dev', 'https://security-audit-working-2026.babacybercafe.pages.dev']
+const defaultOrigins = ['https://babacybercafe.in', 'https://www.babacybercafe.in']
 
 export function allowedOrigin(request: Request) {
   const origin = request.headers.get('origin')
