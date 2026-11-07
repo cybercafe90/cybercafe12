@@ -60,6 +60,7 @@ import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
+import InsurancePortal from "./pages/InsurancePortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
@@ -274,6 +275,7 @@ function Footer() {
           <h3>Explore</h3>
           <Link to="/services">All services</Link>
           <Link to="/services/insurance">Insurance services</Link>
+          <Link to="/insurance">Request an insurance quotation</Link>
           <Link to="/about">About us</Link>
           <Link to="/contact">Contact</Link>
         </div>
@@ -3957,7 +3959,8 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
-        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
+        <Route path="/insurance" element={<InsurancePortal />} />
+        <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
