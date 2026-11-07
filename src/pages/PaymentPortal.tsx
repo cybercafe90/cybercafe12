@@ -91,7 +91,7 @@ function CustomerPayment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(Date.now());
+  const [clock, setClock] = useState(0);
   const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
   const remainingMs = expiresAt - clock;
   const qrExpired = Boolean(expiresAt && remainingMs <= 0);
@@ -99,6 +99,7 @@ function CustomerPayment() {
   useQrCode(uri, Boolean(uri && record?.payment.status === "pending" && !qrExpired));
   useEffect(() => {
     if (!record?.payment.expires_at || record.payment.status !== "pending") return;
+    setClock(Date.now());
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [record?.payment.expires_at, record?.payment.status]);

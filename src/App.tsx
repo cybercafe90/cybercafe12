@@ -3667,10 +3667,8 @@ function RoutedApp() {
         ? "Secure application services for BABA'S CYBER CAFE customers."
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
-  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
-  const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
-    <div className={isPortalRoute ? "portal-theme" : undefined}>
+    <div className="portal-theme">
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
