@@ -60,10 +60,19 @@ import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
+import InsurancePortal from "./pages/InsurancePortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
 import "./cyber-theme.css";
+
+function csvFlag(value?: string, fallback = false) {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (["true", "1", "yes"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  return fallback;
+}
 
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
@@ -274,6 +283,7 @@ function Footer() {
           <h3>Explore</h3>
           <Link to="/services">All services</Link>
           <Link to="/services/insurance">Insurance services</Link>
+          <Link to="/insurance">Request an insurance quotation</Link>
           <Link to="/about">About us</Link>
           <Link to="/contact">Contact</Link>
         </div>
@@ -686,6 +696,12 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
           "Search a growing directory of digital and public-service assistance. Requirements can change; confirm current rules with the responsible authority."
         }
       />
+      {fixedCategory === "insurance" && (
+        <div className="catalog-quote-cta">
+          <p>Need a motor policy quotation? Share your vehicle details and check available insurer options securely.</p>
+          <Link className="button button-gold" to="/insurance">Request an insurance quotation <ArrowUpRight size={14} /></Link>
+        </div>
+      )}
       <div className="catalog-toolbar">
         <label className="search-box">
           <Search size={18} />
@@ -2575,6 +2591,7 @@ function AdminPage() {
             <div className="admin-portal-shortcuts">
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
             </div>
           )}
         </div>
@@ -2980,14 +2997,14 @@ function AdminPage() {
                       <span className="csv-ready">Ready to submit</span>
                     </div>
                     <div className="csv-preview-stats">
-                      <span>{csvRows.filter((row) => row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1").length} featured</span>
-                      <span>{csvRows.filter((row) => row.is_active?.trim().toLowerCase() !== "false" && row.is_active?.trim() !== "0").length} active</span>
+                      <span>{csvRows.filter((row) => csvFlag(row.is_featured, false)).length} featured</span>
+                      <span>{csvRows.filter((row) => csvFlag(row.is_active, true)).length} active</span>
                     </div>
                     <div className="csv-preview-list">
                       {csvRows.slice(0, 5).map((row, index) => (
                         <div className="csv-preview-row" key={`${row.category_slug}-${row.name}-${index}`}>
                           <span><b>{row.name || "Unnamed service"}</b><small>{row.category_slug || "No category"}</small></span>
-                          <span className={row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "csv-featured-on" : "csv-featured-off"}>{row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "★ Featured" : "Not featured"}</span>
+                          <span className={csvFlag(row.is_featured, false) ? "csv-featured-on" : "csv-featured-off"}>{csvFlag(row.is_featured, false) ? "★ Featured" : "Not featured"}</span>
                         </div>
                       ))}
                       {csvRows.length > 5 && <small>and {csvRows.length - 5} more rows…</small>}
@@ -3957,7 +3974,8 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
-        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
+        <Route path="/insurance" element={<InsurancePortal />} />
+        <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />

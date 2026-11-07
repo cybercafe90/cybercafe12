@@ -18,7 +18,7 @@ Deno.serve(async (request) => {
     if (action === 'list') {
       const [apps, alerts, audit] = await Promise.all([
         admin.from('applications').select('id, tracking_id, full_name, mobile, service_name, created_at').order('created_at', { ascending: false }).limit(200),
-        admin.from('bank_sms_alerts').select('id, sender, message, bank_timestamp, received_at, parsed_amount, parsed_utr, parsed_tracking_id, status, processing_note').order('received_at', { ascending: false }).limit(50),
+        admin.from('bank_sms_alerts').select('id, sender, message, bank_timestamp, received_at, parsed_amount, parsed_utr, parsed_tracking_id, matched_payment_id, status, processing_note').order('received_at', { ascending: false }).limit(50),
         admin.from('payment_audit_events').select('id, payment_id, action, metadata, created_at').order('created_at', { ascending: false }).limit(50),
       ])
       if (apps.error || alerts.error || audit.error) throw new Error('Payment dashboard could not be loaded.')
