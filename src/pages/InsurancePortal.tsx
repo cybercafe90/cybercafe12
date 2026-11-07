@@ -39,7 +39,6 @@ type InsuranceQuote = {
   created_at: string;
 };
 const statuses = ["received", "partner_review", "quotes_ready", "customer_contacted", "payment_pending", "issued", "closed"];
-const policyTypes = ["third_party", "comprehensive", "standalone_od", "renewal"];
 const policyLabel = (value: string) => ({
   third_party: "Third-party",
   comprehensive: "Comprehensive",
@@ -69,7 +68,7 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
   const [quoteStatus, setQuoteStatus] = useState("");
   const [requests, setRequests] = useState<InsuranceRequest[]>([]);
   const [selected, setSelected] = useState<InsuranceRequest | null>(null);
-  const [adminReady, setAdminReady] = useState(false);
+  const [adminReady, setAdminReady] = useState(() => !admin || !supabase);
   const [adminToken, setAdminToken] = useState("");
   const [adminSearch, setAdminSearch] = useState("");
   const [quoteDraft, setQuoteDraft] = useState({
@@ -90,10 +89,7 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
   }
 
   useEffect(() => {
-    if (!admin || !supabase) {
-      if (admin) setAdminReady(true);
-      return;
-    }
+    if (!admin || !supabase) return;
     let active = true;
     void supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
