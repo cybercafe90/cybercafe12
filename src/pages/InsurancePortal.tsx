@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, BadgeCheck, Bike, CarFront, CheckCircle2, ClipboardList, FileCheck2, Fuel, LockKeyhole, RefreshCw, ShieldCheck, Truck, WalletCards } from "lucide-react";
 import { callFunction, supabase } from "../lib/supabase";
+import "../insurance.css";
 
 type QuoteForm = {
   customerName: string; mobile: string; email: string; vehicleType: string;
