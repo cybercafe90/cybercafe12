@@ -57,23 +57,16 @@ Deno.serve(async (request) => {
       if (insertError.code === '23505') return response(request, { accepted: true, duplicate: true }, 200)
       throw insertError
     }
+    // SMS alerts are untrusted notifications, not bank-signed proof of funds.
+    // Keep every parsed alert pending manual statement/account verification.
     if (amount && utr && trackingId) {
-      const { data: app } = await admin.from('applications').select('id').eq('tracking_id', trackingId).maybeSingle()
-      if (app) {
-        const { data: payment } = await admin.from('payment_orders').select('id, amount, status').eq('application_id', app.id).maybeSingle()
-        if (payment && Number(payment.amount).toFixed(2) === amount && ['pending', 'claimed'].includes(payment.status)) {
-          const { data: updated } = await admin.from('payment_orders').update({
-            status: 'paid', utr, paid_at: bankTime.toISOString(),
-          }).eq('id', payment.id).in('status', ['pending', 'claimed']).is('utr', null).select('id').maybeSingle()
-          if (updated) {
-            await admin.from('bank_sms_alerts').update({ status: 'matched', matched_payment_id: payment.id, processing_note: 'Automatically matched exact tracking ID, amount and unique UTR.' }).eq('id', alert.id)
-            await admin.from('payment_audit_events').insert({ payment_id: payment.id, action: 'bank_sms_auto_reconciled', metadata: { alert_id: alert.id, utr, amount } })
-            return response(request, { accepted: true, matched: true }, 200)
-          }
-        }
-      }
+      await admin.from('bank_sms_alerts').update({
+        status: 'unmatched',
+        processing_note: 'Potential match only. Verify the corresponding transaction against the bank statement before manually marking payment as paid.',
+      }).eq('id', alert.id)
     }
-    return response(request, { accepted: true, matched: false, alertId: alert.id }, 200)
+    return response(request, { accepted: true, matched: false, reviewRequired: true, alertId: alert.id }, 200)
+
   } catch (reason) {
     console.error('bank-sms webhook failed:', reason instanceof Error ? reason.message.slice(0, 120) : 'unknown error')
     return new Response('Webhook processing failed', { status: 500 })
