@@ -61,14 +61,14 @@ Deno.serve(async (req: Request) => {
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 300) : "";
     if (reason.length < 8) return reply(req, { error: "Provide an investigation reason of at least 8 characters." }, 400);
     if (action === "block") {
-      const { data: existing } = await admin.from("security_actions").select("id").eq("target_ip", ip).eq("provider", "cloudflare").eq("status", "active").limit(1);
+      const { data: existing } = await admin.from("security_actions").select("id").eq("target_ip", ip).eq("provider", "cloudflare").eq("status", "applied").limit(1);
       if (existing?.length) return reply(req, { error: "This IP is already blocked." }, 409);
       const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/firewall/access_rules/rules`, {
         method: "POST", headers, body: JSON.stringify({ mode: "block", configuration: { target: ip.includes(":") ? "ip6" : "ip", value: ip }, notes: `BABA'S CYBER CAFE investigation: ${reason}` }),
       });
       const json = await res.json();
       if (!res.ok || !json.success || !json.result?.id) return reply(req, { error: "Cloudflare did not confirm the IP block. Check API permissions and plan support." }, 502);
-      const { error } = await admin.from("security_actions").insert({ action_type: "ip_block", target_ip: ip, provider: "cloudflare", provider_rule_id: json.result.id, reason, status: "active", performed_by: user.id, result: { provider: "cloudflare", rule_id: json.result.id } });
+      const { error } = await admin.from("security_actions").insert({ action_type: "temporary_ip_block", target_ip: ip, provider: "cloudflare", provider_rule_id: json.result.id, reason, status: "applied", performed_by: user.id, result: { provider: "cloudflare", rule_id: json.result.id } });
       if (error) {
         await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/firewall/access_rules/rules/${json.result.id}`, { method: "DELETE", headers });
         throw new Error("ACTION_AUDIT_FAILED_BLOCK_REVERTED");
@@ -77,13 +77,13 @@ Deno.serve(async (req: Request) => {
       return reply(req, { blocked: true, ip, rule_id: json.result.id });
     }
     if (action === "unblock") {
-      const { data: actions } = await admin.from("security_actions").select("id,provider_rule_id").eq("target_ip", ip).eq("provider", "cloudflare").eq("status", "active").order("performed_at", { ascending: false }).limit(1);
+      const { data: actions } = await admin.from("security_actions").select("id,provider_rule_id").eq("target_ip", ip).eq("provider", "cloudflare").eq("status", "applied").order("performed_at", { ascending: false }).limit(1);
       const record = actions?.[0];
       if (!record?.provider_rule_id) return reply(req, { error: "No active BABA'S CYBER CAFE block record was found for this IP." }, 404);
       const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/firewall/access_rules/rules/${record.provider_rule_id}`, { method: "DELETE", headers });
       const json = await res.json();
       if (!res.ok || !json.success) return reply(req, { error: "Cloudflare did not confirm the unblock." }, 502);
-      await admin.from("security_actions").update({ status: "removed", performed_by: user.id, result: { provider: "cloudflare", removed: true } }).eq("id", record.id);
+      await admin.from("security_actions").update({ status: "released", performed_by: user.id, result: { provider: "cloudflare", removed: true } }).eq("id", record.id);
       await admin.from("security_events").insert({ source: "cloudflare", event_type: "ip_unblocked", severity: "low", status: "resolved", source_ip: ip, summary: "Owner removed an IP block at Cloudflare.", actor_reference: user.id, details: { reason } });
       return reply(req, { unblocked: true, ip });
     }
