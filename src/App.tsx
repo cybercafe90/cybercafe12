@@ -1315,6 +1315,11 @@ function ApplicationPage() {
   );
 }
 
+type CustomerPaymentSummary = {
+  application: { tracking_id: string; full_name: string; mobile: string; service_name: string };
+  payment: { amount: number | string; status: "pending" | "claimed" | "paid" | "needs_review"; claimed_utr?: string | null; utr?: string | null; paid_at?: string | null };
+};
+
 type TrackedRecord = {
   trackingId: string;
   service: string;
@@ -1329,10 +1334,13 @@ type TrackedRecord = {
 function TrackPage() {
   const categoryList = useCategoryList();
   const location = useLocation();
+  const navigate = useNavigate();
   const initialTrackingId = (location.state as { trackingId?: unknown } | null)?.trackingId;
   const [trackingId, setTrackingId] = useState(typeof initialTrackingId === "string" ? initialTrackingId : "");
   const [mobile, setMobile] = useState("");
   const [record, setRecord] = useState<TrackedRecord | null>(null);
+  const [payment, setPayment] = useState<CustomerPaymentSummary | null>(null);
+  const [paymentError, setPaymentError] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -1340,13 +1348,24 @@ function TrackPage() {
     setBusy(true);
     setError("");
     setRecord(null);
+    setPayment(null);
+    setPaymentError("");
     try {
-      setRecord(
-        await callFunction<TrackedRecord>("track-application", {
+      const verifiedTracking = await callFunction<TrackedRecord>("track-application", {
+        trackingId,
+        mobile,
+      });
+      setRecord(verifiedTracking);
+      try {
+        const paymentSummary = await callFunction<CustomerPaymentSummary>("payment-customer", {
+          action: "lookup",
           trackingId,
           mobile,
-        }),
-      );
+        });
+        setPayment(paymentSummary);
+      } catch (paymentReason) {
+        setPaymentError(paymentReason instanceof Error ? paymentReason.message : "Payment information is temporarily unavailable.");
+      }
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -1451,6 +1470,22 @@ function TrackPage() {
                 ))}
               </div>
             )}
+            <section className="combined-payment-card" aria-label="Application payment">
+              <div className="combined-payment-head">
+                <div><span className="eyebrow">PAYMENT OVERVIEW</span><h3>Application payment</h3><p>Check the amount and payment confirmation without looking up your application again.</p></div>
+                {payment && <span className={`payment-status payment-status-${payment.payment.status}`}>{payment.payment.status === "paid" ? "Paid" : payment.payment.status === "claimed" ? "Confirmation submitted" : payment.payment.status === "needs_review" ? "Under review" : "Pending"}</span>}
+              </div>
+              {paymentError ? <p className="combined-payment-note">{paymentError}</p> : payment ? (
+                <>
+                  <div className="combined-payment-amount"><small>AMOUNT ASSIGNED</small><strong>{new Intl.NumberFormat("en-IN", {style:"currency",currency:"INR"}).format(Number(payment.payment.amount || 0))}</strong></div>
+                  {payment.payment.status === "paid" ? <p className="combined-payment-note">Your payment has been verified. {payment.payment.utr ? `Verified UTR: ${payment.payment.utr}.` : ""} {payment.payment.paid_at ? `Verified on ${new Date(payment.payment.paid_at).toLocaleString("en-IN")}.` : ""}</p>
+                    : payment.payment.status === "claimed" || payment.payment.status === "needs_review" ? <p className="combined-payment-note">Your payment reference has been submitted and is awaiting verification. A customer-entered UTR is not proof of credited funds.</p>
+                    : Number(payment.payment.amount) > 0 ? <p className="combined-payment-note">An amount has been assigned. Continue to the secure payment page to view the UPI QR and submit your payment reference.</p>
+                    : <p className="combined-payment-note">No payment amount has been assigned yet. Please check again later.</p>}
+                  {payment.payment.status === "pending" && Number(payment.payment.amount) > 0 && <button type="button" className="button button-dark" onClick={() => navigate("/pay", {state:{trackingId:record.trackingId,mobile}})}>View payment options <ArrowRight size={15}/></button>}
+                </>
+              ) : <p className="combined-payment-note">Loading your payment information…</p>}
+            </section>
             {record.documents.length > 0 && (
               <div className="approved-documents">
                 <h3>Approved documents</h3>
