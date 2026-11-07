@@ -131,9 +131,10 @@ export function AdminInsurancePortal() {
   const [filter,setFilter] = useState("all");
   const [notice,setNotice] = useState("");
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    setError("");
     try {
       const session = await supabase?.auth.getSession();
+      setLoading(true);
       const token = session?.data.session?.access_token;
       if (!token) throw new Error("Please sign in through the owner admin portal first.")
       const result = await callFunction<{items:RequestRow[]}>("insurance-portal",{action:"list_requests",search,status:filter},token);
