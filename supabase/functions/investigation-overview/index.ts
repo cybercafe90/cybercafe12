@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const status = message === "UNAUTHENTICATED" ? 401 : message === "FORBIDDEN" || message === "MFA_REQUIRED" ? 403 : 500;
-    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? (message === "MFA_REQUIRED" ? "Google Authenticator verification is required." : "Investigation access is not granted.") : "Investigation data could not be loaded." }, status);
+    const status = message === "UNAUTHENTICATED" ? 401 : message === "FORBIDDEN" ? 403 : 500;
+    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? "Investigation access is not granted." : "Investigation data could not be loaded." }, status);
   }
 });
