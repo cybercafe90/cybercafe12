@@ -66,6 +66,14 @@ import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
 import "./cyber-theme.css";
 
+function csvFlag(value?: string, fallback = false) {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (["true", "1", "yes"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  return fallback;
+}
+
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
 const whatsapp = "917006865909";
@@ -2982,14 +2990,14 @@ function AdminPage() {
                       <span className="csv-ready">Ready to submit</span>
                     </div>
                     <div className="csv-preview-stats">
-                      <span>{csvRows.filter((row) => row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1").length} featured</span>
-                      <span>{csvRows.filter((row) => row.is_active?.trim().toLowerCase() !== "false" && row.is_active?.trim() !== "0").length} active</span>
+                      <span>{csvRows.filter((row) => csvFlag(row.is_featured, false)).length} featured</span>
+                      <span>{csvRows.filter((row) => csvFlag(row.is_active, true)).length} active</span>
                     </div>
                     <div className="csv-preview-list">
                       {csvRows.slice(0, 5).map((row, index) => (
                         <div className="csv-preview-row" key={`${row.category_slug}-${row.name}-${index}`}>
                           <span><b>{row.name || "Unnamed service"}</b><small>{row.category_slug || "No category"}</small></span>
-                          <span className={row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "csv-featured-on" : "csv-featured-off"}>{row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "★ Featured" : "Not featured"}</span>
+                          <span className={csvFlag(row.is_featured, false) ? "csv-featured-on" : "csv-featured-off"}>{csvFlag(row.is_featured, false) ? "★ Featured" : "Not featured"}</span>
                         </div>
                       ))}
                       {csvRows.length > 5 && <small>and {csvRows.length - 5} more rows…</small>}
