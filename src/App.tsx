@@ -466,7 +466,7 @@ function HomePage() {
           <div className="cyber-pipeline">
             {["Verified & Encrypted","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
           </div>
-          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${statusLabels[trackingRecord.status] ?? trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
+          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${statusLabels.find((label) => label === trackingRecord.status) ?? trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
         </div>
       </section>
 
@@ -558,34 +558,6 @@ function SocialPreviewSection() {
           </a>
           <p className="social-preview-note">Map preview is a Google search for the business name and city; confirm the correct pin on the listing.</p>
         </article>
-      </div>
-    </section>
-  );
-}
-
-function ContactBand() {
-  const settings = useSiteSettings();
-  return (
-    <section className="contact-band">
-      <div>
-        <span className="eyebrow">NEED A HAND?</span>
-        <h2>Talk to a real person.</h2>
-      </div>
-      <div className="contact-band-actions">
-        <a
-          className="button button-gold"
-          href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <MessageCircle size={16} /> WhatsApp us
-        </a>
-        <a
-          className="button button-light-outline"
-          href={`mailto:${settings.contact.email}`}
-        >
-          Send an email <ArrowUpRight size={15} />
-        </a>
       </div>
     </section>
   );
