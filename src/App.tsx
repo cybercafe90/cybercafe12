@@ -603,7 +603,14 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
   const [page, setPage] = useState(1);
   const [remoteServices, setRemoteServices] = useState<ServiceRecord[]>([]);
   const [remoteCount, setRemoteCount] = useState(0);
+  const [catalogVersion, setCatalogVersion] = useState(0);
   const pageSize = 12;
+
+  useEffect(() => {
+    const refresh = () => setCatalogVersion((version) => version + 1);
+    window.addEventListener("catalog-updated", refresh);
+    return () => window.removeEventListener("catalog-updated", refresh);
+  }, []);
 
   useEffect(() => {
     if (!supabase) return;
@@ -635,7 +642,7 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
     return () => {
       current = false;
     };
-  }, [category, department, page, search, sort]);
+  }, [catalogVersion, category, department, page, search, sort]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
