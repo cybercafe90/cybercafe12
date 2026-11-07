@@ -696,6 +696,12 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
           "Search a growing directory of digital and public-service assistance. Requirements can change; confirm current rules with the responsible authority."
         }
       />
+      {fixedCategory === "insurance" && (
+        <div className="catalog-quote-cta">
+          <p>Need a motor policy quotation? Share your vehicle details and check available insurer options securely.</p>
+          <Link className="button button-gold" to="/insurance">Request an insurance quotation <ArrowUpRight size={14} /></Link>
+        </div>
+      )}
       <div className="catalog-toolbar">
         <label className="search-box">
           <Search size={18} />
