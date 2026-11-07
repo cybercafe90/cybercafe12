@@ -2,8 +2,9 @@
 
 There is no public registration flow and no frontend role selector. Provision owner access only from the trusted Supabase dashboard/SQL editor after verifying the business owner's identity.
 
-1. In Supabase Authentication, invite the owner's named email address. Require inbox verification and configure MFA. Do not share a password through chat or source control.
-2. Confirm that the Auth user is verified. In SQL Editor, check the exact email and copy the matching UUID:
+1. Invite the owner's verified email address through Supabase Authentication. Do not share a password or recovery link through chat or source control.
+2. MFA/TOTP verification is intentionally disabled by the business request. Compensate with a unique, strong password (at least 12 characters), restricted owner access, and secure mailbox access. Do not add an OTP-code sign-in flow to the website.
+3. Confirm that the Auth user is verified. In SQL Editor, check the exact email and copy the matching UUID:
 
 ```sql
 select id, email, email_confirmed_at
@@ -11,7 +12,7 @@ from auth.users
 where lower(email) = lower('OWNER_EMAIL');
 ```
 
-3. If exactly one verified account is returned, grant the owner role using that UUID:
+4. If exactly one verified account is returned, grant the owner role using that UUID:
 
 ```sql
 insert into public.user_roles (user_id, role)
@@ -22,8 +23,8 @@ where lower(email) = lower('OWNER_EMAIL')
 on conflict (user_id, role) do nothing;
 ```
 
-4. Visit `/admin/login`, sign in, and verify that the application overview loads. A signed-in account without an `owner` role must be rejected.
-5. Keep a second trusted recovery administrator in Supabase's protected account process, not in the website.
+5. Visit `/admin/login`, sign in with email and password, and verify that the application overview loads. A signed-in account without an `owner` role must be rejected.
+6. Keep a second trusted recovery administrator in Supabase's protected account process, not in the website.
 
 To revoke access, remove the role row and revoke the user's Supabase sessions from the Auth dashboard:
 
