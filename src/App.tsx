@@ -487,7 +487,7 @@ function HomePage() {
           <div className="cyber-pipeline">
             {["Verified & Encrypted","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
           </div>
-          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${statusLabels[trackingRecord.status] ?? trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
+          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
         </div>
       </section>
 
