@@ -2631,8 +2631,8 @@ function AdminPage() {
                     onChange={(event) =>
                       setConfirmNewPassword(event.target.value)
                     }
-                    minLength={8}
-                    maxLength={8}
+                    minLength={12}
+                    maxLength={128}
                     required
                     autoComplete="new-password"
                   />
@@ -2748,6 +2748,9 @@ function AdminPage() {
                         >
                           Update <ArrowRight size={14} />
                         </button>
+                        <Link className="text-button" to={`/admin/payments?application=${item.id}`}>
+                          Payment <ArrowRight size={14} />
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -3048,6 +3051,9 @@ function AdminPage() {
                     <p>
                       {active.full_name} · {active.service_name}
                     </p>
+                    <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
+                      Manage this application's payment <ArrowRight size={14} />
+                    </Link>
                   </div>
                   <button
                     className="icon-button"
