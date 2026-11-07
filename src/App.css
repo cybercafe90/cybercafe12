@@ -1671,3 +1671,93 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
 .investigation-page .incident-meta span { overflow-wrap:anywhere; }
 .investigation-page .investigator-management small { display:block; margin-top:12px; color:var(--muted); font-size:9px; line-height:1.6; }
 @media(max-width:640px){.investigator-grant-form{grid-template-columns:1fr}.investigation-summary{grid-template-columns:1fr}}
+
+
+/* Consistent dark-cyan payment and tracking UI */
+.portal-theme .combined-payment-card {
+  color:#ffffff;
+  border:1px solid rgba(0,242,255,.2);
+  border-radius:14px;
+  background:#0d1527;
+  box-shadow:0 8px 28px rgba(0,0,0,.18),inset 0 0 18px rgba(0,242,255,.025);
+}
+.portal-theme .combined-payment-head h3 { color:#ffffff; }
+.portal-theme .combined-payment-head p,
+.portal-theme .combined-payment-note { color:#94a3b8; }
+.portal-theme .combined-payment-amount {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  color:#ffffff;
+  background:transparent;
+}
+.portal-theme .combined-payment-amount small { color:#94a3b8; }
+.portal-theme .combined-payment-amount strong {
+  color:#00f2ff;
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.portal-theme .combined-payment-card .payment-status,
+.portal-theme .payment-page .payment-status,
+.portal-theme .tracking-result .status-tag {
+  border:1px solid rgba(0,242,255,.28);
+  border-radius:999px;
+  color:#00f2ff;
+  background:rgba(0,242,255,.08);
+}
+.portal-theme .combined-payment-card .payment-status-paid,
+.portal-theme .payment-page .payment-status-paid,
+.portal-theme .tracking-result .status-completed,
+.portal-theme .tracking-result .status-approved,
+.portal-theme .payment-page .status-paid {
+  border-color:rgba(34,197,94,.38);
+  color:#22c55e;
+  background:rgba(34,197,94,.10);
+}
+.portal-theme .combined-payment-card .payment-status-claimed,
+.portal-theme .combined-payment-card .payment-status-needs_review,
+.portal-theme .payment-page .payment-status-claimed,
+.portal-theme .payment-page .payment-status-needs_review {
+  border-color:rgba(250,204,21,.35);
+  color:#facc15;
+  background:rgba(250,204,21,.09);
+}
+.portal-theme .tracking-result .status-rejected {
+  border-color:rgba(248,113,113,.38);
+  color:#fca5a5;
+  background:rgba(248,113,113,.09);
+}
+.portal-theme .track-layout .button,
+.portal-theme .combined-payment-card .button,
+.portal-theme .payment-page .button {
+  border:1px solid #00f2ff;
+  border-radius:9px;
+  color:#000000;
+  background:#00f2ff;
+  font-weight:600;
+  transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease;
+}
+.portal-theme .track-layout .button:hover:not(:disabled),
+.portal-theme .combined-payment-card .button:hover:not(:disabled),
+.portal-theme .payment-page .button:hover:not(:disabled) {
+  border-color:#67f7ff;
+  background:#67f7ff;
+  box-shadow:0 5px 20px rgba(0,242,255,.18);
+  transform:translateY(-1px);
+}
+.portal-theme .track-layout .button:disabled,
+.portal-theme .combined-payment-card .button:disabled,
+.portal-theme .payment-page .button:disabled {
+  cursor:not-allowed;
+  opacity:.55;
+}
+.portal-theme .payment-page .payment-status { color:#00f2ff; }
+@media(prefers-reduced-motion:reduce) {
+  .portal-theme .track-layout .button,
+  .portal-theme .combined-payment-card .button,
+  .portal-theme .payment-page .button { transition:none; }
+}
