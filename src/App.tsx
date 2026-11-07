@@ -594,34 +594,6 @@ function SocialPreviewSection() {
   );
 }
 
-function ContactBand() {
-  const settings = useSiteSettings();
-  return (
-    <section className="contact-band">
-      <div>
-        <span className="eyebrow">NEED A HAND?</span>
-        <h2>Talk to a real person.</h2>
-      </div>
-      <div className="contact-band-actions">
-        <a
-          className="button button-gold"
-          href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <MessageCircle size={16} /> WhatsApp us
-        </a>
-        <a
-          className="button button-light-outline"
-          href={`mailto:${settings.contact.email}`}
-        >
-          Send an email <ArrowUpRight size={15} />
-        </a>
-      </div>
-    </section>
-  );
-}
-
 function CategoryIcon({ slug }: { slug: string }) {
   const icons: Record<string, typeof Building2> = {
     insurance: ShieldCheck,
