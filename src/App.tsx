@@ -3682,7 +3682,7 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
-        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
+        <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
@@ -3690,7 +3690,6 @@ function RoutedApp() {
         <Route path="/privacy" element={<LegalPage privacy />} />
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/pay" element={<PaymentPortal />} />
-        <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/admin/insurance" element={<AdminInsurancePortal />} />
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
