@@ -1,122 +1,284 @@
-import { useMemo, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Bot, Mail, MessageCircle, PhoneCall, Send, ShieldAlert, ShieldCheck, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  ArrowUpRight,
+  FileText,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Send,
+  ShieldAlert,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 
 type ChatLink = { label: string; href: string };
-type ChatMessage = { id: number; role: "assistant" | "customer"; text: string; links?: ChatLink[] };
+type ChatMessage = {
+  id: number;
+  role: "assistant" | "customer";
+  text: string;
+  links?: ChatLink[];
+};
 
-const OUT_OF_SCOPE = "I only assist with BABA'S CYBER CAFE services on babacybercafe.in.";
-const SERVICES_LINK = "/#services";
-const QUICK_ACTIONS = ["Revenue documents", "Motor insurance", "Track application"];
+const SITE = "https://babacybercafe.in";
+const SERVICE_LINK = `${SITE}/#services`;
+const TRACK_LINK = `${SITE}/track`;
+const INSURANCE_LINK = `${SITE}/insurance`;
+const CONTACT_LINK = `${SITE}/contact`;
 
-function containsSensitiveData(value: string) {
-  const patterns = [
-    /\b(?:otp|one[ -]?time password|verification code)\b\s*(?:is|:|=|-)?\s*\d{4,8}\b/i,
-    /\b(?:password|passcode|pin|upi pin|cvv|cvc)\b\s*(?:is|:|=|-)?\s*[a-z0-9@#$!_-]{3,}/i,
-    /\b(?:account(?: number| no\.?)?|a\/c)\D{0,10}\d{9,18}\b/i,
-    /\b\d{16}\b/,
-    /\b[a-z0-9._-]{2,}@(okaxis|okhdfcbank|oksbi|ybl|paytm|ibl|axl|upi)\b/i,
-  ];  return patterns.some((pattern) => pattern.test(value));
+const QUICK_ACTIONS = [
+  "Revenue certificates",
+  "Birth / death / trade licence",
+  "Driving licence / RC",
+  "Motor insurance",
+  "Track my application",
+];
+
+const SENSITIVE_PATTERNS = [
+  /\b(?:otp|one[- ]?time password|verification code|security code)\b\s*(?:is|:|=|-)?\s*\d{4,8}\b/i,
+  /\b(?:here(?:'s| is)|my|this is)\s+(?:my\s+)?(?:otp|one[- ]?time password|verification code|security code)\b/i,
+  /\b(?:password|passcode|login credentials)\s*(?:is|:|=)\s*\S+/i,
+  /\b(?:my|here is|this is)\s+(?:password|passcode|pin)\b/i,
+  /\b(?:upi|atm|debit|credit)?\s*pin\s*(?:is|:|=)?\s*\d{4,6}\b/i,
+  /\b(?:bank details|bank account|account\s*(?:no\.?|number)|ifsc|cvv|card number|net banking)\b.{0,24}\b[\dA-Z]{4,}\b/i,
+  /\b(?:here is|my|attached is)\s+(?:bank passbook|bank details|bank account)\b/i,
+];
+
+function isSensitive(text: string) {
+  return /^\s*\d{4,18}\s*$/.test(text) || SENSITIVE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-function answerFor(message: string): { text: string; links?: ChatLink[] } {
-  const q = message.toLowerCase();
-  if (/\b(hello|hi|hey|salaam|assalam|assalamu|namaste)\b/.test(q)) {
-    return { text: "Hello! Welcome to BABA'S CYBER CAFE in Srinagar. I can help with service requirements, document checklists, enquiries and application tracking. What would you like help with?", links: [{ label: "Browse services", href: SERVICES_LINK }, { label: "Track an application", href: "/track" }] };
+function isRomanUrdu(text: string) {
+  return /\b(assalam|salam|mujhe|mujhay|kya|kaise|kaisay|kaisa|chahiye|chaiye|hai|hain|karna|krna|batao|bataye|madad|darkar|kahan|kidhar|mera|meri|mere|ke liye|kitna|kitne|documents|dastavez|apply|banwana|banwani|status|maloom)\b/i.test(text);
+}
+
+function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> {
+  const q = input.toLowerCase();
+
+  if (isSensitive(input)) {
+    return {
+      text: romanUrdu
+        ? "Security warning: barah-e-karam OTP, password, PIN, bank account number, IFSC ya card details yahan share na karein. Main in details ko process ya store nahi karta. Agar aap ne koi secret share kiya hai to usay dobara post na karein; apne bank/account ki security settings check karein."
+        : "Security warning: Please do not share an OTP, password, PIN, bank account number, IFSC, or card details here. I cannot process or store these details. If you have shared a secret, do not post it again; review the security of the relevant account.",
+    };
   }
-  if (/\b(price|prices|rate|rates|cost|fee|fees|charges|kitna|qeemat)\b/.test(q)) {
-    return { text: "Service charges and government fees can vary by service and case. I don't quote fixed prices here. Please submit an enquiry or contact our support desk for the current details.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }, { label: "Contact support", href: "/contact" }] };
+
+  const outsideScope = /\b(weather|forecast|politics|election|news|cricket|football|movie|song|joke|general knowledge|capital of|stock market|crypto|coding|programming|write code|translate|homework)\b/i.test(q);
+  const websiteTopic = /\b(domicile|jamabandi|girdawari|land records?|mutation|income certificate|category certificate|revenue|birth|death|trade licen[cs]e|smc|municipal|driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto|insurance|third.party|comprehensive|motor policy|bike|car|pan|udyam|msme|abha|passport|health id|bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft|application|tracking|track|reference id|status|service|documents?|apply|enquir(?:y|e)|price|prices|cost|rate|rates|fee|fees|charges|contact|phone|call|whatsapp|email|location|srinagar|support|hello|hi|hey|salam|assalam|namaste)\b/i.test(q);
+
+  if (outsideScope || !websiteTopic) {
+    return {
+      text: "I only assist with BABA'S CYBER CAFE services on babacybercafe.in.",
+    };
   }
-  if (/\b(track|tracking|status|reference|application id|tracking id|tracking number)\b/.test(q)) {
-    return { text: "To check an existing application, open Track Status and enter your reference ID along with the registered mobile number requested on the tracking page. Please do not share OTPs or passwords in this chat.", links: [{ label: "Track Status", href: "/track" }] };
+
+  if (/\b(track|tracking|status|reference id|application id|where is my application)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Apni application ka status dekhne ke liye Track Status page kholen. Wahan apna reference ID aur registered mobile number enter karein. Apna OTP, password ya bank details chat mein share na karein."
+        : "To check an existing application, open Track Status and enter your reference ID and registered mobile number there. Do not send an OTP, password or bank details in this chat.",
+      links: [{ label: "Track Status", href: TRACK_LINK }],
+    };
   }
-  if (/\b(insurance|motor|vehicle policy|third party|comprehensive|bike insurance|car insurance)\b/.test(q)) {
-    return { text: "Our Motor Insurance Desk assists with bike, car and commercial vehicle third-party and comprehensive insurance. Quick checklist: (1) Vehicle RC copy, (2) Previous policy copy if available. Do not send payment credentials, OTPs or PINs in chat. For a quotation, submit an enquiry.", links: [{ label: "Open Insurance Desk", href: "/insurance" }, { label: "Contact support", href: "/contact" }] };
+
+  if (/\b(insurance|third.party|comprehensive|motor policy|bike insurance|car insurance)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Motor Insurance Desk bike, car aur commercial vehicle ke liye Third-Party aur Comprehensive cover enquiries leta hai. Shuruat ke liye ye documents paas rakhein:\n• Vehicle RC copy\n• Previous insurance policy copy (agar available ho)\n\nExact premium aur terms vehicle details dekh kar confirm honge; fixed rate yahan quote nahi kiya ja sakta."
+        : "Our Motor Insurance Desk handles Third-Party and Comprehensive insurance enquiries for bikes, cars and commercial vehicles. Keep these ready:\n• Vehicle RC copy\n• Previous policy copy, if available\n\nThe premium and policy terms depend on the vehicle and cover selected. Please enquire for an exact quotation; no fixed price is promised here.",
+      links: [{ label: "Open Insurance Desk", href: INSURANCE_LINK }],
+    };
   }
-  if (/\b(revenue|domicile|jamabandi|girdawari|land record|mutation|income certificate|category certificate)\b/.test(q)) {
-    return { text: "For Revenue Department assistance (Domicile, Land Records, Jamabandi, Girdawari, Income or Category Certificates), prepare: (1) Aadhaar Card, (2) Ration Card or Voter ID, (3) Previous land or parent documents, if relevant. The exact checklist depends on the service and case.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }] };
+
+  if (/\b(domicile|jamabandi|girdawari|land record|land records|mutation|income certificate|category certificate|revenue)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Revenue Department ki assistance (Domicile, Land Records/Jamabandi/Girdawari, Income ya Category Certificate) ke liye aam tor par ye documents paas rakhein:\n• Aadhaar Card\n• Ration Card ya Voter ID\n• Purane land records ya parent documents (jahan lagu hon)\n\nExact requirement case ke mutabiq badal sakti hai."
+        : "For Revenue Department assistance—Domicile, Land Records/Jamabandi/Girdawari, Income or Category Certificates—keep these ready:\n• Aadhaar Card\n• Ration Card or Voter ID\n• Previous land records or parent documents, where applicable\n\nThe exact requirement can vary by application.",
+      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
+    };
   }
-  if (/\b(smc|municipal|birth certificate|death certificate|trade licen[cs]e)\b/.test(q)) {
-    return { text: "For Municipal / SMC assistance (Birth or Death Certificates and Trade Licence), prepare: (1) Hospital discharge slip or supporting record, (2) ID proof, (3) Address proof. Requirements can vary by application.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }] };
+
+  if (/\b(birth|death|trade licen[cs]e|smc|municipal)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "SMC / Municipal Services (Birth Certificate, Death Certificate ya Trade Licence) ke liye ye documents paas rakhein:\n• Hospital discharge slip (birth/death ke liye, jahan lagu ho)\n• ID proof\n• Address proof\n\nCase ke mutabiq mazeed documents lag sakte hain."
+        : "For SMC / Municipal Services—Birth Certificate, Death Certificate or Trade Licence—keep these ready:\n• Hospital discharge slip, where applicable for birth/death cases\n• Identity proof\n• Address proof\n\nAdditional documents may be needed depending on the case.",
+      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
+    };
   }
-  if (/\b(rto|driving licen[cs]e|learner|permanent dl|vehicle transfer|rc transfer|fitness certificate)\b/.test(q)) {
-    return { text: "For RTO & Transport assistance, prepare: (1) Aadhaar Card, (2) Existing Driving Licence or RC copy, (3) Photo. Form 1-A medical may apply in some cases. We can confirm the exact list when you enquire.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }] };
+
+  if (/\b(driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "RTO & Transport assistance (Learner/Permanent Driving Licence, RC Transfer, Fitness) ke liye ye documents ready rakhein:\n• Aadhaar Card\n• Existing DL ya RC copy\n• Recent photo; Form 1-A medical certificate agar applicable ho\n\nFinal checklist service aur eligibility par depend karegi."
+        : "For RTO & Transport assistance—Learner/Permanent Driving Licence, RC Transfer or Fitness—keep these ready:\n• Aadhaar Card\n• Existing Driving Licence or RC copy\n• Recent photo; Form 1-A medical certificate if applicable\n\nThe final checklist depends on the service and eligibility.",
+      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
+    };
   }
-  if (/\b(pan|msme|udyam|abha|health id|passport|business scheme|central scheme)\b/.test(q)) {
-    return { text: "For PAN, MSME Udyam, ABHA Health ID or Passport Assistance, the initial checklist may include: (1) Aadhaar Card, (2) PAN if already issued, (3) Relevant business or application documents. An Aadhaar-linked mobile may be needed for an official verification step, but never tell us an OTP. Do not send bank account details in this chat; confirm any scheme-specific documents with our desk.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }] };
+
+  if (/\b(pan|udyam|msme|abha|passport|health id|business scheme)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Central & Business Services (PAN, MSME Udyam, ABHA Health ID aur Passport Assistance) ke liye:\n• Aadhaar Card\n• PAN, agar service ke liye relevant ho\n• Business records, agar Udyam ke liye relevant hon\n\nAadhaar-linked mobile verification ki zaroorat ho sakti hai, lekin OTP kabhi chat mein share na karein. Bank account number ya bank details yahan na bhejein."
+        : "For Central & Business Services—PAN, MSME Udyam, ABHA Health ID and Passport Assistance—keep these in mind:\n• Aadhaar Card\n• PAN, where relevant to the service\n• Relevant business records for Udyam, if applicable\n\nAn Aadhaar-linked mobile may be needed for verification, but never share an OTP in chat. Do not send bank account numbers or bank details here.",
+      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
+    };
   }
-  if (/\b(labour|bocw|e.?shram|artisan|weaver|handicraft|handloom)\b/.test(q)) {
-    return { text: "For Labour & Handicrafts assistance (BOCW Labour Card, e-Shram, Artisan or Weaver IDs), prepare: (1) Aadhaar Card, (2) Bank passbook for document review—please do not share account numbers or bank details in chat, (3) Photo and work certificate / endorsement if available.", links: [{ label: "Apply / Enquire", href: SERVICES_LINK }] };
+
+  if (/\b(bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Labour & Handicrafts (BOCW Labour Card, e-Shram, Artisan/Weaver ID) ke liye aam tor par ye documents chahiye ho sakte hain:\n• Aadhaar Card\n• Recent photo\n• Work certificate / endorsement\n\nBank passbook ki zaroorat ho sakti hai; uski photo, account number ya details chat mein share na karein. Secure submission ka tareeqa support se confirm karein."
+        : "For Labour & Handicrafts services—BOCW Labour Card, e-Shram, Artisan or Weaver ID—these may be required:\n• Aadhaar Card\n• Recent photograph\n• Work certificate or endorsement\n\nA bank passbook may be required for some services, but do not share its image, account number or details in chat. Contact support to confirm the secure submission process.",
+      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
+    };
   }
-  if (/\b(document|documents|requirement|requirements|checklist|apply|application|enquir|service|services)\b/.test(q)) {
-    return { text: "I can guide you through Revenue, Municipal / SMC, RTO, Motor Insurance, Central & Business Schemes, and Labour & Handicrafts services. Tell me which service you need and I’ll give you a short document checklist. Exact fees are confirmed by support, not guessed here.", links: [{ label: "Browse all services", href: SERVICES_LINK }, { label: "Apply / Enquire", href: "/apply" }] };
+
+  if (/\b(price|prices|cost|rate|rates|fee|fees|charges|kitna|kitne paise)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Service charges aur government fees case aur service ke mutabiq alag ho sakti hain. Main fixed price invent nahi karunga. Exact rate ke liye website par enquiry submit karein ya support se rabta karein."
+        : "Service charges and government fees vary by service and application. I won't invent a fixed price. Please submit an enquiry on the website or contact our support team for the exact amount.",
+      links: [
+        { label: "Submit an Enquiry", href: `${SITE}/apply` },
+        { label: "Contact Support", href: CONTACT_LINK },
+      ],
+    };
   }
-  if (/\b(contact|phone|call|whatsapp|email|address|location)\b/.test(q)) {
-    return { text: "BABA'S CYBER CAFE customer support is based in Srinagar, Jammu & Kashmir. Phone / WhatsApp: +91 7006865909. Email: support@babacybercafe.in. You can also open the contact page for available details.", links: [{ label: "Contact page", href: "/contact" }] };
+
+  if (/\b(contact|phone|call|whatsapp|email|location|address|srinagar|support)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nAap website ke Contact page se bhi rabta kar sakte hain."
+        : "BABA'S CYBER CAFE · Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nYou can also use the website Contact page.",
+      links: [
+        { label: "Contact Page", href: CONTACT_LINK },
+        { label: "Call +91 7006865909", href: "tel:+917006865909" },
+        { label: "Email Support", href: "mailto:support@babacybercafe.in" },
+      ],
+    };
   }
-  return { text: OUT_OF_SCOPE };
+
+  if (/\b(apply|enquire|enquiry|document|documents|requirement|requirements|what do i need|how to apply)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Main documents aur application navigation mein madad kar sakta hoon. Aap kis service ke liye apply karna chahte hain—Revenue, SMC, RTO, Motor Insurance, PAN/MSME/ABHA, ya Labour/Handloom?"
+        : "I can help with document checklists and application navigation. Which service do you need—Revenue, SMC, RTO, Motor Insurance, PAN/MSME/ABHA, or Labour/Handloom?",
+      links: [{ label: "Browse All Services", href: SERVICE_LINK }],
+    };
+  }
+
+  return {
+    text: romanUrdu
+      ? "Main sirf BABA'S CYBER CAFE ki services, required documents aur website navigation mein madad karta hoon. Aap service ka naam batayein—Revenue, SMC, RTO, Insurance, PAN/MSME/ABHA, Labour/Handloom, ya application tracking."
+      : "I can help with BABA'S CYBER CAFE services, document requirements and website navigation only. Tell me the service name—Revenue, SMC, RTO, Insurance, PAN/MSME/ABHA, Labour/Handloom, or application tracking.",
+    links: [{ label: "Browse Services", href: SERVICE_LINK }],
+  };
 }
 
 export default function CustomerChatAssistant() {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 1, role: "assistant", text: "Hi! I'm the BABA'S CYBER CAFE service assistant. I can help with services, document checklists, enquiries and tracking. Please never share passwords, PINs, bank details or OTPs here.", links: [{ label: "Browse services", href: SERVICES_LINK }, { label: "Track status", href: "/track" }] },
+    {
+      id: 1,
+      role: "assistant",
+      text: "Hello! I’m the BABA'S CYBER CAFE service assistant for Srinagar, J&K. I can help with services, document checklists and application tracking. Please do not share OTPs, passwords, PINs or bank details here.",
+    },
   ]);
-  const [showQuickActions, setShowQuickActions] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const nextId = useRef(2);
+  const [romanUrdu, setRomanUrdu] = useState(false);
+  const [nextId, setNextId] = useState(2);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const sendMessage = (raw: string) => {
+  useEffect(() => {
+    if (open) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      inputRef.current?.focus();
+    }
+  }, [messages, open]);
+
+  function sendMessage(raw: string) {
     const value = raw.trim();
     if (!value) return;
-    setDraft("");
-    setShowQuickActions(false);
-    if (containsSensitiveData(value)) {
-      setMessages((current) => [...current, { id: nextId.current++, role: "assistant", text: "⚠️ Security warning: please do not share passwords, OTPs, PINs, bank account details, card numbers or verification codes here. I do not collect or process them. If you already shared a real credential, contact your bank or the relevant provider immediately and secure the account. I have not sent your message anywhere." }]);
-      return;
-    }
-    const response = answerFor(value);
-    setMessages((current) => [...current, { id: nextId.current++, role: "customer", text: value }, { id: nextId.current++, role: "assistant", ...response }]);
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
-  };
+    const language = isRomanUrdu(value) || romanUrdu;
+    setRomanUrdu(language);
+    const sensitive = isSensitive(value);
+    const customerMessage: ChatMessage | null = sensitive
+      ? null
+      : { id: nextId, role: "customer", text: value };
+    const reply = buildReply(value, language);
+    setMessages((current) => [
+      ...current,
+      ...(customerMessage ? [customerMessage] : []),
+      { id: nextId + 1, role: "assistant", ...reply },
+    ]);
+    setNextId((current) => current + 2);
+    setInput("");
+  }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    sendMessage(draft);
-  };
+    sendMessage(input);
+  }
 
-  const suggestions = useMemo(() => QUICK_ACTIONS, []);
   return (
     <div className="customer-chat-assistant">
       {open && (
         <section className="customer-chat-panel" role="dialog" aria-modal="false" aria-label="BABA'S CYBER CAFE customer assistant">
           <header className="customer-chat-header">
-            <span className="customer-chat-avatar"><Bot size={21}/></span>
-            <span className="customer-chat-title"><b>BABA'S CYBER CAFE</b><small><i/> SERVICE ASSISTANT · SRINAGAR</small></span>
-            <button type="button" className="customer-chat-close" onClick={() => setOpen(false)} aria-label="Close chat"><X size={19}/></button>
+            <div className="customer-chat-avatar"><ShieldCheck size={21}/></div>
+            <div className="customer-chat-heading">
+              <strong>BABA'S CYBER CAFE</strong>
+              <span><i/> SERVICE ASSISTANT · SRINAGAR</span>
+            </div>
+            <button className="customer-chat-close" type="button" onClick={() => setOpen(false)} aria-label="Close assistant"><X size={19}/></button>
           </header>
-          <div className="customer-chat-safety"><ShieldCheck size={14}/> Website services only · Never share OTPs, PINs or bank details</div>
-          <div className="customer-chat-messages" ref={scrollRef} aria-live="polite">
+          <div className="customer-chat-security"><ShieldAlert size={14}/><span>Never share OTPs, passwords, PINs or bank details in chat.</span></div>
+          <div className="customer-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
             {messages.map((message) => (
-              <div className={message.role === "customer" ? "customer-chat-row is-customer" : "customer-chat-row"} key={message.id}>
+              <article className={message.role === "assistant" ? "customer-chat-message assistant" : "customer-chat-message customer"} key={message.id}>
+                {message.role === "assistant" && <span className="customer-chat-message-mark"><ShieldCheck size={13}/></span>}
                 <div className="customer-chat-bubble">
                   <p>{message.text}</p>
-                  {message.links && <div className="customer-chat-links">{message.links.map((link) => <Link key={link.href} to={link.href} onClick={() => setOpen(false)}>{link.label}<ArrowRight size={13}/></Link>)}</div>}
+                  {message.links && message.links.length > 0 && (
+                    <div className="customer-chat-links">
+                      {message.links.map((link) => (
+                        <a href={link.href} key={link.label} target={link.href.startsWith("https://babacybercafe.in/") ? "_self" : undefined}>
+                          {link.label}<ArrowUpRight size={13}/>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+              </article>
             ))}
-            {showQuickActions && <div className="customer-chat-quick">{suggestions.map((item) => <button type="button" key={item} onClick={() => sendMessage(item)}>{item}</button>)}</div>}
+            <div ref={bottomRef}/>
           </div>
+          {messages.length === 1 && (
+            <div className="customer-chat-quick-actions">
+              {QUICK_ACTIONS.map((action) => <button type="button" key={action} onClick={() => sendMessage(action)}>{action}</button>)}
+            </div>
+          )}
           <form className="customer-chat-compose" onSubmit={handleSubmit}>
-            <input aria-label="Ask about BABA'S CYBER CAFE services" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask about a service…" maxLength={500}/>
-            <button type="submit" aria-label="Send message" disabled={!draft.trim()}><Send size={17}/></button>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask about a service or documents…"
+              aria-label="Ask about BABA'S CYBER CAFE services"
+              maxLength={500}
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!input.trim()} aria-label="Send message"><Send size={17}/></button>
           </form>
-          <footer className="customer-chat-footer"><span><ShieldAlert size={12}/> No passwords, OTPs, PINs or bank details</span><a href="tel:+917006865909"><PhoneCall size={12}/> Call support</a><a href="mailto:support@babacybercafe.in"><Mail size={12}/> Email</a></footer>
+          <div className="customer-chat-footnote"><FileText size={11}/> Website service guidance only · Messages are not saved</div>
         </section>
       )}
-      <button className={open ? "customer-chat-launcher is-open" : "customer-chat-launcher"} type="button" onClick={() => setOpen((value) => !value)} aria-haspopup="dialog" aria-expanded={open}>
-        {open ? <X size={20}/> : <MessageCircle size={21}/>}<span>{open ? "Close assistant" : "Chat with us"}</span>
+      <button className={open ? "customer-chat-launcher is-open" : "customer-chat-launcher"} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Close customer assistant" : "Open customer assistant"}>
+        {open ? <X size={21}/> : <MessageCircle size={21}/>}
+        <span>{open ? "Close" : "Ask assistant"}</span>
+        {!open && <i/>}
       </button>
     </div>
   );
