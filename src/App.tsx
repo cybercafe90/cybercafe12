@@ -3566,6 +3566,19 @@ function LegalPage({ privacy = false }: { privacy?: boolean }) {
               number, email, selected service and details you provide. Do not
               submit passwords, bank details, PINs or one-time passcodes.
             </p>
+            <h2>Website security information</h2>
+            <p>
+              To protect the website and investigate suspicious activity, the
+              site may record the public IP address observed by our hosting
+              network, visit time, page path, browser and device information,
+              and a coarse country code when supplied by the network. If you
+              sign in, a system account reference may also be recorded. This
+              information is restricted to the owner and authorised
+              investigators, is used for security and abuse prevention, and is
+              not used to identify a person with certainty. Shared networks,
+              mobile carriers and VPNs can cause multiple people to appear under
+              the same IP address.
+            </p>
             <h2>How information is used</h2>
             <p>
               Information is used to respond to enquiries, provide application
