@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { callFunction, supabase } from "../lib/supabase";
 import "../payment.css";
 
@@ -84,8 +84,12 @@ function playSuccessTone() {
 }
 
 function CustomerPayment() {
-  const [trackingId, setTrackingId] = useState("");
-  const [mobile, setMobile] = useState("");
+  const location = useLocation();
+  const paymentEntry = location.state as { trackingId?: unknown; mobile?: unknown } | null;
+  const initialTrackingId = typeof paymentEntry?.trackingId === "string" ? paymentEntry.trackingId : "";
+  const initialMobile = typeof paymentEntry?.mobile === "string" ? paymentEntry.mobile : "";
+  const [trackingId, setTrackingId] = useState(initialTrackingId);
+  const [mobile, setMobile] = useState(initialMobile);
   const [record, setRecord] = useState<PaymentRecord | null>(null);
   const [utr, setUtr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -113,6 +117,24 @@ function CustomerPayment() {
     setRecord(result);
     return result;
   }, [record, trackingId, mobile]);
+
+  useEffect(() => {
+    if (!initialTrackingId || !initialMobile) return;
+    let active = true;
+    setLoading(true);
+    void callFunction<PaymentRecord>("payment-customer", {
+      action: "lookup",
+      trackingId: initialTrackingId,
+      mobile: initialMobile,
+    }).then((result) => {
+      if (active) setRecord(result);
+    }).catch((reason) => {
+      if (active) setError(reason instanceof Error ? reason.message : "We could not load the payment details.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [initialTrackingId, initialMobile]);
 
   const find = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true); setError(""); setMessage(""); setRecord(null);
@@ -147,7 +169,7 @@ function CustomerPayment() {
   return (
     <main className="payment-page">
       <div className="payment-shell">
-        <div className="payment-heading"><span className="eyebrow">BABA'S CYBER CAFE · SECURE PAYMENT</span><h1>Application payment</h1><p>Find your application to view the exact amount assigned by our team.</p></div>
+        <div className="payment-heading"><span className="eyebrow">BABA'S CYBER CAFE · SECURE PAYMENT</span><h1>Application payment</h1><p>Find your application to view the exact amount assigned by our team.</p><Link to="/track">← Back to combined tracking &amp; payment</Link></div>
         <section className="payment-panel">
           <form className="payment-lookup" onSubmit={find}>
             <label>Tracking ID<input value={trackingId} onChange={e => setTrackingId(e.target.value.toUpperCase())} placeholder="BABA-XXXXXXXXXX" pattern="BABA-[A-Z0-9]{10}" required maxLength={15}/></label>
