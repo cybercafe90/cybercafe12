@@ -46,7 +46,7 @@ export default function InvestigationPage() {
     }catch(reason){setData(null);setError(reason instanceof Error?reason.message:"Investigation data could not be loaded.");}
     finally{setLoading(false);}
   },[]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{const timer=window.setTimeout(()=>{void load();},0);return()=>window.clearTimeout(timer);},[load]);
   async function manageInvestigator(action:"grant"|"revoke",target?:Investigator){
     if(!supabase)return;setGrantBusy(true);setError("");setMessage("");
     try{
