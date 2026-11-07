@@ -1912,6 +1912,9 @@ function AdminPage() {
   const [serviceCount, setServiceCount] = useState(0);
   const [servicePageCount, setServicePageCount] = useState(1);
   const [catalogVersion, setCatalogVersion] = useState(0);
+  const [csvRows, setCsvRows] = useState<Record<string, string>[]>([]);
+  const [csvFileName, setCsvFileName] = useState("");
+  const [csvPreviewError, setCsvPreviewError] = useState("");
   const [categoryNameInput, setCategoryNameInput] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -2274,50 +2277,77 @@ function AdminPage() {
       setBusy(false);
     }
   }
-  async function importCsv(file?: File) {
-    if (!file || !supabase) return;
+  async function previewCsv(file?: File) {
+    setCsvPreviewError("");
+    setError("");
+    setNotice("");
+    setCsvRows([]);
+    setCsvFileName("");
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setCsvPreviewError("Please choose a .csv file.");
+      return;
+    }
+    if (file.size > 1_500_000) {
+      setCsvPreviewError("CSV file is too large. Maximum size is 1.5 MB.");
+      return;
+    }
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async ({ data, errors: parseErrors }) => {
+      transformHeader: (header) => header.trim().toLowerCase(),
+      complete: ({ data, errors: parseErrors, meta }) => {
         if (parseErrors.length) {
-          setError(`CSV could not be read: ${parseErrors[0].message}`);
+          setCsvPreviewError(`CSV could not be read: ${parseErrors[0].message}`);
           return;
         }
-        const valid = data.filter(
-          (row) =>
-            row.name?.trim() &&
-            adminCategories.some(
-              (item) => item.slug === row.category_slug?.trim(),
-            ),
-        );
-        if (!valid.length) {
-          setError(
-            "No valid rows. Include name and a valid category_slug column.",
-          );
+        const headers = new Set(meta.fields ?? []);
+        if (!headers.has("name") || !headers.has("category_slug")) {
+          setCsvPreviewError("CSV must include the name and category_slug columns. Download the template for the full format.");
           return;
         }
-        setBusy(true);
-        try {
-          const { data: session } = await supabase!.auth.getSession();
-          const result = await callFunction<{
-            imported: number;
-            skipped: number;
-          }>("import-services", { rows: valid }, session.session?.access_token);
-          setNotice(
-            `${result.imported} service(s) imported; ${result.skipped} row(s) skipped.`,
-          );
-          setError("");
-          setCatalogVersion((version) => version + 1);
-        } catch (reason) {
-          setError(
-            reason instanceof Error ? reason.message : "CSV import failed.",
-          );
-        } finally {
-          setBusy(false);
+        const rows = data.filter((row) => Object.values(row).some((value) => String(value ?? "").trim()));
+        if (!rows.length) {
+          setCsvPreviewError("The selected CSV has no service rows.");
+          return;
         }
+        setCsvRows(rows);
+        setCsvFileName(file.name);
       },
     });
+  }
+
+  async function submitCsvImport() {
+    if (!supabase || !csvRows.length) return;
+    const valid = csvRows.filter(
+      (row) =>
+        row.name?.trim() &&
+        adminCategories.some((item) => item.slug === row.category_slug?.trim()),
+    );
+    if (!valid.length) {
+      setCsvPreviewError("No valid rows. Check service names and category_slug values against the active categories.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const result = await callFunction<{
+        imported: number;
+        skipped: number;
+      }>("import-services", { rows: valid }, session.session?.access_token);
+      setNotice(`${result.imported} service(s) imported or updated; ${result.skipped + (csvRows.length - valid.length)} row(s) skipped. Featured flags were applied from the CSV.`);
+      setCsvRows([]);
+      setCsvFileName("");
+      setCsvPreviewError("");
+      setCatalogVersion((version) => version + 1);
+      window.dispatchEvent(new Event("catalog-updated"));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "CSV import failed.");
+    } finally {
+      setBusy(false);
+    }
   }
   async function addCategory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2919,20 +2949,49 @@ function AdminPage() {
                   {busy ? "Saving service…" : "Add service"} <ArrowRight size={15} />
                 </button>
               </form>
-              <label className="csv-drop">
-                <FileText size={24} />
-                <b>Import a CSV catalogue</b>
-                <small>
-                  Upload rows with name and category_slug. The server validates
-                  imports.
-                </small>
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={(event) => void importCsv(event.target.files?.[0])}
-                  disabled={busy}
-                />
-              </label>
+              <div className="csv-import-panel">
+                <label className="csv-drop">
+                  <FileText size={24} />
+                  <b>Upload a CSV catalogue</b>
+                  <small>Choose a CSV, review the preview, then press Submit to publish the changes.</small>
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      void previewCsv(file);
+                      event.currentTarget.value = "";
+                    }}
+                    disabled={busy}
+                  />
+                </label>
+                {csvPreviewError && <p className="csv-feedback csv-error" role="alert">{csvPreviewError}</p>}
+                {csvRows.length > 0 && (
+                  <div className="csv-preview">
+                    <div className="csv-preview-head">
+                      <div><b>{csvFileName}</b><small>{csvRows.length} rows ready to review</small></div>
+                      <span className="csv-ready">Ready to submit</span>
+                    </div>
+                    <div className="csv-preview-stats">
+                      <span>{csvRows.filter((row) => row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1").length} featured</span>
+                      <span>{csvRows.filter((row) => row.is_active?.trim().toLowerCase() !== "false" && row.is_active?.trim() !== "0").length} active</span>
+                    </div>
+                    <div className="csv-preview-list">
+                      {csvRows.slice(0, 5).map((row, index) => (
+                        <div className="csv-preview-row" key={`${row.category_slug}-${row.name}-${index}`}>
+                          <span><b>{row.name || "Unnamed service"}</b><small>{row.category_slug || "No category"}</small></span>
+                          <span className={row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "csv-featured-on" : "csv-featured-off"}>{row.is_featured?.trim().toLowerCase() === "true" || row.is_featured?.trim() === "1" ? "★ Featured" : "Not featured"}</span>
+                        </div>
+                      ))}
+                      {csvRows.length > 5 && <small>and {csvRows.length - 5} more rows…</small>}
+                    </div>
+                    <button type="button" className="button button-dark csv-submit" onClick={() => void submitCsvImport()} disabled={busy}>
+                      {busy ? "Updating catalogue…" : `Submit and update ${csvRows.length} rows`} <ArrowRight size={15} />
+                    </button>
+                    <button type="button" className="text-button csv-cancel" onClick={() => { setCsvRows([]); setCsvFileName(""); setCsvPreviewError(""); }} disabled={busy}>Remove selected CSV</button>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
           <section className="admin-section">
@@ -2975,14 +3034,15 @@ function AdminPage() {
                         {categoryLabel(service.category_slug, adminCategories)}
                       </td>
                       <td>
-                        <input
-                          aria-label={`Feature ${service.name}`}
-                          type="checkbox"
-                          checked={service.is_featured}
-                          onChange={() =>
-                            void setServiceField(service, "is_featured")
-                          }
-                        />
+                        <label className={`admin-feature-toggle ${service.is_featured ? "is-featured" : "is-standard"}`}>
+                          <input
+                            aria-label={`Feature ${service.name}`}
+                            type="checkbox"
+                            checked={service.is_featured}
+                            onChange={() => void setServiceField(service, "is_featured")}
+                          />
+                          <span>{service.is_featured ? "★ Featured" : "☆ Standard"}</span>
+                        </label>
                       </td>
                       <td>
                         <input
