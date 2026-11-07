@@ -41,7 +41,7 @@ const SENSITIVE_PATTERNS = [
 ];
 
 function isSensitive(text: string) {
-  return SENSITIVE_PATTERNS.some((pattern) => pattern.test(text));
+  return /^\\s*\\d{4,8}\\s*$/.test(text) || SENSITIVE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function isRomanUrdu(text: string) {
@@ -210,7 +210,7 @@ export default function CustomerChatAssistant() {
       ...(customerMessage ? [customerMessage] : []),
       { id: nextId + 1, role: "assistant", ...reply },
     ]);
-    setNextId((current) => current + (customerMessage ? 2 : 1));
+    setNextId((current) => current + 2);
     setInput("");
   }
 
