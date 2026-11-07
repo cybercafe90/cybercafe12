@@ -11,7 +11,7 @@ test("public navigation and service search work with either backend mode", async
   await expect(page).toHaveTitle(/BABA'S CYBER CAFE/);
   const menuToggle = page.getByRole("button", { name: "Open menu" });
   if (await menuToggle.isVisible()) await menuToggle.click();
-  await page.getByRole("link", { name: "Services", exact: true }).click();
+  await page.getByRole("link", { name: "Services Hub", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(
     page.getByRole("heading", { name: "Find the right assistance." }),
