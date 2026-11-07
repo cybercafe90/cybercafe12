@@ -84,6 +84,9 @@ verify_jwt = true
 [functions.bank-sms-webhook]
 verify_jwt = false
 
+[functions.admin-delete-application]
+verify_jwt = true
+
 
 [auth.email.template.confirmation]
 subject = "Your BABA'S CYBER CAFE verification code"
