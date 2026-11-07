@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
-const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in", "https://security-audit-working-2026.babacybercafe.pages.dev"];
+const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in"];
 function cors(req: Request): HeadersInit {
   const origin = req.headers.get("origin") ?? "";
   return { "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0], "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Max-Age": "86400", "Vary": "Origin" };
