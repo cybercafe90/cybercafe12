@@ -91,13 +91,14 @@ function CustomerPayment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(Date.now());
+  const [clock, setClock] = useState(0);
   const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
   const remainingMs = expiresAt - clock;
   const qrExpired = Boolean(expiresAt && remainingMs <= 0);
   const uri = useMemo(() => record && Number(record.payment.amount) > 0 && record.payment.id ? makeUpiUri(Number(record.payment.amount), record.application.tracking_id, record.payment.id) : "", [record]);
   useQrCode(uri, Boolean(uri && record?.payment.status === "pending" && !qrExpired));
   useEffect(() => {
+    setClock(Date.now());
     if (!record?.payment.expires_at || record.payment.status !== "pending") return;
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
