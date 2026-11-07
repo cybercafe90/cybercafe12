@@ -39,7 +39,6 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  UploadCloud,
   Ticket,
   UsersRound,
   X,
@@ -61,6 +60,7 @@ import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
+import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -263,7 +263,7 @@ function Footer() {
           <Link to="/" className="brand">
             <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
             <span className="brand-name">
-              BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
+              BABA'S <small>CYBER CAFE</small>
             </span>
           </Link>
           <p>Thoughtful digital assistance, rooted in Srinagar.</p>
@@ -376,8 +376,6 @@ function HomePage() {
   const [trackingRecord, setTrackingRecord] = useState<TrackedRecord | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
   const [trackingError, setTrackingError] = useState("");
-  const [localFiles, setLocalFiles] = useState<{id:string;name:string;size:number;valid:boolean;message:string;preview?:string}[]>([]);
-  const [dragging, setDragging] = useState(false);
 
   const departments = [
     { slug: "revenue", title: "Revenue Department", detail: "Land records, Jamabandi, mutations" },
@@ -387,25 +385,6 @@ function HomePage() {
     { slug: "handloom", title: "Handloom & Handicrafts", detail: "Artisan identification and handloom support" },
     { slug: "central", title: "Central & National Services", detail: "PAN, passport and health-scheme assistance" },
   ];
-
-  const inspectFiles = (incoming: FileList | File[]) => {
-    Array.from(incoming).slice(0, 8).forEach((file) => {
-      const id = `${file.name}-${file.lastModified}-${file.size}`;
-      const allowed = ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type);
-      const underLimit = file.size <= 10 * 1024 * 1024;
-      const valid = allowed && underLimit;
-      const item = {
-        id, name: file.name, size: file.size, valid,
-        message: !allowed ? "Use PDF, JPG, PNG or WebP." : !underLimit ? "File exceeds the 10 MB limit." : "Format and size check passed.",
-      };
-      setLocalFiles((current) => [...current.filter((entry) => entry.id !== id), item]);
-      if (valid && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = () => setLocalFiles((current) => current.map((entry) => entry.id === id ? { ...entry, preview: String(reader.result ?? "") } : entry));
-        reader.readAsDataURL(file);
-      }
-    });
-  };
 
   async function lookupApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -487,23 +466,13 @@ function HomePage() {
           <div className="cyber-pipeline">
             {["Reference Received","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
           </div>
-          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
+          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${statusLabels.find((label) => label === trackingRecord.status) ?? trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
         </div>
       </section>
 
-      <section className="cyber-departments">
+      <section className="cyber-departments" id="services">
         <div className="cyber-section-heading"><div><span className="cyber-eyebrow">SERVICE HUB · SIX KEY DESKS</span><h2>Public services, <em>made easier.</em></h2><p>Explore common departments and find the assistance relevant to your request.</p></div><Link to="/services" className="cyber-text-link">View all services <ArrowUpRight size={15}/></Link></div>
         <div className="cyber-department-grid">{departments.map((department,index)=><Link to={`/services/${department.slug}`} className="cyber-department-card" key={department.slug}><span className="cyber-dept-index">0{index+1}</span><CategoryIcon slug={department.slug}/><h3>{department.title}</h3><p>{department.detail}</p><small>Processing time varies by department and authority</small><ArrowUpRight className="cyber-dept-arrow" size={17}/></Link>)}</div>
-      </section>
-
-      <section className="cyber-document-section">
-        <div className="cyber-document-copy"><span className="cyber-eyebrow">SMART DOCUMENT PRE-CHECK</span><h2>Check your files <em>before you submit.</em></h2><p>Choose up to eight documents for a local format and size check. This preview runs in your browser only; files selected here are not uploaded.</p><div className="cyber-security-note"><ShieldCheck size={18}/><span><b>Private by design</b><small>Submit documents only through the relevant application form. Do not upload passwords, OTPs or UPI PINs.</small></span></div><Link to="/apply" className="cyber-button cyber-button-primary">Continue to application <ArrowRight size={16}/></Link></div>
-        <div className={dragging ? "cyber-dropzone is-dragging" : "cyber-dropzone"} onDragOver={(event)=>{event.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={(event)=>{event.preventDefault();setDragging(false);inspectFiles(event.dataTransfer.files);}}>
-          <input id="cyber-document-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" multiple onChange={(event)=>inspectFiles(event.target.files ?? [])}/>
-          <label htmlFor="cyber-document-input"><span className="cyber-upload-icon"><UploadCloud size={25}/></span><b>Drop files here or browse</b><small>PDF, JPG, PNG or WebP · Maximum 10 MB per file</small></label>
-          {localFiles.length>0 && <div className="cyber-file-list">{localFiles.map((file)=><div className="cyber-file-item" key={file.id}>{file.preview ? <img src={file.preview} alt={`Preview of ${file.name}`}/> : <FileCheck2 size={20}/>}<span><b>{file.name}</b><small>{(file.size/1024/1024).toFixed(2)} MB · {file.message}</small></span><button type="button" aria-label={`Remove ${file.name}`} onClick={()=>setLocalFiles((current)=>current.filter((item)=>item.id!==file.id))}><X size={15}/></button></div>)}</div>}
-          <p className="cyber-drop-note">Local pre-check only · No document upload occurs in this panel</p>
-        </div>
       </section>
 
       <section className="cyber-concierge">
@@ -3650,88 +3619,6 @@ function SoundControls() {
   );
 }
 
-function AskUsQuestionWidget() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [question, setQuestion] = useState("");
-  const [consent, setConsent] = useState(false);
-
-  const submitQuestion = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const message = [
-      "Hello BABA'S CYBER CAFE, I have a question.",
-      "",
-      `Name: ${name.trim()}`,
-      `Contact: ${contact.trim()}`,
-      `Question: ${question.trim()}`,
-      "",
-      "Sent from the website Ask Us a Question window.",
-    ].join("\n");
-    window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-    setOpen(false);
-    setName("");
-    setContact("");
-    setQuestion("");
-    setConsent(false);
-  };
-
-  return (
-    <>
-      <button
-        className="ask-question-trigger"
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <MessageCircle size={19} />
-        <span>Ask us a question</span>
-      </button>
-      {open && (
-        <div className="ask-question-backdrop" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setOpen(false);
-        }}>
-          <section className="ask-question-window" role="dialog" aria-modal="true" aria-labelledby="ask-question-title">
-            <div className="ask-question-heading">
-              <div>
-                <span className="eyebrow">BABA'S CYBER CAFE · SRINAGAR</span>
-                <h2 id="ask-question-title">How can we help?</h2>
-                <p>Send us your question. Our team will respond on WhatsApp.</p>
-              </div>
-              <button className="icon-button" type="button" onClick={() => setOpen(false)} aria-label="Close question window">
-                <X size={19} />
-              </button>
-            </div>
-            <form className="ask-question-form" onSubmit={submitQuestion}>
-              <label className="field">
-                <span>Your name</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" maxLength={80} required placeholder="Enter your name" />
-              </label>
-              <label className="field">
-                <span>Mobile number or WhatsApp</span>
-                <input value={contact} onChange={(event) => setContact(event.target.value)} autoComplete="tel" inputMode="tel" maxLength={30} required placeholder="Your contact number" />
-              </label>
-              <label className="field">
-                <span>Your question</span>
-                <textarea value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={1200} rows={4} required placeholder="Tell us what you would like to know…" />
-              </label>
-              <label className="ask-question-consent">
-                <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} required />
-                <span>I agree to share these details with BABA'S CYBER CAFE so they can respond to my question.</span>
-              </label>
-              <button className="button button-dark ask-question-submit" type="submit">
-                Send question on WhatsApp <ArrowUpRight size={16} />
-              </button>
-              <small className="ask-question-privacy">Your details are placed in a WhatsApp message; they are not saved by this window.</small>
-            </form>
-          </section>
-        </div>
-      )}
-    </>
-  );
-}
-
 function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
@@ -3780,14 +3667,17 @@ function RoutedApp() {
         ? "Secure application services for BABA'S CYBER CAFE customers."
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
+  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
+  const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
-    <>
+    <div className={isPortalRoute ? "portal-theme" : undefined}>
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
+        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
@@ -3805,8 +3695,8 @@ function RoutedApp() {
       </Routes>
       <Footer />
       <SoundControls />
-      <AskUsQuestionWidget />
-    </>
+      <CustomerChatAssistant />
+    </div>
   );
 }
 
