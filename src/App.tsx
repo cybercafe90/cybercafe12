@@ -2585,6 +2585,7 @@ function AdminPage() {
             <div className="admin-portal-shortcuts">
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
             </div>
           )}
         </div>
