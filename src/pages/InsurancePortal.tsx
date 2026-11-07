@@ -167,6 +167,7 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
         ...quoteDraft,
         premium: Number(quoteDraft.premium),
         idv: quoteDraft.idv,
+        validUntil: quoteDraft.validUntil ? new Date(quoteDraft.validUntil).toISOString() : "",
         addOns: quoteDraft.addOns.split("\n").map((item) => item.trim()).filter(Boolean),
         exclusions: quoteDraft.exclusions.split("\n").map((item) => item.trim()).filter(Boolean),
       }, adminToken);
