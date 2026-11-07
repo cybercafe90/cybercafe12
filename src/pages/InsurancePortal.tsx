@@ -142,7 +142,7 @@ export function AdminInsurancePortal() {
     } catch(reason) { setError(reason instanceof Error ? reason.message : "Could not load insurance requests."); }
     finally { setLoading(false); }
   },[search,filter]);
-  useEffect(()=>{void load()},[load]);
+  useEffect(()=>{const timer=window.setTimeout(()=>{void load()},0);return ()=>window.clearTimeout(timer)},[load]);
   async function changeStatus(id:string,status:string) {
     try {
       const session=await supabase?.auth.getSession(), token=session?.data.session?.access_token;
