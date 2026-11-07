@@ -27,8 +27,8 @@ otp_length = 8
 secure_password_change = true
 
 [auth.mfa.totp]
-enroll_enabled = true
-verify_enabled = true
+enroll_enabled = false
+verify_enabled = false
 
 [storage.vector]
 enabled = false
