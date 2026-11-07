@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Activity, AlertTriangle, RefreshCw, ShieldCheck, Ban, Globe2, Users } from "lucide-react";
+import { Activity, AlertTriangle, RefreshCw, ShieldCheck, Ban, Globe2 } from "lucide-react";
 import { callFunction, isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type SecurityEvent = {
