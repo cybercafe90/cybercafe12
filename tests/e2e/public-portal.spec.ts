@@ -167,9 +167,12 @@ test("investigation portal denies unauthenticated visitors", async ({ page }) =>
   await expect(
     page.getByRole("heading", { name: "Investigation portal" }),
   ).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText(
-    "Sign in with an approved owner or investigator account to continue.",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Restricted access" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Go to secure sign-in" }),
+  ).toHaveAttribute("href", "/admin/login");
   await expect(
     page.getByRole("heading", { name: "Security events" }),
   ).toHaveCount(0);
