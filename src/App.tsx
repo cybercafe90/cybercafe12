@@ -60,6 +60,7 @@ import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
+import { InsurancePortal, AdminInsurancePortal } from "./pages/InsurancePortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import "./App.css";
 
@@ -242,7 +243,8 @@ function Header() {
           {open ? <X /> : <Menu />}
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
-          <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/services" onClick={close}>Services</NavLink>
+          <NavLink to="/insurance" onClick={close}>Motor Insurance</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
           <NavLink to="/about" onClick={close}>About</NavLink>
@@ -272,6 +274,7 @@ function Footer() {
           <h3>Explore</h3>
           <Link to="/services">All services</Link>
           <Link to="/services/insurance">Insurance services</Link>
+          <Link to="/insurance">Motor insurance portal</Link>
           <Link to="/about">About us</Link>
           <Link to="/contact">Contact</Link>
         </div>
@@ -3645,6 +3648,8 @@ function RoutedApp() {
       "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
+      "/insurance": "Motor Insurance Compare & Buy | BABA'S CYBER CAFE",
+      "/admin/insurance": "Insurance Enquiries | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3667,7 +3672,7 @@ function RoutedApp() {
         ? "Secure application services for BABA'S CYBER CAFE customers."
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
-  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
+  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay", "/insurance"];
   const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
     <div className={isPortalRoute ? "portal-theme" : undefined}>
@@ -3677,7 +3682,7 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
-        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
+        <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
@@ -3685,6 +3690,7 @@ function RoutedApp() {
         <Route path="/privacy" element={<LegalPage privacy />} />
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/pay" element={<PaymentPortal />} />
+        <Route path="/admin/insurance" element={<AdminInsurancePortal />} />
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
