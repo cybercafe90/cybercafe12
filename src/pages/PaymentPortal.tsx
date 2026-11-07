@@ -186,14 +186,14 @@ function CustomerPayment() {
                   </div>}
                     </>}
                 )}
-                {record.payment.status === "pending" && !qrExpired && (
+                {record.payment.status === "pending" && (
                   <form className="payment-utr-form" onSubmit={submitConfirmation}>
                     <label>Enter 12-digit UPI reference / UTR number<input value={utr} onChange={e => setUtr(e.target.value.replace(/\D/g, "").slice(0,12))} inputMode="numeric" pattern="[0-9]{12}" minLength={12} maxLength={12} placeholder="12-digit UTR" required/></label>
                     <button className="button button-dark" disabled={loading || utr.length !== 12}>{loading ? "Submitting…" : "Submit confirmation"}</button>
                     <small>Submitting a reference does not itself confirm payment. Your payment status changes to Paid only after verification.</small>
                   </form>
                 )}
-                <p className="payment-poll-note">Payment status refreshes automatically every 4 seconds while this page is open.</p>
+                <p className="payment-poll-note">Payment status refreshes automatically every 3 seconds while this page is open.</p>
               </div>
             )}
           </section>
