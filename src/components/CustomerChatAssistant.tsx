@@ -60,10 +60,9 @@ function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" |
   }
 
   const outsideScope = /\b(weather|forecast|politics|election|news|cricket|football|movie|song|joke|general knowledge|capital of|stock market|crypto|coding|programming|write code|translate|homework)\b/i.test(q);
-  const mentionsService =
-    /\b(domicile|jamabandi|girdawari|land record|land records|mutation|income certificate|category certificate|revenue|birth|death|trade licen[cs]e|smc|municipal|driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto|insurance|third.party|comprehensive|motor policy|bike|car|pan|udyam|msme|abha|passport|health id|bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft|application|tracking|track|reference id|status|service|documents?)\b/i.test(q);
 
-  if (outsideScope && !mentionsService) {
+
+  if (outsideScope) {
     return {
       text: "I only assist with BABA'S CYBER CAFE services on babacybercafe.in.",
     };
