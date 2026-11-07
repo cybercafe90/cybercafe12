@@ -57,7 +57,7 @@ Deno.serve(async (request) => {
     !['petrol','diesel','cng','electric','other'].includes(fuelType)||
     !['third_party','comprehensive','standalone_od','renewal'].includes(policyType)||
     (policyExpiry&&!/^\d{4}-\d{2}-\d{2}$/.test(policyExpiry))) return response(request,{error:'Please check the required vehicle, contact and consent details.'},400)
-   let saved:{tracking_id:string}|null=null
+   let saved:{id:string;email:string;tracking_id:string}|null=null
    for(let attempt=0;attempt<3&&!saved;attempt++){
     const {data,error}=await admin.from('insurance_quote_requests').insert({
      tracking_id:createTrackingReference(),customer_name:customerName,mobile,email,vehicle_type:vehicleType,
