@@ -91,3 +91,5 @@
 }
 
 .payment-countdown { display: block; margin-top: 10px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
+
+.payment-countdown { display:block; margin-top:10px; font-variant-numeric:tabular-nums; color:var(--muted); font-size:12px; }

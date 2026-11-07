@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
@@ -30,11 +31,15 @@ import {
   HeartHandshake,
   Instagram,
   Landmark,
+  LockKeyhole,
+  MapPin,
   Menu,
   MessageCircle,
+  PhoneCall,
   Search,
   ShieldCheck,
   Sparkles,
+  UploadCloud,
   Ticket,
   UsersRound,
   X,
@@ -223,9 +228,9 @@ function Header() {
           onClick={close}
           aria-label="Baba's Cyber Cafe home"
         >
-          <span className="brand-mark">B</span>
+          <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
           <span className="brand-name">
-            BABA'S <small>CYBER CAFE</small>
+            BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
           </span>
         </Link>
         <button
@@ -236,34 +241,13 @@ function Header() {
         >
           {open ? <X /> : <Menu />}
         </button>
-        <nav
-          className={open ? "main-nav is-open" : "main-nav"}
-          aria-label="Main navigation"
-        >
-          <NavLink to="/services" onClick={close}>
-            Services
-          </NavLink>
-          <NavLink to="/about" onClick={close}>
-            About
-          </NavLink>
-          <NavLink to="/track" onClick={close}>
-            Track application
-          </NavLink>
-          <NavLink to="/pay" onClick={close}>
-            Make a payment
-          </NavLink>
-          <NavLink to="/grievance" onClick={close}>
-            Grievance portal
-          </NavLink>
-          <NavLink to="/investigation" onClick={close}>
-            Investigation
-          </NavLink>
-          <NavLink to="/contact" onClick={close}>
-            Contact
-          </NavLink>
-          <Link className="nav-button" to="/apply" onClick={close}>
-            Start an enquiry <ArrowUpRight size={15} />
-          </Link>
+        <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
+          <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
+          <NavLink to="/track" onClick={close}>Track Reference</NavLink>
+          <NavLink to="/about" onClick={close}>About</NavLink>
+          <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
+          <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
         </nav>
       </header>
     </>
@@ -277,9 +261,9 @@ function Footer() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link to="/" className="brand">
-            <span className="brand-mark">B</span>
+            <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
             <span className="brand-name">
-              BABA'S <small>CYBER CAFE</small>
+              BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
             </span>
           </Link>
           <p>Thoughtful digital assistance, rooted in Srinagar.</p>
@@ -384,185 +368,153 @@ function PageIntro({
 
 function HomePage() {
   const settings = useSiteSettings();
-  const [headlineLead, headlineFinish = ""] =
-    settings.homepage.headline.split("|");
+  const navigate = useNavigate();
+  const [quickReference, setQuickReference] = useState("");
+  const [selectedService, setSelectedService] = useState("revenue");
+  const [trackingId, setTrackingId] = useState("");
+  const [trackingMobile, setTrackingMobile] = useState("");
+  const [trackingRecord, setTrackingRecord] = useState<TrackedRecord | null>(null);
+  const [trackingBusy, setTrackingBusy] = useState(false);
+  const [trackingError, setTrackingError] = useState("");
+  const [localFiles, setLocalFiles] = useState<{id:string;name:string;size:number;valid:boolean;message:string;preview?:string}[]>([]);
+  const [dragging, setDragging] = useState(false);
+
+  const departments = [
+    { slug: "revenue", title: "Revenue Department", detail: "Land records, Jamabandi, mutations" },
+    { slug: "smc", title: "Srinagar Municipal Corporation", detail: "Trade licences, birth and death assistance" },
+    { slug: "rto", title: "RTO & Transport", detail: "Driving licence, vehicle transfer, permits" },
+    { slug: "labour", title: "Labour & Employment", detail: "e-Shram and eligible artisan schemes" },
+    { slug: "handloom", title: "Handloom & Handicrafts", detail: "Artisan identification and handloom support" },
+    { slug: "central", title: "Central & National Services", detail: "PAN, passport and health-scheme assistance" },
+  ];
+
+  const inspectFiles = (incoming: FileList | File[]) => {
+    Array.from(incoming).slice(0, 8).forEach((file) => {
+      const id = `${file.name}-${file.lastModified}-${file.size}`;
+      const allowed = ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type);
+      const underLimit = file.size <= 10 * 1024 * 1024;
+      const valid = allowed && underLimit;
+      const item = {
+        id, name: file.name, size: file.size, valid,
+        message: !allowed ? "Use PDF, JPG, PNG or WebP." : !underLimit ? "File exceeds the 10 MB limit." : "Format and size check passed.",
+      };
+      setLocalFiles((current) => [...current.filter((entry) => entry.id !== id), item]);
+      if (valid && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => setLocalFiles((current) => current.map((entry) => entry.id === id ? { ...entry, preview: String(reader.result ?? "") } : entry));
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  async function lookupApplication(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setTrackingBusy(true);
+    setTrackingError("");
+    setTrackingRecord(null);
+    try {
+      setTrackingRecord(await callFunction<TrackedRecord>("track-application", { trackingId, mobile: trackingMobile }));
+    } catch (reason) {
+      setTrackingError(reason instanceof Error ? reason.message : "We could not verify those details. Please check and try again.");
+    } finally {
+      setTrackingBusy(false);
+    }
+  }
+
+  const currentStage = !trackingRecord ? -1 :
+    trackingRecord.status === "Completed" || trackingRecord.status === "Rejected" ? 3 :
+    trackingRecord.status === "Under Review" ? 2 :
+    trackingRecord.status === "Documents Required" ? 1 : 0;
+
   return (
-    <>
-      <main>
-        {settings.announcement.enabled && settings.announcement.text && (
-          <div className="site-announcement">
-            <BadgeCheck size={15} />
-            {settings.announcement.text}
+    <main className="cyber-home">
+      {settings.announcement.enabled && settings.announcement.text && (
+        <div className="cyber-announcement"><BadgeCheck size={15}/>{settings.announcement.text}</div>
+      )}
+      <section className="cyber-hero">
+        <div className="cyber-hero-grid"/>
+        <div className="cyber-hero-copy">
+          <span className="cyber-eyebrow"><i/> DIGITAL CIVIC INFRASTRUCTURE · SECURE DOCUMENT ASSISTANCE</span>
+          <h1>Smart Civic Assistance.<br/><em>Digitalized &amp; Secure.</em></h1>
+          <p>Fast, friendly documentation and application assistance for Srinagar Municipal Corporation, Revenue, RTO, welfare schemes and more.</p>
+          <div className="cyber-hero-actions">
+            <Link className="cyber-button cyber-button-primary" to="/services">Explore Services <ArrowRight size={16}/></Link>
+            <Link className="cyber-button cyber-button-ghost" to="/apply">Start an Application <ArrowUpRight size={16}/></Link>
           </div>
-        )}
-        <section className="home-hero">
-          <div className="hero-copy">
-            <span className="eyebrow">
-              <span className="eyebrow-dot" />
-              {settings.homepage.eyebrow}
-            </span>
-            <h1>
-              {headlineLead}
-              <br />
-              <em>{headlineFinish}</em>
-            </h1>
-            <p>{settings.homepage.description}</p>
-            <div className="hero-actions">
-              <Link className="button button-gold" to="/services">
-                Explore services <ArrowRight size={16} />
-              </Link>
-              <Link className="button button-outline" to="/track">
-                Track an application <ArrowUpRight size={15} />
-              </Link>
-            </div>
-            <div className="hero-caption">
-              <span className="caption-rule" />
-              Independent assistance. Clear next steps.
-            </div>
+          <div className="cyber-trust-line"><ShieldCheck size={15}/> Independent assistance · Clear updates · Customer-first support</div>
+        </div>
+        <div className="cyber-hero-visual" aria-label="Animated cyber shield emblem">
+          <div className="cyber-orbit cyber-orbit-a"/><div className="cyber-orbit cyber-orbit-b"/>
+          <div className="cyber-shield-card">
+            <div className="cyber-card-top"><span><i/> SYSTEM ONLINE</span><span>BBC / SRN</span></div>
+            <div className="cyber-shield-emblem"><span className="shield-aura"/><ShieldCheck size={112} strokeWidth={1.1}/><LockKeyhole className="shield-lock" size={30}/></div>
+            <div className="cyber-card-bottom"><span>SECURE SERVICE DESK</span><b>SRINAGAR · J&amp;K</b></div>
+            <div className="cyber-circuit circuit-one"/><div className="cyber-circuit circuit-two"/>
           </div>
-          <div className="hero-visual">
-            <img
-              src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=85"
-              alt="A bright workspace with a computer ready for digital services"
-            />
-            <div className="hero-stamp">
-              <span>
-                <ShieldCheck size={19} />
-              </span>
-              <small>
-                PERSONAL
-                <br />
-                SERVICE
-              </small>
-            </div>
-            <div className="hero-image-caption">
-              <span>01 / DIGITAL ASSISTANCE</span>
-              <span>SRINAGAR, J&amp;K</span>
-            </div>
-          </div>
-          <div className="hero-index">
-            01 <span /> 04
-          </div>
-        </section>
+          <span className="cyber-float-tag"><Activity size={13}/> DIGITAL SERVICE NETWORK</span>
+          <span className="cyber-float-code">01 / 06 &nbsp; · &nbsp; VERIFIED WORKFLOW</span>
+        </div>
+        <div className="cyber-hero-bottom"><span>01 — LOCAL SERVICE DESK</span><span>ASSISTANCE · DOCUMENTATION · TRACKING</span></div>
+      </section>
 
-        <section className="quick-strip">
-          <div>
-            <span className="strip-number">01</span>
-            <span>
-              <b>Browse assistance</b>
-              <small>Explore services by department</small>
-            </span>
-            <ArrowDown size={16} />
+      <section className="cyber-command-wrap">
+        <div className="cyber-command-intro"><span className="cyber-eyebrow">QUICK COMMAND</span><h2>Where would you like to go?</h2></div>
+        <div className="cyber-command-grid">
+          <form className="cyber-command-card" onSubmit={(event) => { event.preventDefault(); navigate(`/track?trackingId=${encodeURIComponent(quickReference.trim())}`); }}>
+            <span className="cyber-command-icon"><Search size={18}/></span>
+            <label htmlFor="quick-reference">Track by reference ID</label>
+            <div className="cyber-command-input"><input id="quick-reference" value={quickReference} onChange={(event)=>setQuickReference(event.target.value.toUpperCase())} placeholder="Enter tracking reference" maxLength={32} required/><button aria-label="Continue to tracking"><ArrowRight size={17}/></button></div>
+          </form>
+          <div className="cyber-command-card">
+            <span className="cyber-command-icon purple"><Zap size={18}/></span>
+            <label htmlFor="quick-service">Find a service</label>
+            <div className="cyber-command-input"><select id="quick-service" value={selectedService} onChange={(event)=>setSelectedService(event.target.value)}>{categories.filter((item)=>item.slug!=="all").map((item)=><option value={item.slug} key={item.slug}>{item.name}</option>)}</select><button type="button" aria-label="Open selected service" onClick={()=>navigate(`/services/${selectedService}`)}><ArrowRight size={17}/></button></div>
           </div>
-          <div>
-            <span className="strip-number">02</span>
-            <span>
-              <b>Send an enquiry</b>
-              <small>Share what you need help with</small>
-            </span>
-            <ArrowDown size={16} />
-          </div>
-          <div>
-            <span className="strip-number">03</span>
-            <span>
-              <b>Follow your request</b>
-              <small>Track updates with your reference</small>
-            </span>
-            <ArrowDown size={16} />
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="insurance-feature">
-          <div className="insurance-art">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
-            <div className="insurance-symbol">
-              <ShieldCheck size={62} strokeWidth={1.2} />
-            </div>
-            <span className="art-caption">COVERAGE · CARE · CLARITY</span>
+      <section className="cyber-vault-section" id="vault">
+        <div className="cyber-section-heading"><div><span className="cyber-eyebrow">LIVE DIGITAL VAULT</span><h2>Your application. <em>One secure reference.</em></h2><p>Check the latest customer-visible update using your tracking ID and registered mobile number.</p></div><span className="cyber-vault-mark"><ShieldCheck size={28}/><small>PRIVATE LOOKUP</small></span></div>
+        <div className="cyber-vault-card">
+          <form className="cyber-vault-form" onSubmit={lookupApplication}>
+            <label>APPLICATION REFERENCE<input value={trackingId} onChange={(event)=>setTrackingId(event.target.value.toUpperCase())} placeholder="BABA-XXXXXXXXXX" required minLength={8} maxLength={30}/></label>
+            <label>REGISTERED MOBILE<input type="tel" value={trackingMobile} onChange={(event)=>setTrackingMobile(event.target.value)} placeholder="+91 mobile number" required pattern="[+0-9 ()-]{8,18}"/></label>
+            <button className="cyber-button cyber-button-primary" disabled={trackingBusy || !isSupabaseConfigured}>{trackingBusy ? "Verifying…" : "Access tracking"} <ArrowRight size={16}/></button>
+          </form>
+          {!isSupabaseConfigured && <p className="cyber-inline-note">Online tracking is temporarily unavailable. Please contact our Srinagar desk.</p>}
+          {trackingError && <p className="cyber-error" role="alert">{trackingError}</p>}
+          {trackingRecord && <div className="cyber-live-result" aria-live="polite"><div><span className="cyber-eyebrow">REFERENCE VERIFIED</span><h3>{trackingRecord.service}</h3><p>{trackingRecord.trackingId} · Submitted {new Date(trackingRecord.submittedAt).toLocaleDateString("en-IN")}</p></div><StatusTag status={trackingRecord.status}/></div>}
+          <div className="cyber-pipeline">
+            {["Verified & Encrypted","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
           </div>
-          <div className="insurance-copy">
-            <span className="eyebrow">INSURANCE ASSISTANCE</span>
-            <h2>
-              Good cover starts
-              <br />
-              with a <em>clear conversation.</em>
-            </h2>
-            <p>
-              Explore insurance enquiry and documentation assistance. We can
-              help you navigate a question; policy terms and decisions always
-              remain with the insurer.
-            </p>
-            <div className="insurance-links">
-              <Link to="/services/insurance">
-                Explore insurance services <ArrowRight size={16} />
-              </Link>
-              <Link to="/apply?category=insurance">
-                Ask about a policy <ArrowUpRight size={15} />
-              </Link>
-            </div>
-            <span className="feature-footnote">
-              <BadgeCheck size={15} /> No public prices. No insurer affiliation
-              implied.
-            </span>
-          </div>
-          <span className="feature-vertical">BABA'S · SERVICE DESK</span>
-        </section>
+          <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${statusLabels[trackingRecord.status] ?? trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
+        </div>
+      </section>
 
-        <section className="category-section">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">HOW CAN WE HELP?</span>
-              <h2>Assistance, by department.</h2>
-            </div>
-            <Link className="text-link" to="/services">
-              View all services <ArrowRight size={16} />
-            </Link>
-          </div>
-          <div className="category-grid">
-            {categories.slice(1, 7).map((category, index) => (
-              <Link
-                className="category-card"
-                to={`/services/${category.slug}`}
-                key={category.slug}
-              >
-                <span className="category-number">0{index + 1}</span>
-                <CategoryIcon slug={category.slug} />
-                <h3>{category.name}</h3>
-                <p>{category.description}</p>
-                <ArrowUpRight size={16} className="card-arrow" />
-              </Link>
-            ))}
-          </div>
-        </section>
+      <section className="cyber-departments">
+        <div className="cyber-section-heading"><div><span className="cyber-eyebrow">SERVICE HUB · SIX KEY DESKS</span><h2>Public services, <em>made easier.</em></h2><p>Explore common departments and find the assistance relevant to your request.</p></div><Link to="/services" className="cyber-text-link">View all services <ArrowUpRight size={15}/></Link></div>
+        <div className="cyber-department-grid">{departments.map((department,index)=><Link to={`/services/${department.slug}`} className="cyber-department-card" key={department.slug}><span className="cyber-dept-index">0{index+1}</span><CategoryIcon slug={department.slug}/><h3>{department.title}</h3><p>{department.detail}</p><small>Processing time varies by department and authority</small><ArrowUpRight className="cyber-dept-arrow" size={17}/></Link>)}</div>
+      </section>
 
-        <section className="track-cta">
-          <div>
-            <span className="eyebrow">ALREADY SENT AN ENQUIRY?</span>
-            <h2>
-              Your next step,
-              <br />
-              <em>just a reference away.</em>
-            </h2>
-          </div>
-          <div className="track-cta-right">
-            <p>
-              Check progress with your tracking ID and the mobile number
-              registered with your enquiry.
-            </p>
-            <Link className="button button-dark" to="/track">
-              Track your application <ArrowRight size={16} />
-            </Link>
-          </div>
-          <span className="cta-watermark">B</span>
-        </section>
-        <SocialPreviewSection />
-        <ContactBand />
-      </main>
-    </>
+      <section className="cyber-document-section">
+        <div className="cyber-document-copy"><span className="cyber-eyebrow">SMART DOCUMENT PRE-CHECK</span><h2>Check your files <em>before you submit.</em></h2><p>Choose up to eight documents for a local format and size check. This preview runs in your browser only; files selected here are not uploaded.</p><div className="cyber-security-note"><ShieldCheck size={18}/><span><b>Private by design</b><small>Submit documents only through the relevant application form. Do not upload passwords, OTPs or UPI PINs.</small></span></div><Link to="/apply" className="cyber-button cyber-button-primary">Continue to application <ArrowRight size={16}/></Link></div>
+        <div className={dragging ? "cyber-dropzone is-dragging" : "cyber-dropzone"} onDragOver={(event)=>{event.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={(event)=>{event.preventDefault();setDragging(false);inspectFiles(event.dataTransfer.files);}}>
+          <input id="cyber-document-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" multiple onChange={(event)=>inspectFiles(event.target.files ?? [])}/>
+          <label htmlFor="cyber-document-input"><span className="cyber-upload-icon"><UploadCloud size={25}/></span><b>Drop files here or browse</b><small>PDF, JPG, PNG or WebP · Maximum 10 MB per file</small></label>
+          {localFiles.length>0 && <div className="cyber-file-list">{localFiles.map((file)=><div className="cyber-file-item" key={file.id}>{file.preview ? <img src={file.preview} alt={`Preview of ${file.name}`}/> : <FileCheck2 size={20}/>}<span><b>{file.name}</b><small>{(file.size/1024/1024).toFixed(2)} MB · {file.message}</small></span><button type="button" aria-label={`Remove ${file.name}`} onClick={()=>setLocalFiles((current)=>current.filter((item)=>item.id!==file.id))}><X size={15}/></button></div>)}</div>}
+          <p className="cyber-drop-note">Local pre-check only · No document upload occurs in this panel</p>
+        </div>
+      </section>
+
+      <section className="cyber-concierge">
+        <div><span className="cyber-eyebrow">DIRECT CONCIERGE · SRINAGAR LOCAL DESK</span><h2>Real help. <em>Right here.</em></h2><p>Speak with our team about services, application requirements and next steps.</p><div className="cyber-contact-actions"><a className="cyber-button cyber-button-primary" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp desk <span className="cyber-online-dot"/></a><a className="cyber-button cyber-button-ghost" href={`tel:${settings.contact.phone.replace(/[^+\d]/g,"")}`}><PhoneCall size={16}/> {settings.contact.phone}</a></div></div>
+        <div className="cyber-location-card"><span className="cyber-location-icon"><MapPin size={23}/></span><span className="cyber-eyebrow">OUR SERVICE AREA</span><h3>Srinagar, Jammu &amp; Kashmir</h3><p>For the exact business pin, opening hours and directions, use our verified Google Business Profile.</p><a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open Google Business Profile <ArrowUpRight size={15}/></a></div>
+      </section>
+      <section className="cyber-social-wrap"><SocialPreviewSection/></section>
+      <section className="cyber-contact-band"><div><span className="cyber-eyebrow">NEED A HAND?</span><h2>Start with a clear conversation.</h2></div><Link to="/contact" className="cyber-button cyber-button-primary">Contact BABA'S CYBER CAFE <ArrowRight size={16}/></Link></section>
+    </main>
   );
 }
-
 
 function SocialPreviewSection() {
   const settings = useSiteSettings();
@@ -637,34 +589,6 @@ function SocialPreviewSection() {
           </a>
           <p className="social-preview-note">Map preview is a Google search for the business name and city; confirm the correct pin on the listing.</p>
         </article>
-      </div>
-    </section>
-  );
-}
-
-function ContactBand() {
-  const settings = useSiteSettings();
-  return (
-    <section className="contact-band">
-      <div>
-        <span className="eyebrow">NEED A HAND?</span>
-        <h2>Talk to a real person.</h2>
-      </div>
-      <div className="contact-band-actions">
-        <a
-          className="button button-gold"
-          href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <MessageCircle size={16} /> WhatsApp us
-        </a>
-        <a
-          className="button button-light-outline"
-          href={`mailto:${settings.contact.email}`}
-        >
-          Send an email <ArrowUpRight size={15} />
-        </a>
       </div>
     </section>
   );
@@ -1364,7 +1288,8 @@ type TrackedRecord = {
 
 function TrackPage() {
   const categoryList = useCategoryList();
-  const [trackingId, setTrackingId] = useState("");
+  const [searchParams] = useSearchParams();
+  const [trackingId, setTrackingId] = useState(searchParams.get("trackingId") ?? "");
   const [mobile, setMobile] = useState("");
   const [record, setRecord] = useState<TrackedRecord | null>(null);
   const [busy, setBusy] = useState(false);
