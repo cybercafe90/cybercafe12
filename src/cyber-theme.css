@@ -317,3 +317,74 @@ body { color: var(--text-heading); }
   .cyber-network-layer *, .cyber-network-canvas { animation: none !important; transition: none !important; }
   .portal-theme .button, .portal-theme .nav-button { transition: none; }
 }
+
+
+/* Exact dashboard palette for the combined tracking/payment card and portals */
+.portal-theme .combined-payment-card {
+  color: #fff;
+  border: 1px solid var(--border-cyan-subtle);
+  border-radius: 14px;
+  background: rgba(13, 20, 36, .82);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18), inset 0 0 18px rgba(0,242,255,.025);
+  backdrop-filter: blur(14px);
+}
+.portal-theme .combined-payment-head h3 { color: #fff; }
+.portal-theme .combined-payment-head p,
+.portal-theme .combined-payment-note { color: var(--text-muted); }
+.portal-theme .combined-payment-amount {
+  border: 0;
+  border-radius: 0;
+  color: #fff;
+  background: transparent;
+}
+.portal-theme .combined-payment-amount small { color: var(--text-muted); }
+.portal-theme .combined-payment-amount strong { color: var(--accent-cyan); }
+.portal-theme .track-layout .button,
+.portal-theme .combined-payment-card .button,
+.portal-theme .payment-page .button,
+.portal-theme .payment-page .button-dark,
+.portal-theme .payment-page .button-gold {
+  border: 1px solid var(--accent-cyan);
+  border-radius: 999px;
+  color: #020a12;
+  background: var(--accent-cyan);
+  font-weight: 800;
+}
+.portal-theme .track-layout .button:hover:not(:disabled),
+.portal-theme .combined-payment-card .button:hover:not(:disabled),
+.portal-theme .payment-page .button:hover:not(:disabled) {
+  color: #020a12;
+  background: #8afaff;
+  box-shadow: 0 0 18px rgba(0,240,255,.45);
+}
+.portal-theme .payment-panel,
+.portal-theme .payment-customer-card,
+.portal-theme .payment-method,
+.portal-theme .payment-success,
+.portal-theme .payment-empty,
+.portal-theme .payment-create-form,
+.portal-theme .payment-admin-card,
+.portal-theme .payment-alert-card,
+.portal-theme .payment-awaiting,
+.portal-theme .admin-modal,
+.portal-theme .modal-backdrop > div {
+  color: #e8f1ff;
+  border-color: var(--border-cyan-subtle);
+  background: rgba(13,20,36,.82);
+  backdrop-filter: blur(14px);
+}
+.portal-theme .payment-amount strong,
+.portal-theme .payment-success > strong { color: var(--accent-cyan); }
+.portal-theme .payment-lookup input,
+.portal-theme .payment-utr-form input,
+.portal-theme .payment-admin-fields input,
+.portal-theme .payment-admin-fields select,
+.portal-theme .payment-admin-controls input {
+  color: #f8fbff;
+  border-color: rgba(0,240,255,.22);
+  background: var(--input-bg);
+}
+.portal-theme .payment-qr-card { background: #fff; }
+.portal-theme .payment-admin-tabs button.is-active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+.portal-theme .payment-status-paid,
+.portal-theme .status-completed { color: var(--accent-green); }
