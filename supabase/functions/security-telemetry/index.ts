@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
     const { data: recent } = await admin.from("security_events").select("id").eq("correlation_id", correlation).gte("occurred_at", new Date(Date.now() - 120000).toISOString()).limit(1);
     if (!recent?.length) {
       const { error } = await admin.from("security_events").insert({
-        source: "website", event_type: "page_view", severity: "info", status: "new",
+        source: "application", event_type: "page_view", severity: "info", status: "new",
         source_ip: ip, route: safeRoute, actor_reference: actorId,
         summary: "Website page visit recorded.",
         details: { user_agent: ua, country_code: country || null, device_hint: /mobile|android|iphone/i.test(ua) ? "mobile" : "desktop_or_tablet", collection: "server_request_headers" },
