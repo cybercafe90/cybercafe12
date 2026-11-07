@@ -900,6 +900,61 @@ function AboutPage() {
   );
 }
 
+function printApplicationReceipt(details: {
+  trackingId: string;
+  fullName: string;
+  mobile: string;
+  email: string;
+  department: string;
+  service: string;
+  submittedAt: string;
+  status: string;
+}) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    window.alert("Please allow pop-ups for this website to generate your receipt.");
+    return;
+  }
+  const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[character] ?? character);
+  const rows = [
+    ["Customer name", details.fullName],
+    ["Mobile number", details.mobile],
+    ["Email address", details.email],
+    ["Department", details.department],
+    ["Service / enquiry", details.service],
+    ["Submission date", new Date(details.submittedAt).toLocaleString("en-IN")],
+    ["Current status", details.status],
+  ];
+  printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Receipt ${escapeHtml(details.trackingId)}</title><style>
+    *{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f1e9;color:#171713;font:14px/1.55 Arial,sans-serif}
+    .receipt{max-width:720px;margin:0 auto;padding:38px;background:#fff;border:1px solid #d8d0bd}
+    .brand{font-size:22px;font-weight:800;letter-spacing:1.5px}.sub{color:#786c52;font-size:10px;letter-spacing:2px;margin-top:4px}
+    .rule{height:3px;background:#b99b5c;margin:22px 0}.heading{font-size:22px;margin:0 0 5px}.muted{color:#666;font-size:12px}
+    .reference{margin:24px 0;padding:20px;background:#171713;color:#fff;border-left:5px solid #c7a45e}
+    .reference small{display:block;color:#e6d6b3;font-size:10px;letter-spacing:2px}.reference strong{display:block;margin-top:7px;color:#fff;font:bold 26px/1.3 Arial,sans-serif;letter-spacing:1px;overflow-wrap:anywhere}
+    table{width:100%;border-collapse:collapse;margin-top:18px}td{padding:11px 8px;border-bottom:1px solid #e9e5dc;vertical-align:top}td:first-child{width:38%;color:#696457;font-size:12px}
+    .notice{margin-top:22px;padding:14px;background:#f6f3ec;color:#504a3d;font-size:11px}
+    .footer{margin-top:28px;padding-top:14px;border-top:1px solid #ddd5c5;color:#777;font-size:10px}
+    .actions{display:flex;justify-content:flex-end;margin:0 auto 14px;max-width:720px}.actions button{padding:10px 18px;background:#171713;color:#fff;border:0;border-radius:4px;font-weight:700}
+    @media print{body{padding:0;background:#fff}.receipt{border:0;max-width:none;padding:24px}.actions{display:none}@page{size:A4;margin:12mm}}
+  </style></head><body><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><main class="receipt">
+    <div class="brand">BABA'S CYBER CAFE</div><div class="sub">SERVICE CENTRE · SRINAGAR, JAMMU &amp; KASHMIR</div><div class="rule"></div>
+    <h1 class="heading">Application submission receipt</h1><div class="muted">Acknowledgement of your enquiry / service request</div>
+    <section class="reference"><small>YOUR TRACKING REFERENCE</small><strong>${escapeHtml(details.trackingId)}</strong></section>
+    <table>${rows.map(([label,value]) => `<tr><td>${escapeHtml(label)}</td><td><strong>${escapeHtml(value)}</strong></td></tr>`).join("")}</table>
+    <div class="notice"><strong>Important:</strong> This receipt confirms that BABA'S CYBER CAFE has received your enquiry. It is not a government approval, service completion certificate, payment receipt, or guarantee of acceptance by any department or insurer. Keep your tracking reference and registered mobile number to check updates.</div>
+    <div class="footer">For assistance: +91 7006865909 · support@babacybercafe.in<br>Thank you for choosing BABA'S CYBER CAFE — Your Trust, Our Service.</div>
+  </main></body></html>`);
+  printWindow.document.close();
+  window.setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 350);
+}
+
 function ApplicationPage() {
   const settings = useSiteSettings();
   const categoryList = useCategoryList();
@@ -1012,6 +1067,22 @@ function ApplicationPage() {
             <strong>{result.trackingId}</strong>
           </div>
           <div className="success-actions">
+            <button
+              type="button"
+              className="button button-outline"
+              onClick={() => printApplicationReceipt({
+                trackingId: result.trackingId,
+                fullName,
+                mobile,
+                email: customerEmail,
+                department: categoryLabel(selectedCategory, categoryList),
+                service: selectedService,
+                submittedAt: new Date().toISOString(),
+                status: "Application received",
+              })}
+            >
+              <FileText size={15} /> Download / Print receipt
+            </button>
             <Link className="button button-dark" to="/track">
               Track application <ArrowRight size={16} />
             </Link>
@@ -2964,6 +3035,22 @@ function AdminPage() {
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => printApplicationReceipt({
+                        trackingId: active.tracking_id,
+                        fullName: active.full_name,
+                        mobile: active.mobile,
+                        email: active.email,
+                        department: categoryLabel(active.category_slug, adminCategories),
+                        service: active.service_name,
+                        submittedAt: active.created_at,
+                        status: newStatus || active.status,
+                      })}
+                    >
+                      <FileText size={14} /> Generate application receipt
+                    </button>
                     <button type="button" className="text-button" disabled={busy} onClick={() => void deleteApplication(active)}>Delete this application</button>
                   </div>
                   <button
