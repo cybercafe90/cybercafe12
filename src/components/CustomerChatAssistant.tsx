@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Bot, FileText, Mail, MessageCircle, PhoneCall, Send, ShieldAlert, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, Bot, Mail, MessageCircle, PhoneCall, Send, ShieldAlert, ShieldCheck, X } from "lucide-react";
 
 type ChatLink = { label: string; href: string };
 type ChatMessage = { id: number; role: "assistant" | "customer"; text: string; links?: ChatLink[] };
@@ -53,7 +53,7 @@ function answerFor(message: string): { text: string; links?: ChatLink[] } {
   if (/\b(document|documents|requirement|requirements|checklist|apply|application|enquir|service|services)\b/.test(q)) {
     return { text: "I can guide you through Revenue, Municipal / SMC, RTO, Motor Insurance, Central & Business Schemes, and Labour & Handicrafts services. Tell me which service you need and I’ll give you a short document checklist. Exact fees are confirmed by support, not guessed here.", links: [{ label: "Browse all services", href: SERVICES_LINK }, { label: "Apply / Enquire", href: "/apply" }] };
   }
-  if (/\b(contact|phone|call|whatsapp|email|address|location|srinagar)\b/.test(q)) {
+  if (/\b(contact|phone|call|whatsapp|email|address|location)\b/.test(q)) {
     return { text: "BABA'S CYBER CAFE customer support is based in Srinagar, Jammu & Kashmir. Phone / WhatsApp: +91 7006865909. Email: support@babacybercafe.in. You can also open the contact page for available details.", links: [{ label: "Contact page", href: "/contact" }] };
   }
   return { text: OUT_OF_SCOPE };
