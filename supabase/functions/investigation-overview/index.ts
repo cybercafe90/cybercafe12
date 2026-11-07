@@ -23,9 +23,14 @@ async function authorize(req: Request) {
   const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
   const { data: { user }, error } = await userClient.auth.getUser(token);
   if (error || !user) throw new Error("UNAUTHENTICATED");
+  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+  if (claimsError) throw new Error("UNAUTHENTICATED");
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: owner } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
-  if (owner?.role === "owner") return { admin, user, role: "owner" as const, permissions: ["view_events", "investigate", "manage_investigators"] };
+  if (owner?.role === "owner") {
+    if (claimsData?.claims?.aal !== "aal2") throw new Error("MFA_REQUIRED");
+    return { admin, user, role: "owner" as const, permissions: ["view_events", "investigate", "manage_investigators"] };
+  }
   const { data: investigator } = await admin.from("security_investigators").select("enabled,permissions").eq("user_id", user.id).maybeSingle();
   if (!investigator?.enabled) throw new Error("FORBIDDEN");
   return { admin, user, role: "investigator" as const, permissions: Array.isArray(investigator.permissions) ? investigator.permissions : [] };
