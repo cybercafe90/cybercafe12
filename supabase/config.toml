@@ -95,3 +95,9 @@ content_path = "./supabase/templates/confirmation.html"
 [auth.email.template.magic_link]
 subject = "Your BABA'S CYBER CAFE sign-in code"
 content_path = "./supabase/templates/magic_link.html"
+
+[functions.security-telemetry]
+verify_jwt = false
+
+[functions.investigation-ip-control]
+verify_jwt = true
