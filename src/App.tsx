@@ -39,7 +39,6 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  UploadCloud,
   Ticket,
   UsersRound,
   X,
@@ -377,8 +376,6 @@ function HomePage() {
   const [trackingRecord, setTrackingRecord] = useState<TrackedRecord | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
   const [trackingError, setTrackingError] = useState("");
-  const [localFiles, setLocalFiles] = useState<{id:string;name:string;size:number;valid:boolean;message:string;preview?:string}[]>([]);
-  const [dragging, setDragging] = useState(false);
 
   const departments = [
     { slug: "revenue", title: "Revenue Department", detail: "Land records, Jamabandi, mutations" },
@@ -388,25 +385,6 @@ function HomePage() {
     { slug: "handloom", title: "Handloom & Handicrafts", detail: "Artisan identification and handloom support" },
     { slug: "central", title: "Central & National Services", detail: "PAN, passport and health-scheme assistance" },
   ];
-
-  const inspectFiles = (incoming: FileList | File[]) => {
-    Array.from(incoming).slice(0, 8).forEach((file) => {
-      const id = `${file.name}-${file.lastModified}-${file.size}`;
-      const allowed = ["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.type);
-      const underLimit = file.size <= 10 * 1024 * 1024;
-      const valid = allowed && underLimit;
-      const item = {
-        id, name: file.name, size: file.size, valid,
-        message: !allowed ? "Use PDF, JPG, PNG or WebP." : !underLimit ? "File exceeds the 10 MB limit." : "Format and size check passed.",
-      };
-      setLocalFiles((current) => [...current.filter((entry) => entry.id !== id), item]);
-      if (valid && file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = () => setLocalFiles((current) => current.map((entry) => entry.id === id ? { ...entry, preview: String(reader.result ?? "") } : entry));
-        reader.readAsDataURL(file);
-      }
-    });
-  };
 
   async function lookupApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -495,16 +473,6 @@ function HomePage() {
       <section className="cyber-departments" id="services">
         <div className="cyber-section-heading"><div><span className="cyber-eyebrow">SERVICE HUB · SIX KEY DESKS</span><h2>Public services, <em>made easier.</em></h2><p>Explore common departments and find the assistance relevant to your request.</p></div><Link to="/services" className="cyber-text-link">View all services <ArrowUpRight size={15}/></Link></div>
         <div className="cyber-department-grid">{departments.map((department,index)=><Link to={`/services/${department.slug}`} className="cyber-department-card" key={department.slug}><span className="cyber-dept-index">0{index+1}</span><CategoryIcon slug={department.slug}/><h3>{department.title}</h3><p>{department.detail}</p><small>Processing time varies by department and authority</small><ArrowUpRight className="cyber-dept-arrow" size={17}/></Link>)}</div>
-      </section>
-
-      <section className="cyber-document-section">
-        <div className="cyber-document-copy"><span className="cyber-eyebrow">SMART DOCUMENT PRE-CHECK</span><h2>Check your files <em>before you submit.</em></h2><p>Choose up to eight documents for a local format and size check. This preview runs in your browser only; files selected here are not uploaded.</p><div className="cyber-security-note"><ShieldCheck size={18}/><span><b>Private by design</b><small>Submit documents only through the relevant application form. Do not upload passwords, OTPs or UPI PINs.</small></span></div><Link to="/apply" className="cyber-button cyber-button-primary">Continue to application <ArrowRight size={16}/></Link></div>
-        <div className={dragging ? "cyber-dropzone is-dragging" : "cyber-dropzone"} onDragOver={(event)=>{event.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={(event)=>{event.preventDefault();setDragging(false);inspectFiles(event.dataTransfer.files);}}>
-          <input id="cyber-document-input" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" multiple onChange={(event)=>inspectFiles(event.target.files ?? [])}/>
-          <label htmlFor="cyber-document-input"><span className="cyber-upload-icon"><UploadCloud size={25}/></span><b>Drop files here or browse</b><small>PDF, JPG, PNG or WebP · Maximum 10 MB per file</small></label>
-          {localFiles.length>0 && <div className="cyber-file-list">{localFiles.map((file)=><div className="cyber-file-item" key={file.id}>{file.preview ? <img src={file.preview} alt={`Preview of ${file.name}`}/> : <FileCheck2 size={20}/>}<span><b>{file.name}</b><small>{(file.size/1024/1024).toFixed(2)} MB · {file.message}</small></span><button type="button" aria-label={`Remove ${file.name}`} onClick={()=>setLocalFiles((current)=>current.filter((item)=>item.id!==file.id))}><X size={15}/></button></div>)}</div>}
-          <p className="cyber-drop-note">Local pre-check only · No document upload occurs in this panel</p>
-        </div>
       </section>
 
       <section className="cyber-concierge">
@@ -3726,8 +3694,10 @@ function RoutedApp() {
         ? "Secure application services for BABA'S CYBER CAFE customers."
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
+  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
+  const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
-    <>
+    <div className={isPortalRoute ? "portal-theme" : undefined}>
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -3753,7 +3723,7 @@ function RoutedApp() {
       <Footer />
       <SoundControls />
       <CustomerChatAssistant />
-    </>
+    </div>
   );
 }
 
