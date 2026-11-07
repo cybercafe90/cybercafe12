@@ -20,7 +20,7 @@ Example request body:
 }
 ```
 
-Use the original bank message without rewriting it. Timestamp is Unix epoch milliseconds. Do not include a PIN, OTP, full account number, card number, login details or any customer personal data that is not needed.
+Use the literal sender value `ICICI BANK` in this JSON field (the automation trigger itself should be filtered to the genuine ICICI SMS sender ID or official ICICI app). Forward the original bank message without rewriting it. Timestamp is Unix epoch milliseconds. Do not include a PIN, OTP, full account number, card number, login details or any customer personal data that is not needed.
 
 ## MacroDroid (Android)
 
@@ -31,7 +31,7 @@ Use the original bank message without rewriting it. Timestamp is Unix epoch mill
 5. Method: POST.
 6. URL: the Edge Function URL above.
 7. Header: `x-api-key: YOUR_LONG_RANDOM_WEBHOOK_SECRET`.
-8. Body type: JSON. Map the original sender, original SMS/notification text, and event timestamp into the JSON fields shown above. If MacroDroid exposes the notification/SMS received timestamp as seconds, multiply by 1000; otherwise send milliseconds.
+8. Body type: JSON. Set `sender` to the literal `ICICI BANK`, map the original SMS/notification text into `message`, and map the event timestamp into `timestamp`. If MacroDroid exposes the notification/SMS received timestamp as seconds, multiply by 1000; otherwise send milliseconds.
 9. Save and test using a genuine low-value credit notification. Check **Admin → UPI payments → Bank alerts**.
 
 ## Tasker alternative
@@ -39,7 +39,7 @@ Use the original bank message without rewriting it. Timestamp is Unix epoch mill
 1. Create an **Event → Phone → Received Text** profile for the bank sender, or **Event → UI → Notification** for the ICICI app.
 2. Add a task with an **HTTP Request** action: POST to the URL above.
 3. Set header `x-api-key` to the webhook secret.
-4. Set JSON body fields `sender`, `message`, and `timestamp` from the event variables.
+4. Set `sender` to the literal `ICICI BANK`, set `message` to the original notification text, and set `timestamp` from the event time variable.
 5. Restrict the profile to credit notifications and test with a genuine bank credit.
 
 ## Security and verification limitations
