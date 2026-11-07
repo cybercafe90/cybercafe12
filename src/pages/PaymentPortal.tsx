@@ -91,14 +91,13 @@ function CustomerPayment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(0);
+  const [clock, setClock] = useState(Date.now());
   const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
   const remainingMs = expiresAt - clock;
   const qrExpired = Boolean(expiresAt && remainingMs <= 0);
   const uri = useMemo(() => record && Number(record.payment.amount) > 0 && record.payment.id ? makeUpiUri(Number(record.payment.amount), record.application.tracking_id, record.payment.id) : "", [record]);
   useQrCode(uri, Boolean(uri && record?.payment.status === "pending" && !qrExpired));
   useEffect(() => {
-    setClock(Date.now());
     if (!record?.payment.expires_at || record.payment.status !== "pending") return;
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
@@ -179,15 +178,13 @@ function CustomerPayment() {
                 <div className="payment-amount"><small>AMOUNT DUE</small><strong>{money(record.payment.amount)}</strong><span>Pay only the exact amount shown.</span></div>
                 {record.payment.status === "claimed" || record.payment.status === "needs_review" ? (
                   <div className="payment-awaiting"><h2>Confirmation received</h2><p>Your UPI reference {record.payment.claimed_utr ? <b>{record.payment.claimed_utr}</b> : ""} is awaiting verification. This page checks for updates automatically.</p></div>
+                ) : qrExpired ? (
+                  <div className="payment-awaiting"><h2>QR code expired</h2><p>This QR was valid for five minutes. Contact BABA'S CYBER CAFE to renew it before paying. If you already paid, do not pay again; contact us with your UTR.</p></div>
                 ) : (
-                  qrExpired ? (
-                    <div className="payment-awaiting"><h2>QR code expired</h2><p>This QR was valid for five minutes. Contact BABA'S CYBER CAFE to renew it before paying. If you already paid, do not pay again; contact us with your UTR.</p></div>
-                  ) : (
                     <div className="payment-pay-grid">
                       <div className="payment-qr-card"><div id="upi-payment-qr" aria-label="Dynamic UPI payment QR code"/><small>Scan with GPay, PhonePe or Paytm</small><b className="payment-countdown">QR expires in {String(Math.floor(remainingMs / 60000)).padStart(2,"0")}:{String(Math.floor((remainingMs % 60000) / 1000)).padStart(2,"0")}</b></div>
                       <div className="payment-instructions"><h2>Pay using any UPI app</h2><p>Scan the QR code or open your UPI app using the button below.</p><a className="button button-gold payment-deep-link" href={uri}>Click to pay via UPI app ↗</a><p className="payment-warning">Do not change the payment remark / note. It contains your tracking ID and helps us reconcile your payment.</p><div className="payment-payee"><small>PAY TO</small><b>{payeeName}</b><span>{payeeVpa}</span></div></div>
                     </div>
-                  )
                 )}
                 {record.payment.status === "pending" && (
                   <form className="payment-utr-form" onSubmit={submitConfirmation}>
