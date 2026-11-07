@@ -235,6 +235,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .track-empty h2 { margin: 14px 0 7px; color: var(--ink); font: 500 22px var(--serif); }
 .track-empty p { max-width: 325px; color: #77766d; font-size: 10px; line-height: 1.7; }
 .track-empty > span { margin-top: 20px; color: #8b7447; font-size: 9px; }
+.combined-payment-card { display: grid; gap: 13px; margin: 20px 0 4px; padding: 18px; border: 1px solid #d8c99f; background: #faf8f2; }
+.combined-payment-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.combined-payment-head h3 { margin: 5px 0 4px; color: var(--ink); font: 500 19px var(--serif); }
+.combined-payment-head p, .combined-payment-note { color: #6e6c63; font-size: 10px; line-height: 1.7; }
+.combined-payment-amount { display: flex; flex-direction: column; gap: 3px; padding: 13px 15px; background: #171713; color: #fff; }
+.combined-payment-amount small { color: #e6d6b3; font-size: 8px; font-weight: 700; letter-spacing: 1.6px; }
+.combined-payment-amount strong { color: #fff; font-size: 24px; font-weight: 750; }
+.combined-payment-card .button { justify-self: start; }
+@media (max-width: 700px) {
+  .combined-payment-head { flex-direction: column; }
+  .combined-payment-card { padding: 15px; }
+}
 .tracking-result-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
 .tracking-result-head h2 { margin: 7px 0 4px; font: 500 22px var(--serif); }
 .tracking-result-head p { color: #77766d; font-size: 9px; }
