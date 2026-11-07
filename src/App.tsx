@@ -61,6 +61,7 @@ import InvestigationPage from "./pages/InvestigationPage";
 import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
+import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -491,7 +492,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="cyber-departments">
+      <section className="cyber-departments" id="services">
         <div className="cyber-section-heading"><div><span className="cyber-eyebrow">SERVICE HUB · SIX KEY DESKS</span><h2>Public services, <em>made easier.</em></h2><p>Explore common departments and find the assistance relevant to your request.</p></div><Link to="/services" className="cyber-text-link">View all services <ArrowUpRight size={15}/></Link></div>
         <div className="cyber-department-grid">{departments.map((department,index)=><Link to={`/services/${department.slug}`} className="cyber-department-card" key={department.slug}><span className="cyber-dept-index">0{index+1}</span><CategoryIcon slug={department.slug}/><h3>{department.title}</h3><p>{department.detail}</p><small>Processing time varies by department and authority</small><ArrowUpRight className="cyber-dept-arrow" size={17}/></Link>)}</div>
       </section>
@@ -3650,88 +3651,6 @@ function SoundControls() {
   );
 }
 
-function AskUsQuestionWidget() {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [question, setQuestion] = useState("");
-  const [consent, setConsent] = useState(false);
-
-  const submitQuestion = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const message = [
-      "Hello BABA'S CYBER CAFE, I have a question.",
-      "",
-      `Name: ${name.trim()}`,
-      `Contact: ${contact.trim()}`,
-      `Question: ${question.trim()}`,
-      "",
-      "Sent from the website Ask Us a Question window.",
-    ].join("\n");
-    window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-    setOpen(false);
-    setName("");
-    setContact("");
-    setQuestion("");
-    setConsent(false);
-  };
-
-  return (
-    <>
-      <button
-        className="ask-question-trigger"
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <MessageCircle size={19} />
-        <span>Ask us a question</span>
-      </button>
-      {open && (
-        <div className="ask-question-backdrop" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setOpen(false);
-        }}>
-          <section className="ask-question-window" role="dialog" aria-modal="true" aria-labelledby="ask-question-title">
-            <div className="ask-question-heading">
-              <div>
-                <span className="eyebrow">BABA'S CYBER CAFE · SRINAGAR</span>
-                <h2 id="ask-question-title">How can we help?</h2>
-                <p>Send us your question. Our team will respond on WhatsApp.</p>
-              </div>
-              <button className="icon-button" type="button" onClick={() => setOpen(false)} aria-label="Close question window">
-                <X size={19} />
-              </button>
-            </div>
-            <form className="ask-question-form" onSubmit={submitQuestion}>
-              <label className="field">
-                <span>Your name</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" maxLength={80} required placeholder="Enter your name" />
-              </label>
-              <label className="field">
-                <span>Mobile number or WhatsApp</span>
-                <input value={contact} onChange={(event) => setContact(event.target.value)} autoComplete="tel" inputMode="tel" maxLength={30} required placeholder="Your contact number" />
-              </label>
-              <label className="field">
-                <span>Your question</span>
-                <textarea value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={1200} rows={4} required placeholder="Tell us what you would like to know…" />
-              </label>
-              <label className="ask-question-consent">
-                <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} required />
-                <span>I agree to share these details with BABA'S CYBER CAFE so they can respond to my question.</span>
-              </label>
-              <button className="button button-dark ask-question-submit" type="submit">
-                Send question on WhatsApp <ArrowUpRight size={16} />
-              </button>
-              <small className="ask-question-privacy">Your details are placed in a WhatsApp message; they are not saved by this window.</small>
-            </form>
-          </section>
-        </div>
-      )}
-    </>
-  );
-}
-
 function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
@@ -3788,6 +3707,7 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
+        <Route path="/insurance" element={<ServicesPage fixedCategory="insurance" />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
@@ -3805,7 +3725,7 @@ function RoutedApp() {
       </Routes>
       <Footer />
       <SoundControls />
-      <AskUsQuestionWidget />
+      <CustomerChatAssistant />
     </>
   );
 }
