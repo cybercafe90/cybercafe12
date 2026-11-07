@@ -19,9 +19,12 @@ Deno.serve(async (req: Request) => {
     const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
     const { data: { user }, error: userError } = await userClient.auth.getUser(token);
     if (userError || !user) return reply(req, { error: "Verified owner sign-in required." }, 401);
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError) return reply(req, { error: "Verified owner sign-in required." }, 401);
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { data: owner } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
     if (owner?.role !== "owner") return reply(req, { error: "Owner authorization required." }, 403);
+    if (claimsData?.claims?.aal !== "aal2") return reply(req, { error: "Google Authenticator verification is required." }, 403);
     const raw = await req.text();
     if (raw.length > 4000) return reply(req, { error: "Request too large." }, 413);
     const body = JSON.parse(raw);
