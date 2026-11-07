@@ -46,7 +46,10 @@ export default function CyberNetworkCanvas() {
         vx: random(-0.22, 0.22), vy: random(-0.18, 0.18),
         radius: random(1, 2.1), phase: random(0, Math.PI * 2),
       }));
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
       drawStatic();
+      if (!reducedMotion.matches && !paused) frame = window.requestAnimationFrame(draw);
     };
 
     const drawGrid = () => {
@@ -185,7 +188,7 @@ export default function CyberNetworkCanvas() {
         window.cancelAnimationFrame(frame);
       } else {
         lastTime = 0;
-        frame = window.requestAnimationFrame(draw);
+        if (!reducedMotion.matches) frame = window.requestAnimationFrame(draw);
       }
     };
     const onScroll = () => {
@@ -203,7 +206,6 @@ export default function CyberNetworkCanvas() {
     mobileQuery.addEventListener("change", resize);
     reducedMotion.addEventListener("change", resize);
     resize();
-    if (!reducedMotion.matches && !paused) frame = window.requestAnimationFrame(draw);
 
     return () => {
       disposed = true;
