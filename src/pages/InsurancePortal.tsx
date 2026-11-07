@@ -165,7 +165,7 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
     if (!selected || !adminToken) return;
     setBusy(true); setError(""); setNotice("");
     try {
-      await callFunction("insurance-portal", {
+      const result = await callFunction<{ saved: boolean; emailSent: boolean; emailWarning?: string }>("insurance-portal", {
         action: "create_quote",
         requestId: selected.id,
         ...quoteDraft,
@@ -174,7 +174,7 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
         addOns: quoteDraft.addOns.split("\n").map((item) => item.trim()).filter(Boolean),
         exclusions: quoteDraft.exclusions.split("\n").map((item) => item.trim()).filter(Boolean),
       }, adminToken);
-      setNotice("Quotation saved. The customer notification was queued by the email service when configured.");
+      setNotice(result.emailWarning ?? (result.emailSent ? "Quotation saved and customer email sent." : "Quotation saved. Customer email delivery was not confirmed."));
       setQuoteDraft({ insurerName: "", productName: "", policyType: "comprehensive", premium: "", idv: "", coverSummary: "", addOns: "", exclusions: "", paymentUrl: "", validUntil: "" });
       await loadRequests(adminToken);
     } catch (reason) {
