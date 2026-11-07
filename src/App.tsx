@@ -1879,11 +1879,6 @@ function AdminPage() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [error, setError] = useState("");
-  const [mfaMode, setMfaMode] = useState<"enroll" | "challenge" | null>(null);
-  const [mfaFactorId, setMfaFactorId] = useState("");
-  const [mfaQrCode, setMfaQrCode] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaBusy, setMfaBusy] = useState(false);
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -1976,28 +1971,6 @@ function AdminPage() {
         if (!current) return;
         if (roleError) throw roleError;
         if (data?.role === "owner") {
-          const [{ data: factors, error: factorsError }, { data: assurance, error: assuranceError }] = await Promise.all([
-            supabase!.auth.mfa.listFactors(),
-            supabase!.auth.mfa.getAuthenticatorAssuranceLevel(),
-          ]);
-          if (factorsError) throw factorsError;
-          if (assuranceError) throw assuranceError;
-          const verifiedFactor = factors.totp.find((factor) => factor.status === "verified");
-          if (verifiedFactor && assurance.currentLevel !== "aal2") {
-            setMfaFactorId(verifiedFactor.id);
-            setMfaMode("challenge");
-            setIsOwner(false);
-            setReady(true);
-            return;
-          }
-          if (!verifiedFactor) {
-            setMfaMode("enroll");
-            setIsOwner(false);
-            setReady(true);
-            return;
-          }
-          if (assurance.currentLevel !== "aal2") throw new Error("Authenticator verification is required.");
-          setMfaMode(null);
           setIsOwner(true);
           setError("");
           setReady(true);
@@ -2080,65 +2053,6 @@ function AdminPage() {
       window.clearTimeout(timer);
     };
   }, [catalogVersion, isOwner, servicePage, serviceSearch]);
-
-  async function startMfaEnrollment() {
-    if (!supabase) return;
-    setMfaBusy(true);
-    setError("");
-    try {
-      const { data: factors, error: listError } = await supabase.auth.mfa.listFactors();
-      if (listError) throw listError;
-      for (const factor of factors.totp.filter((item) => item.status !== "verified")) {
-        const { error: removeError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
-        if (removeError) throw removeError;
-      }
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "BABA'S CYBER CAFE Admin",
-      });
-      if (enrollError) throw enrollError;
-      setMfaFactorId(data.id);
-      setMfaQrCode(data.totp.qr_code);
-      setMfaMode("enroll");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Authenticator setup could not be started.");
-    } finally {
-      setMfaBusy(false);
-    }
-  }
-
-  async function verifyMfaCode() {
-    if (!supabase || !mfaFactorId || !/^\\d{6}$/.test(mfaCode)) {
-      setError("Enter the current six-digit code from your authenticator app.");
-      return;
-    }
-    setMfaBusy(true);
-    setError("");
-    try {
-      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
-      if (challengeError) throw challengeError;
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: mfaFactorId,
-        challengeId: challenge.id,
-        code: mfaCode,
-      });
-      if (verifyError) throw verifyError;
-      await supabase.auth.refreshSession();
-      const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assuranceError) throw assuranceError;
-      if (assurance.currentLevel !== "aal2") throw new Error("Authenticator verification did not reach the required security level.");
-      setMfaMode(null);
-      setMfaQrCode("");
-      setMfaCode("");
-      setIsOwner(true);
-      setReady(true);
-      setNotice("Authenticator security is enabled for this owner account.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Authenticator code could not be verified.");
-    } finally {
-      setMfaBusy(false);
-    }
-  }
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2675,47 +2589,6 @@ function AdminPage() {
         </form>
       )}
       {!passwordRecovery && user && !ready && <p>Checking secure portal access…</p>}
-      {!passwordRecovery && user && ready && mfaMode && (
-        <section className="signin-panel admin-signin" aria-labelledby="admin-mfa-title">
-          <div className="signin-icon"><ShieldCheck size={25} /></div>
-          <span className="eyebrow">OWNER ACCOUNT PROTECTION</span>
-          <h2 id="admin-mfa-title">{mfaMode === "enroll" ? "Set up authenticator security" : "Verify your authenticator"}</h2>
-          <p>
-            {mfaMode === "enroll"
-              ? "Scan this private QR code with Google Authenticator, Microsoft Authenticator or another TOTP app. The admin dashboard stays locked until setup is verified."
-              : "Enter the current six-digit code from your registered authenticator app to continue to the owner dashboard."}
-          </p>
-          {mfaMode === "enroll" && !mfaQrCode && (
-            <button type="button" className="button button-dark" onClick={() => void startMfaEnrollment()} disabled={mfaBusy}>
-              {mfaBusy ? "Preparing secure QR…" : "Generate authenticator QR"}
-            </button>
-          )}
-          {mfaQrCode && mfaMode === "enroll" && (
-            <div className="admin-mfa-qr">
-              <img src={mfaQrCode} alt="Private authenticator enrollment QR code" />
-              <p>Keep this QR code private. Do not send it to anyone.</p>
-            </div>
-          )}
-          {(mfaMode === "challenge" || Boolean(mfaQrCode)) && (
-            <label className="field">
-              <span>Six-digit authenticator code</span>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={mfaCode}
-                onChange={(event) => setMfaCode(event.target.value.replace(/\\D/g, "").slice(0, 6))}
-                maxLength={6}
-                pattern="[0-9]{6}"
-              />
-            </label>
-          )}
-          {error && <div className="notice notice-error">{error}</div>}
-          <button type="button" className="button button-dark" onClick={() => void verifyMfaCode()} disabled={mfaBusy || mfaCode.length !== 6 || (mfaMode === "enroll" && !mfaQrCode)}>
-            {mfaBusy ? "Verifying…" : mfaMode === "enroll" ? "Verify and enable MFA" : "Verify and continue"}
-          </button>
-          <button type="button" className="button button-outline" onClick={() => void signOut()} disabled={mfaBusy}>Sign out</button>
-        </section>
-      )}
       {!passwordRecovery && user && ready && !isOwner && (
         <div className="notice notice-error">
           {error || "Owner access is required for this dashboard."}

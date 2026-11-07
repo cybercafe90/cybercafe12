@@ -23,12 +23,9 @@ async function authorize(req: Request) {
   const userClient = createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
   const { data: { user }, error } = await userClient.auth.getUser(token);
   if (error || !user) throw new Error("UNAUTHENTICATED");
-  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-  if (claimsError) throw new Error("UNAUTHENTICATED");
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data: owner } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
   if (owner?.role === "owner") {
-    if (claimsData?.claims?.aal !== "aal2") throw new Error("MFA_REQUIRED");
     return { admin, user, role: "owner" as const, permissions: ["view_events", "investigate", "manage_investigators"] };
   }
   const { data: investigator } = await admin.from("security_investigators").select("enabled,permissions").eq("user_id", user.id).maybeSingle();
@@ -65,7 +62,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    const status = message === "UNAUTHENTICATED" ? 401 : message === "FORBIDDEN" || message === "MFA_REQUIRED" ? 403 : 500;
-    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? (message === "MFA_REQUIRED" ? "Google Authenticator verification is required." : "Investigation access is not granted.") : "Investigation data could not be loaded." }, status);
+    const status = message === "UNAUTHENTICATED" ? 401 : message === "FORBIDDEN" ? 403 : 500;
+    return reply(req, { error: status === 401 ? "Verified sign-in required." : status === 403 ? "Investigation access is not granted." : "Investigation data could not be loaded." }, status);
   }
 });
