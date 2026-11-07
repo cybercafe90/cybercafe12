@@ -3789,6 +3789,18 @@ function RoutedApp() {
         ? "Secure application services for BABA'S CYBER CAFE customers."
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      const token = data.session?.access_token;
+      void callFunction("security-telemetry", { route: location.pathname }, token).catch(() => {
+        // Monitoring must never interrupt the public website.
+      });
+    });
+    return () => { cancelled = true; };
+  }, [location.pathname]);
   const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
   const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
