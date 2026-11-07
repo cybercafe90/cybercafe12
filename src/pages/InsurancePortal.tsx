@@ -15,6 +15,63 @@ const initialForm: QuoteForm = {
   policyType: "comprehensive", previousInsurer: "", policyExpiry: "", claimsLastYear: false,
   customerNotes: "", consent: false,
 };
+
+type PublicQuote = { id:string; insurer_name:string; product_name:string; policy_type:string; premium:number; idv:number|null; cover_summary:string; add_ons:string[]; exclusions:string[]; payment_url:string|null; valid_until:string|null };
+function QuoteLookupPanel() {
+ const [trackingId,setTrackingId]=useState(""); const [mobile,setMobile]=useState("");
+ const [quotes,setQuotes]=useState<PublicQuote[]>([]); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [searched,setSearched]=useState(false);
+ async function search(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();setBusy(true);setError("");setQuotes([]);setSearched(false);
+  try{const result=await callFunction<{quotes:PublicQuote[]}>("insurance-portal",{action:"get_quotes",trackingId,mobile});setQuotes(result.quotes);setSearched(true)}
+  catch(reason){setError(reason instanceof Error?reason.message:"We could not retrieve your quotes. Check your reference and mobile.");}
+  finally{setBusy(false)}
+ }
+ return <div className="insurance-quote-lookup">
+  <div><span className="insurance-kicker">YOUR QUOTE COMPARISON</span><h3>Already requested a quote?</h3><p>Enter your request reference and registered mobile to see insurer quotations added by our POSP desk.</p></div>
+  <form onSubmit={search}><label>Tracking reference<input value={trackingId} onChange={e=>setTrackingId(e.target.value.toUpperCase())} placeholder="BABA-XXXXXXXXXX" required maxLength={24}/></label><label>Registered mobile<input type="tel" value={mobile} onChange={e=>setMobile(e.target.value)} placeholder="+91 mobile number" required maxLength={20}/></label><button disabled={busy}>{busy?"Checking…":"View my quotes"} <ArrowRight size={15}/></button></form>
+  {error&&<p className="insurance-form-error">{error}</p>}
+  {searched&&quotes.length===0&&<p className="insurance-admin-empty">No insurer quotations have been added yet. Your POSP desk will update this page when partner quotes are ready.</p>}
+  {quotes.length>0&&<div className="insurance-public-quotes"><h4>{quotes.length} available insurer quotation{quotes.length===1?"":"s"}</h4>{quotes.map(q=><article key={q.id}>
+   <div className="insurance-public-quote-top"><div><b>{q.insurer_name}</b><small>{q.product_name} · {q.policy_type.replaceAll("_"," ")}</small></div><strong>₹{Number(q.premium).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div>
+   {q.idv!==null&&<p className="insurance-quote-idv">Insured Declared Value (IDV): ₹{Number(q.idv).toLocaleString("en-IN")}</p>}
+   <p>{q.cover_summary}</p>
+   {q.add_ons?.length>0&&<div className="insurance-quote-points"><b>Add-ons</b><span>{q.add_ons.join(" · ")}</span></div>}
+   {q.exclusions?.length>0&&<div className="insurance-quote-points"><b>Exclusions / conditions</b><span>{q.exclusions.join(" · ")}</span></div>}
+   {q.valid_until&&<small className="insurance-quote-expiry">Quote valid until {new Date(q.valid_until).toLocaleString()}</small>}
+   {q.payment_url?<a className="insurance-pay-link" href={q.payment_url} target="_blank" rel="noopener noreferrer">Continue to insurer payment <ArrowRight size={15}/></a>:<small className="insurance-quote-expiry">Insurer payment link will be shared after the proposal is confirmed.</small>}
+  </article>)}</div>}
+  <p className="insurance-quote-safety">Premiums and terms shown here are entered from partner/insurer quotations. Final underwriting, proposal acceptance and payment confirmation remain with the insurer.</p>
+ </div>
+}
+function InsuranceQuoteEntry({requestId,onSaved}:{requestId:string;onSaved:()=>void|Promise<void>}) {
+ const [insurerName,setInsurerName]=useState("");const [productName,setProductName]=useState("");const [policyType,setPolicyType]=useState("comprehensive");
+ const [premium,setPremium]=useState("");const [idv,setIdv]=useState("");const [coverSummary,setCoverSummary]=useState("");
+ const [addOns,setAddOns]=useState("");const [exclusions,setExclusions]=useState("");const [paymentUrl,setPaymentUrl]=useState("");
+ const [validUntil,setValidUntil]=useState("");const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
+ async function submit(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();setBusy(true);setMessage("");
+  try{const session=await supabase?.auth.getSession(),token=session?.data.session?.access_token;if(!token)throw new Error("Owner sign-in required.");
+   await callFunction("insurance-portal",{action:"create_quote",requestId,insurerName,productName,policyType,premium:Number(premium),idv:idv?Number(idv):null,coverSummary,addOns:addOns.split(",").map(x=>x.trim()).filter(Boolean),exclusions:exclusions.split(",").map(x=>x.trim()).filter(Boolean),paymentUrl,validUntil:validUntil?new Date(validUntil).toISOString():null},token);
+   setMessage("Insurer quotation saved. The customer can now compare it using their reference.");setInsurerName("");setProductName("");setPremium("");setIdv("");setCoverSummary("");setAddOns("");setExclusions("");setPaymentUrl("");setValidUntil("");await onSaved();
+  }catch(reason){setMessage(reason instanceof Error?reason.message:"Quote could not be saved.");}finally{setBusy(false)}
+ }
+ return <details className="insurance-admin-quote-entry"><summary>Add partner quotation</summary><form onSubmit={submit}>
+  <div className="insurance-admin-quote-grid">
+   <label>Insurer name<input value={insurerName} onChange={e=>setInsurerName(e.target.value)} required maxLength={120} placeholder="Insurer name"/></label>
+   <label>Product / plan<input value={productName} onChange={e=>setProductName(e.target.value)} required maxLength={160} placeholder="Plan name"/></label>
+   <label>Cover type<select value={policyType} onChange={e=>setPolicyType(e.target.value)}><option value="third_party">Third-party</option><option value="comprehensive">Comprehensive / Package</option><option value="standalone_od">Standalone OD</option><option value="bundled">Bundled</option></select></label>
+   <label>Final premium (₹)<input type="number" min="1" max="10000000" step="0.01" value={premium} onChange={e=>setPremium(e.target.value)} required/></label>
+   <label>IDV (₹) <span>optional</span><input type="number" min="0" max="100000000" step="1" value={idv} onChange={e=>setIdv(e.target.value)}/></label>
+   <label>Quote expiry <span>optional</span><input type="datetime-local" value={validUntil} onChange={e=>setValidUntil(e.target.value)}/></label>
+   <label className="insurance-admin-quote-wide">Coverage summary<textarea rows={2} value={coverSummary} onChange={e=>setCoverSummary(e.target.value)} required maxLength={1600} placeholder="Cover, deductibles and key conditions from insurer quote"/></label>
+   <label>Add-ons <span>comma separated</span><input value={addOns} onChange={e=>setAddOns(e.target.value)} placeholder="Zero depreciation, RSA"/></label>
+   <label>Exclusions / conditions <span>comma separated</span><input value={exclusions} onChange={e=>setExclusions(e.target.value)} placeholder="Conditions and exclusions"/></label>
+   <label className="insurance-admin-quote-wide">Insurer payment URL <span>optional · HTTPS link from partner system</span><input type="url" value={paymentUrl} onChange={e=>setPaymentUrl(e.target.value)} placeholder="https://…"/></label>
+  </div>
+  <button disabled={busy}>{busy?"Saving…":"Save verified quotation"} <CheckCircle2 size={14}/></button>{message&&<small>{message}</small>}
+ </form></details>
+}
+
 type RequestRow = {
   id: string; tracking_id: string; customer_name: string; mobile: string; email: string;
   vehicle_type: string; registration_number: string | null; make_model: string; variant: string | null;
@@ -109,6 +166,7 @@ export function InsurancePortal() {
         <button className="insurance-submit-button" disabled={busy}>{busy ? "Saving secure request…" : "Request insurer quotations"} <ArrowRight size={17}/></button>
         <p className="insurance-form-disclaimer"><LockKeyhole size={13}/> Your request is stored securely. We do not collect premiums or card/bank credentials on this page.</p>
       </form>}
+      <QuoteLookupPanel />
     </section>
     <section className="insurance-how-section">
       <div className="insurance-section-heading"><span className="insurance-kicker">A TRANSPARENT PURCHASE JOURNEY</span><h2>From vehicle details to insurer payment.</h2></div>
@@ -161,6 +219,7 @@ export function AdminInsurancePortal() {
         <div className="insurance-admin-details"><span>{vehicleLabels[item.vehicle_type]} · {item.make_model} {item.variant??""}</span><span>{item.registration_number||"Registration not provided"} · {item.registration_year}</span><span>{item.mobile} · {item.email}</span><span>{item.policy_type.replaceAll("_"," ")} · {item.fuel_type}</span><span>Previous insurer: {item.previous_insurer||"Not provided"} · Claims: {item.claims_last_year?"Yes":"No"}</span></div>
         {item.customer_notes && <p>{item.customer_notes}</p>}
         <label className="insurance-status-control">Request status<select value={item.status} onChange={e=>void changeStatus(item.id,e.target.value)}>{Object.entries(statusLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+        <InsuranceQuoteEntry requestId={item.id} onSaved={load} />
       </article>)}</div>}
     <p className="insurance-admin-footnote"><LockKeyhole size={13}/> Owner-only data access. Customer requests are not publicly readable.</p>
   </main>;
