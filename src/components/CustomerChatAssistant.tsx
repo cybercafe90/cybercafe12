@@ -34,14 +34,17 @@ const QUICK_ACTIONS = [
 ];
 
 const SENSITIVE_PATTERNS = [
-  /\b(?:otp|one[- ]?time password|verification code|security code)\b/i,
-  /\b(?:password|passcode|login credentials)\b/i,
-  /\b(?:upi|atm|debit|credit)?\s*pin\b/i,
-  /\b(?:bank details|bank account|bank passbook|account\s*(?:no\.?|number)|ifsc|cvv|card number|net banking)\b/i,
+  /\b(?:otp|one[- ]?time password|verification code|security code)\b\s*(?:is|:|=|-)?\s*\d{4,8}\b/i,
+  /\b(?:here(?:'s| is)|my|this is)\s+(?:my\s+)?(?:otp|one[- ]?time password|verification code|security code)\b/i,
+  /\b(?:password|passcode|login credentials)\s*(?:is|:|=)\s*\S+/i,
+  /\b(?:my|here is|this is)\s+(?:password|passcode|pin)\b/i,
+  /\b(?:upi|atm|debit|credit)?\s*pin\s*(?:is|:|=)?\s*\d{4,6}\b/i,
+  /\b(?:bank details|bank account|account\s*(?:no\.?|number)|ifsc|cvv|card number|net banking)\b.{0,24}\b[\dA-Z]{4,}\b/i,
+  /\b(?:here is|my|attached is)\s+(?:bank passbook|bank details|bank account)\b/i,
 ];
 
 function isSensitive(text: string) {
-  return /^\s*\d{4,8}\s*$/.test(text) || SENSITIVE_PATTERNS.some((pattern) => pattern.test(text));
+  return /^\s*\d{4,18}\s*$/.test(text) || SENSITIVE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function isRomanUrdu(text: string) {
