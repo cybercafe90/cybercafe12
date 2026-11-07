@@ -2,9 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
   FileText,
-  MapPin,
   MessageCircle,
-  Phone,
   Send,
   ShieldAlert,
   ShieldCheck,
@@ -154,7 +152,7 @@ if (/\b(hello|hi|hey|salaam|assalam|assalamu|namaste)\b/i.test(q)) {
     };
   }
 
-  if (/\b(contact|phone|call|whatsapp|email|location|address|support)\b/i.test(q)) {
+  if (/\b(contact|phone|call|whatsapp|email|location|address|support|hours|timing|open)\b/i.test(q)) {
     return {
       text: romanUrdu
         ? "BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nAap website ke Contact page se bhi rabta kar sakte hain."
