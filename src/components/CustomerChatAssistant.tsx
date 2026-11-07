@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
   FileText,
+  Globe2,
+  RotateCcw,
   MessageCircle,
   Send,
   ShieldAlert,
@@ -24,11 +26,9 @@ const INSURANCE_LINK = `${SITE}/insurance`;
 const CONTACT_LINK = `${SITE}/contact`;
 
 const QUICK_ACTIONS = [
-  "Revenue certificates",
-  "Birth / death / trade licence",
-  "Driving licence / RC",
-  "Motor insurance",
-  "Track my application",
+  "Browse all services", "Revenue certificates", "Birth / death / trade licence",
+  "Driving licence / RC", "Motor insurance", "Payment help",
+  "Track my application", "Submit a grievance", "Talk to a human",
 ];
 
 const SENSITIVE_PATTERNS = [
@@ -174,6 +174,44 @@ function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" |
   };
 }
 
+
+function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> | null {
+  const q = input.toLowerCase();
+  if (/\b(payment|pay|paid|utr|transaction|refund|fee payment)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Payment ke liye pehle Track Status par reference ID aur registered mobile se application verify karein. Due amount ho to website ka payment page follow karein. UTR dena payment credit hone ka proof nahi; bank credit verify hone ke baad hi payment confirmed hoti hai. OTP, PIN ya bank details chat mein share na karein."
+        : "For payment help, first verify your application on Track Status using your reference ID and registered mobile. If an amount is due, follow the website payment page. A submitted UTR is not proof of credited funds; payment is confirmed only after bank credit is verified. Never share an OTP, PIN or bank details here.",
+      links: [{ label: "Track & Payment", href: TRACK_LINK }, { label: "Payment Portal", href: "\${SITE}/pay" }, { label: "Contact Support", href: CONTACT_LINK }],
+    };
+  }
+  if (/\b(grievance|complaint|complain|delay|issue|problem|refund request)\b/i.test(q)) {
+    return {
+      text: romanUrdu ? "Aap Grievance page par complaint submit kar sakte hain. Application reference ID aur issue ki short details ready rakhein. Password, OTP, PIN ya bank details share na karein." : "Submit a service-related complaint through the Grievance page. Keep your application reference ID and a short description of the issue ready. Do not include passwords, OTPs, PINs or bank details.",
+      links: [{ label: "Submit a Grievance", href: "\${SITE}/grievance" }, { label: "Contact Support", href: CONTACT_LINK }],
+    };
+  }
+  if (/\b(talk to a human|human|agent|staff|representative|support team|call me)\b/i.test(q)) {
+    return {
+      text: romanUrdu ? "Support team se WhatsApp ya phone par rabta karein. Sirf apni query batayein; OTP, password ya bank details share na karein." : "You can speak with our support team by WhatsApp or phone. Share only a brief description of your enquiry—never send an OTP, password or bank details.",
+      links: [{ label: "Chat on WhatsApp", href: "https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20assistance." }, { label: "Call support", href: "tel:+917006865909" }, { label: "Email support", href: "mailto:support@babacybercafe.in" }],
+    };
+  }
+  if (/\b(browse all services|all services|service list|services list|catalogue|catalog)\b/i.test(q)) {
+    return {
+      text: romanUrdu ? "Revenue, SMC, RTO, Motor Insurance, PAN, ABHA, MSME, Labour, Handloom aur doosri digital assistance services browse karein. Availability aur eligibility har service ke liye alag ho sakti hai." : "Browse Revenue, SMC, RTO, Motor Insurance, PAN, ABHA, MSME, Labour, Handloom and other digital assistance services. Availability and eligibility vary by service.",
+      links: [{ label: "Browse Services Hub", href: "\${SITE}/services" }, { label: "Start an Enquiry", href: "\${SITE}/apply" }],
+    };
+  }
+  if (/\b(privacy|personal information|delete my data|data protection)\b/i.test(q)) {
+    return {
+      text: romanUrdu ? "Personal information sirf zaroori form ya verified support channel par dein. Is chat mein documents, Aadhaar number, OTP, password, PIN ya bank details share na karein. Data handling ke liye Privacy Policy dekhein." : "Share personal information only through the relevant form or a verified support channel. Do not share documents, Aadhaar numbers, OTPs, passwords, PINs or bank details in this chat. Review the Privacy Policy for data-handling information.",
+      links: [{ label: "Privacy Policy", href: "\${SITE}/privacy" }, { label: "Contact Support", href: CONTACT_LINK }],
+    };
+  }
+  return null;
+}
+
 export default function CustomerChatAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -188,6 +226,11 @@ export default function CustomerChatAssistant() {
   const [nextId, setNextId] = useState(2);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  function resetChat() {
+    setMessages([{ id: 1, role: "assistant", text: "Hello! I’m the BABA'S CYBER CAFE digital assistant for Srinagar, J&K. Ask about services, documents, tracking, payments or grievances. Never share OTPs, passwords, PINs or bank details here." }]);
+    setNextId(2);
+    setInput("");
+  }
 
   useEffect(() => {
     if (open) {
@@ -205,7 +248,7 @@ export default function CustomerChatAssistant() {
     const customerMessage: ChatMessage | null = sensitive
       ? null
       : { id: nextId, role: "customer", text: value };
-    const reply = buildReply(value, language);
+    const reply = buildAdvancedReply(value, language) ?? buildReply(value, language);
     setMessages((current) => [
       ...current,
       ...(customerMessage ? [customerMessage] : []),
@@ -230,7 +273,11 @@ export default function CustomerChatAssistant() {
               <strong>BABA'S CYBER CAFE</strong>
               <span><i/> SERVICE ASSISTANT · SRINAGAR</span>
             </div>
-            <button className="customer-chat-close" type="button" onClick={() => setOpen(false)} aria-label="Close assistant"><X size={19}/></button>
+            <div className="customer-chat-tools">
+              <button type="button" onClick={() => setRomanUrdu((value) => !value)} aria-label="Switch language" title="Switch English / Roman Urdu"><Globe2 size={15}/><span>{romanUrdu ? "اردو / EN" : "EN / اردو"}</span></button>
+              <button type="button" onClick={resetChat} aria-label="Start a new chat" title="New chat"><RotateCcw size={15}/></button>
+              <button className="customer-chat-close" type="button" onClick={() => setOpen(false)} aria-label="Close assistant"><X size={19}/></button>
+            </div>
           </header>
           <div className="customer-chat-security"><ShieldAlert size={14}/><span>Never share OTPs, passwords, PINs or bank details in chat.</span></div>
           <div className="customer-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
@@ -253,11 +300,9 @@ export default function CustomerChatAssistant() {
             ))}
             <div ref={bottomRef}/>
           </div>
-          {messages.length === 1 && (
-            <div className="customer-chat-quick-actions">
-              {QUICK_ACTIONS.map((action) => <button type="button" key={action} onClick={() => sendMessage(action)}>{action}</button>)}
-            </div>
-          )}
+          <div className="customer-chat-quick-actions" aria-label="Quick help topics">
+            {QUICK_ACTIONS.map((action) => <button type="button" key={action} onClick={() => sendMessage(action)}>{action}</button>)}
+          </div>
           <form className="customer-chat-compose" onSubmit={handleSubmit}>
             <input
               ref={inputRef}
@@ -270,7 +315,7 @@ export default function CustomerChatAssistant() {
             />
             <button type="submit" disabled={!input.trim()} aria-label="Send message"><Send size={17}/></button>
           </form>
-          <div className="customer-chat-footnote"><FileText size={11}/> Website service guidance only · Messages are not saved</div>
+          <div className="customer-chat-footnote"><FileText size={11}/> Website guidance only · Not monitored live · Messages are not saved</div>
         </section>
       )}
       <button className={open ? "customer-chat-launcher is-open" : "customer-chat-launcher"} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Close customer assistant" : "Open customer assistant"}>
