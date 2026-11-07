@@ -25,11 +25,8 @@ jobs:
         run: |
           npm audit --json > npm-audit.json || true
           node -e 'const a=require("./npm-audit.json"); const items=Object.values(a.vulnerabilities||{}).map(v=>({name:v.name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range})})); console.log(JSON.stringify({totals:a.metadata?.vulnerabilities,advisories:items},null,2));'
-      - name: Preview non-breaking npm audit remediation
-        shell: bash
-        run: |
-          npm audit fix --dry-run --json > npm-audit-fix-plan.json || true
-          node -e 'const p=require("./npm-audit-fix-plan.json"); console.log(JSON.stringify({added:p.added,removed:p.removed,changed:p.changed,audit:p.audit?.metadata?.vulnerabilities,errors:p.error?{code:p.error.code,summary:p.error.summary}:null},null,2));'
+      - name: Preview npm audit remediation without changing the lockfile
+        run: npm audit fix --dry-run || true
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm run build
