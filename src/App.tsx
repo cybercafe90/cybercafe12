@@ -63,6 +63,7 @@ import PaymentPortal from "./pages/PaymentPortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
 import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
+import "./cyber-theme.css";
 
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
