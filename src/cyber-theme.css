@@ -388,3 +388,53 @@ body { color: var(--text-heading); }
 .portal-theme .payment-admin-tabs button.is-active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
 .portal-theme .payment-status-paid,
 .portal-theme .status-completed { color: var(--accent-green); }
+
+
+/* Admin CSV import: review first, then explicitly publish to the catalogue */
+.portal-theme .csv-import-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.portal-theme .csv-drop {
+  min-height: 176px;
+  padding: 20px;
+  border: 1px dashed rgba(0,240,255,.48);
+  border-radius: 14px;
+  color: var(--accent-cyan);
+  background: linear-gradient(145deg, rgba(0,240,255,.08), rgba(13,20,36,.88));
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.portal-theme .csv-drop:hover { border-color: var(--accent-cyan); background: rgba(0,240,255,.11); box-shadow: 0 0 20px rgba(0,240,255,.08); }
+.portal-theme .csv-drop b { color: #f4fbff; font: 700 15px inherit; }
+.portal-theme .csv-drop small { max-width: 290px; color: var(--text-muted); font-size: 11px; }
+.portal-theme .csv-drop input { width: min(250px,100%); color: #dbeafe; font-size: 11px; }
+.portal-theme .csv-preview {
+  padding: 14px;
+  border: 1px solid rgba(0,240,255,.28);
+  border-radius: 14px;
+  background: rgba(7,17,31,.92);
+  box-shadow: inset 0 0 22px rgba(0,240,255,.035);
+}
+.portal-theme .csv-preview-head, .portal-theme .csv-preview-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.portal-theme .csv-preview-head b, .portal-theme .csv-preview-row b { color: #f8fbff; font-size: 12px; overflow-wrap: anywhere; }
+.portal-theme .csv-preview-head small, .portal-theme .csv-preview-row small { display: block; margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+.portal-theme .csv-ready { padding: 5px 8px; border: 1px solid rgba(0,255,136,.3); border-radius: 999px; color: #55f0ad; background: rgba(0,255,136,.08); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.portal-theme .csv-preview-stats { display: flex; gap: 8px; margin: 12px 0; }
+.portal-theme .csv-preview-stats span { padding: 5px 9px; border-radius: 8px; color: #b8c9dc; background: rgba(148,163,184,.1); font-size: 10px; }
+.portal-theme .csv-preview-list { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(148,163,184,.14); border-bottom: 1px solid rgba(148,163,184,.14); }
+.portal-theme .csv-preview-row { min-width: 0; }
+.portal-theme .csv-preview-row > span:first-child { min-width: 0; }
+.portal-theme .csv-featured-on { color: #ffd166; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.portal-theme .csv-featured-off { color: #94a3b8; font-size: 10px; white-space: nowrap; }
+.portal-theme .csv-submit { width: 100%; margin-top: 12px; border: 1px solid var(--accent-cyan); color: #03121a; background: var(--accent-cyan); font-weight: 800; }
+.portal-theme .csv-submit:hover:not(:disabled) { box-shadow: 0 0 18px rgba(0,240,255,.35); }
+.portal-theme .csv-cancel { align-self: center; margin-top: 4px; color: #9fb4c9; }
+.portal-theme .csv-feedback { margin: 0; padding: 10px 12px; border-radius: 9px; font-size: 11px; }
+.portal-theme .csv-error { border: 1px solid rgba(255,92,112,.32); color: #ff9aa8; background: rgba(255,92,112,.08); }
+.portal-theme .admin-feature-toggle { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid rgba(148,163,184,.2); border-radius: 999px; color: #a8b6c8; background: rgba(148,163,184,.07); font-size: 10px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.portal-theme .admin-feature-toggle input { accent-color: #f6c453; margin: 0; }
+.portal-theme .admin-feature-toggle.is-featured { border-color: rgba(255,209,102,.52); color: #ffd166; background: rgba(255,193,7,.13); box-shadow: 0 0 14px rgba(255,193,7,.08); }
+.portal-theme .admin-feature-toggle.is-standard { color: #9aabc0; }
+@media (max-width: 680px) {
+  .portal-theme .csv-preview { padding: 11px; }
+  .portal-theme .csv-preview-head { align-items: flex-start; }
+  .portal-theme .csv-ready { font-size: 8px; }
+  .portal-theme .csv-preview-row { align-items: flex-start; }
+}
