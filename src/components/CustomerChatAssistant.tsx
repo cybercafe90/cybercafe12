@@ -13,12 +13,10 @@ function containsSensitiveData(value: string) {
   const patterns = [
     /\b(?:otp|one[ -]?time password|verification code)\b\s*(?:is|:|=|-)?\s*\d{4,8}\b/i,
     /\b(?:password|passcode|pin|upi pin|cvv|cvc)\b\s*(?:is|:|=|-)?\s*[a-z0-9@#$!_-]{3,}/i,
-    /\b\d{12}\b/,
+    /\b(?:account(?: number| no\.?)?|a\/c)\D{0,10}\d{9,18}\b/i,
     /\b\d{16}\b/,
-    /\b\d{9,18}\b/,
-    /\b[a-z0-9._-]{2,}@[a-z]{2,}\b/i,
-  ];
-  return patterns.some((pattern) => pattern.test(value));
+    /\b[a-z0-9._-]{2,}@(okaxis|okhdfcbank|oksbi|ybl|paytm|ibl|axl|upi)\b/i,
+  ];  return patterns.some((pattern) => pattern.test(value));
 }
 
 function answerFor(message: string): { text: string; links?: ChatLink[] } {
