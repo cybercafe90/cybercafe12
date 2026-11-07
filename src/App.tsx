@@ -61,6 +61,7 @@ import GrievancePage from "./pages/GrievancePage";
 import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
+import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
 
 const phone = "+91 7006865909";
@@ -411,6 +412,7 @@ function HomePage() {
         <div className="cyber-announcement"><BadgeCheck size={15}/>{settings.announcement.text}</div>
       )}
       <section className="cyber-hero">
+        <CyberNetworkCanvas />
         <div className="cyber-hero-grid"/>
         <div className="cyber-hero-copy">
           <span className="cyber-eyebrow"><i/> DIGITAL CIVIC INFRASTRUCTURE · SECURE DOCUMENT ASSISTANCE</span>
@@ -3814,10 +3816,8 @@ function RoutedApp() {
     });
     return () => { cancelled = true; };
   }, [location.pathname]);
-  const portalPrefixes = ["/apply", "/track", "/dashboard", "/admin", "/investigation", "/grievance", "/pay"];
-  const isPortalRoute = portalPrefixes.some((prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`));
   return (
-    <div className={isPortalRoute ? "portal-theme" : undefined}>
+    <div className="portal-theme">
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
