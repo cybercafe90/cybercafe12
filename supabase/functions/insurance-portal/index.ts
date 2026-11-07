@@ -64,7 +64,7 @@ Deno.serve(async (request) => {
      registration_number:registrationNumber||null,make_model:makeModel,variant:variant||null,registration_year:registrationYear,
      fuel_type:fuelType,policy_type:policyType,previous_insurer:previousInsurer||null,policy_expiry:policyExpiry||null,
      claims_last_year:body.claimsLastYear===true,customer_notes:customerNotes||null,status:'received'
-    }).select('tracking_id').single()
+    }).select('id,email,tracking_id').single()
     if(!error&&data) saved=data; else if(error?.code!=='23505') throw error??new Error('Could not save quote request.')
    }
    if(!saved) return response(request,{error:'A reference could not be generated. Please try again.'},503)
