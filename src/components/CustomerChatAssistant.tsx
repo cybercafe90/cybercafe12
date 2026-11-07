@@ -2,9 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
   FileText,
-  MapPin,
   MessageCircle,
-  Phone,
   Send,
   ShieldAlert,
   ShieldCheck,
