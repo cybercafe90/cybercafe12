@@ -65,3 +65,7 @@
 @media(prefers-reduced-motion:reduce) {
   .insurance-portal-page *, .insurance-portal-page *::before, .insurance-portal-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+.catalog-quote-cta { display:flex; align-items:center; justify-content:space-between; gap:18px; max-width:1180px; margin:0 auto 22px; padding:18px 20px; border:1px solid var(--line); background:var(--gold-wash); }
+.catalog-quote-cta p { max-width:640px; margin:0; color:var(--ink); font-size:12px; line-height:1.7; }
+@media(max-width:620px) { .catalog-quote-cta { align-items:stretch; flex-direction:column; padding:16px; } .catalog-quote-cta .button { width:100%; justify-content:center; } }
