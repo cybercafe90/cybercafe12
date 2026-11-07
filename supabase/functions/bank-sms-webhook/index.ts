@@ -67,8 +67,10 @@ Deno.serve(async (request) => {
         const { data: payment } = await admin.from('payment_orders')
           .select('id, amount, status, utr, claimed_utr')
           .eq('application_id', app.id).maybeSingle()
-        const { data: duplicateUtr } = await admin.from('payment_orders')
-          .select('id').or(`utr.eq.${utr},claimed_utr.eq.${utr}`).limit(1).maybeSingle()
+        const { data: duplicateUtr } = payment
+          ? await admin.from('payment_orders').select('id').neq('id', payment.id)
+              .or(`utr.eq.${utr},claimed_utr.eq.${utr}`).limit(1).maybeSingle()
+          : { data: null }
         const claimedReferenceMatches = !payment?.claimed_utr || payment.claimed_utr === utr
         if (payment && Number(payment.amount).toFixed(2) === Number(amount).toFixed(2)
           && ['pending','claimed','needs_review'].includes(payment.status)
