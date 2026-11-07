@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
       });
       const json = await res.json();
       if (!res.ok || !json.success || !json.result?.id) return reply(req, { error: "Cloudflare did not confirm the IP block. Check API permissions and plan support." }, 502);
-      const { error } = await admin.from("security_actions").insert({ action_type: "temporary_ip_block", target_ip: ip, provider: "cloudflare", provider_rule_id: json.result.id, reason, status: "applied", performed_by: user.id, result: { provider: "cloudflare", rule_id: json.result.id } });
+      const { error } = await admin.from("security_actions").insert({ action_type: "ip_block", target_ip: ip, provider: "cloudflare", provider_rule_id: json.result.id, reason, status: "applied", performed_by: user.id, result: { provider: "cloudflare", rule_id: json.result.id } });
       if (error) {
         await fetch(`https://api.cloudflare.com/client/v4/zones/${zone}/firewall/access_rules/rules/${json.result.id}`, { method: "DELETE", headers });
         throw new Error("ACTION_AUDIT_FAILED_BLOCK_REVERTED");
