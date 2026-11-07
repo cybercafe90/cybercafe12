@@ -182,13 +182,13 @@ function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage
       text: romanUrdu
         ? "Payment ke liye pehle Track Status par reference ID aur registered mobile se application verify karein. Due amount ho to website ka payment page follow karein. UTR dena payment credit hone ka proof nahi; bank credit verify hone ke baad hi payment confirmed hoti hai. OTP, PIN ya bank details chat mein share na karein."
         : "For payment help, first verify your application on Track Status using your reference ID and registered mobile. If an amount is due, follow the website payment page. A submitted UTR is not proof of credited funds; payment is confirmed only after bank credit is verified. Never share an OTP, PIN or bank details here.",
-      links: [{ label: "Track & Payment", href: TRACK_LINK }, { label: "Payment Portal", href: "\${SITE}/pay" }, { label: "Contact Support", href: CONTACT_LINK }],
+      links: [{ label: "Track & Payment", href: TRACK_LINK }, { label: "Payment Portal", href: SITE + "/pay" }, { label: "Contact Support", href: CONTACT_LINK }],
     };
   }
   if (/\b(grievance|complaint|complain|delay|issue|problem|refund request)\b/i.test(q)) {
     return {
       text: romanUrdu ? "Aap Grievance page par complaint submit kar sakte hain. Application reference ID aur issue ki short details ready rakhein. Password, OTP, PIN ya bank details share na karein." : "Submit a service-related complaint through the Grievance page. Keep your application reference ID and a short description of the issue ready. Do not include passwords, OTPs, PINs or bank details.",
-      links: [{ label: "Submit a Grievance", href: "\${SITE}/grievance" }, { label: "Contact Support", href: CONTACT_LINK }],
+      links: [{ label: "Submit a Grievance", href: SITE + "/grievance" }, { label: "Contact Support", href: CONTACT_LINK }],
     };
   }
   if (/\b(talk to a human|human|agent|staff|representative|support team|call me)\b/i.test(q)) {
@@ -200,13 +200,13 @@ function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage
   if (/\b(browse all services|all services|service list|services list|catalogue|catalog)\b/i.test(q)) {
     return {
       text: romanUrdu ? "Revenue, SMC, RTO, Motor Insurance, PAN, ABHA, MSME, Labour, Handloom aur doosri digital assistance services browse karein. Availability aur eligibility har service ke liye alag ho sakti hai." : "Browse Revenue, SMC, RTO, Motor Insurance, PAN, ABHA, MSME, Labour, Handloom and other digital assistance services. Availability and eligibility vary by service.",
-      links: [{ label: "Browse Services Hub", href: "\${SITE}/services" }, { label: "Start an Enquiry", href: "\${SITE}/apply" }],
+      links: [{ label: "Browse Services Hub", href: SITE + "/services" }, { label: "Start an Enquiry", href: SITE + "/apply" }],
     };
   }
   if (/\b(privacy|personal information|delete my data|data protection)\b/i.test(q)) {
     return {
       text: romanUrdu ? "Personal information sirf zaroori form ya verified support channel par dein. Is chat mein documents, Aadhaar number, OTP, password, PIN ya bank details share na karein. Data handling ke liye Privacy Policy dekhein." : "Share personal information only through the relevant form or a verified support channel. Do not share documents, Aadhaar numbers, OTPs, passwords, PINs or bank details in this chat. Review the Privacy Policy for data-handling information.",
-      links: [{ label: "Privacy Policy", href: "\${SITE}/privacy" }, { label: "Contact Support", href: CONTACT_LINK }],
+      links: [{ label: "Privacy Policy", href: SITE + "/privacy" }, { label: "Contact Support", href: CONTACT_LINK }],
     };
   }
   return null;
