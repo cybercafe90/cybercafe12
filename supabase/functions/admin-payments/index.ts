@@ -57,11 +57,22 @@ Deno.serve(async (request) => {
       const { data: existing } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
       if (existing && ['paid','claimed'].includes(existing.status) && amount !== Number(existing.amount)) return response(request, { error: 'Reopen or resolve the existing payment before changing its amount.' }, 409)
       const result = existing
-        ? await admin.from('payment_orders').update({ amount }).eq('id', existing.id).select('id').single()
-        : await admin.from('payment_orders').insert({ application_id: body.applicationId, amount, created_by: actor.id }).select('id').single()
+        ? await admin.from('payment_orders').update({ amount, expires_at: new Date(Date.now() + 5 * 60_000).toISOString() }).eq('id', existing.id).select('id').single()
+        : await admin.from('payment_orders').insert({ application_id: body.applicationId, amount, expires_at: new Date(Date.now() + 5 * 60_000).toISOString(), created_by: actor.id }).select('id').single()
       if (result.error) throw result.error
       await admin.from('payment_audit_events').insert({ payment_id: result.data.id, actor_id: actor.id, action: 'amount_assigned', metadata: { amount } })
       return response(request, { updated: true }, 200)
+    }
+
+    if (action === 'renew_qr') {
+      if (!validId(body.applicationId)) return response(request, { error: 'Invalid application.' }, 400)
+      const { data: payment } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
+      if (!payment || Number(payment.amount) <= 0 || payment.status !== 'pending') return response(request, { error: 'Only an unpaid payment with an assigned amount can receive a new QR expiry.' }, 409)
+      const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString()
+      const { error } = await admin.from('payment_orders').update({ expires_at: expiresAt }).eq('id', payment.id)
+      if (error) throw error
+      await admin.from('payment_audit_events').insert({ payment_id: payment.id, actor_id: actor.id, action: 'upi_qr_renewed', metadata: { expires_at: expiresAt } })
+      return response(request, { renewed: true, expiresAt }, 200)
     }
 
     if (action === 'manual_mark_paid') {
