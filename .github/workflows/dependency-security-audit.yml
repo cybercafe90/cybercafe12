@@ -1,0 +1,34 @@
+name: Dependency security audit
+
+on:
+  push:
+    branches: [dependency-audit-review-20261107]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run full dependency audit and print advisory details
+        shell: bash
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const a=require("./npm-audit.json"); const items=Object.values(a.vulnerabilities||{}).map(v=>({name:v.name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range})})); console.log(JSON.stringify({totals:a.metadata?.vulnerabilities,advisories:items},null,2));'
+      - run: npm audit --omit=dev
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run test:edge
+      - run: npm run check:edge
