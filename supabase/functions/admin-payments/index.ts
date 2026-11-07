@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
       if (!validId(body.applicationId) || typeof body.reason !== 'string' || body.reason.trim().length < 10) return response(request, { error: 'A reason is required.' }, 400)
       const { data: payment } = await admin.from('payment_orders').select('id').eq('application_id', body.applicationId).maybeSingle()
       if (!payment) return response(request, { error: 'Payment record not found.' }, 404)
-      const { error } = await admin.from('payment_orders').update({ status: 'pending', utr: null, paid_at: null, claimed_utr: null }).eq('id', payment.id)
+      const { error } = await admin.from('payment_orders').update({ status: 'pending', utr: null, paid_at: null, claimed_utr: null, expires_at: new Date(Date.now() + 5 * 60_000).toISOString() }).eq('id', payment.id)
       if (error) throw error
       await admin.from('payment_audit_events').insert({ payment_id: payment.id, actor_id: actor.id, action: 'admin_reopened_payment', metadata: { reason: body.reason.trim() } })
       return response(request, { updated: true }, 200)
