@@ -1512,3 +1512,144 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
  .customer-chat-launcher { min-height:50px; padding-inline:17px; }
 }
 @media(prefers-reduced-motion:reduce) { .customer-chat-panel { animation:none; } .customer-chat-launcher { transition:none; } }
+
+
+/* Shared cyber dashboard theme for every customer and staff portal */
+.portal-theme {
+  --ink:#f8fbff;
+  --ink-soft:#dbe7f5;
+  --paper:#080b14;
+  --white:rgba(19,26,46,.86);
+  --muted:#94a3b8;
+  --line:rgba(0,245,255,.22);
+  --gold:#00f5ff;
+  --gold-light:#00ff88;
+  --gold-wash:rgba(124,58,237,.16);
+  --green:#00ff88;
+  min-height:100vh;
+  color:#fff;
+  background:
+    radial-gradient(ellipse at 12% 0%,rgba(0,245,255,.10),transparent 34%),
+    radial-gradient(ellipse at 88% 8%,rgba(124,58,237,.14),transparent 32%),
+    linear-gradient(rgba(0,245,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,245,255,.025) 1px,transparent 1px),
+    #080b14;
+  background-size:auto,auto,36px 36px,36px 36px,auto;
+}
+.portal-theme .topline { color:#a7b5c9; background:#080b14; border-bottom:1px solid rgba(0,245,255,.13); }
+.portal-theme .topline a { color:#00f5ff; }
+.portal-theme .site-header { border-color:rgba(0,245,255,.22); background:rgba(8,11,20,.96); box-shadow:0 8px 28px rgba(0,0,0,.2); }
+.portal-theme .brand-mark { border-color:#00f5ff; color:#00f5ff; box-shadow:0 0 16px rgba(0,245,255,.12); }
+.portal-theme .brand-name { color:#fff; }
+.portal-theme .brand-name small { color:#94a3b8; }
+.portal-theme .main-nav a { color:#c4d0e0; }
+.portal-theme .main-nav a:hover,.portal-theme .main-nav a.active { color:#00f5ff; }
+.portal-theme .main-nav .nav-button { border-color:#00f5ff; color:#071018; background:#00f5ff; }
+.portal-theme .content-page { min-height:62vh; color:#f8fbff; background:transparent; }
+.portal-theme .page-intro h1,.portal-theme .admin-page h1,.portal-theme .investigation-page h1,.portal-theme .payment-heading h1 { color:#fff; }
+.portal-theme .page-intro p,.portal-theme .admin-page p,.portal-theme .investigation-page p,.portal-theme .payment-heading p { color:#a7b5c9; }
+.portal-theme .eyebrow,.portal-theme .text-link,.portal-theme .investigation-access { color:#00f5ff; }
+.portal-theme .signin-panel,.portal-theme .track-empty,.portal-theme .tracking-result,
+.portal-theme .admin-section,.portal-theme .form-panel,.portal-theme .table-wrap,
+.portal-theme .grievance-panel,.portal-theme .investigation-summary > div,
+.portal-theme .incident-card,.portal-theme .investigator-management,
+.portal-theme .payment-panel,.portal-theme .payment-customer-card,
+.portal-theme .payment-method,.portal-theme .payment-success,.portal-theme .payment-empty,
+.portal-theme .payment-create-form,.portal-theme .payment-admin-card,.portal-theme .payment-alert-card,
+.portal-theme .payment-awaiting {
+  color:#e8f1ff;
+  border:1px solid rgba(0,245,255,.22);
+  background:rgba(19,26,46,.82);
+  box-shadow:0 8px 28px rgba(0,0,0,.16),inset 0 0 18px rgba(124,58,237,.045);
+  backdrop-filter:blur(16px);
+}
+.portal-theme .signin-panel h2,.portal-theme .track-empty h2,.portal-theme .tracking-result h2,
+.portal-theme .admin-section h2,.portal-theme .investigation-summary strong,
+.portal-theme .incident-card h2,.portal-theme .payment-panel h2,.portal-theme .payment-customer-card h2,
+.portal-theme .payment-success h2,.portal-theme .payment-empty h2,.portal-theme .payment-create-form h2,
+.portal-theme .payment-instructions h2,.portal-theme .payment-awaiting h2 { color:#fff; }
+.portal-theme .admin-section-head h2 { color:#fff; }
+.portal-theme .field,.portal-theme .payment-lookup label,.portal-theme .payment-utr-form label,
+.portal-theme .payment-admin-fields label,.portal-theme .payment-admin-controls label { color:#c5d2e3; }
+.portal-theme .field input,.portal-theme .field select,.portal-theme .field textarea,
+.portal-theme .search-box,.portal-theme .search-box input,
+.portal-theme .admin-search input,.portal-theme .settings-form input,.portal-theme .settings-form textarea,
+.portal-theme .settings-form select,.portal-theme .inline-service-form input,.portal-theme .inline-service-form select,
+.portal-theme .inline-service-form textarea,.portal-theme .investigator-grant-form input,
+.portal-theme .incident-controls input,.portal-theme .incident-controls textarea,
+.portal-theme .payment-lookup input,.portal-theme .payment-utr-form input,
+.portal-theme .payment-admin-fields input,.portal-theme .payment-admin-fields select,
+.portal-theme .payment-admin-controls input {
+  color:#f8fbff;
+  border-color:rgba(0,245,255,.24);
+  background:#080f1d;
+}
+.portal-theme input::placeholder,.portal-theme textarea::placeholder { color:#718198; }
+.portal-theme .field input:focus,.portal-theme .field select:focus,.portal-theme .field textarea:focus,
+.portal-theme .payment-lookup input:focus,.portal-theme .payment-utr-form input:focus,
+.portal-theme .payment-admin-fields input:focus,.portal-theme .payment-admin-fields select:focus {
+  border-color:#00f5ff;
+  box-shadow:0 0 0 3px rgba(0,245,255,.10);
+  outline:none;
+}
+.portal-theme .button-dark,.portal-theme .button-gold,.portal-theme .payment-deep-link {
+  border-color:#00f5ff;
+  color:#071018;
+  background:#00f5ff;
+  box-shadow:0 4px 18px rgba(0,245,255,.13);
+}
+.portal-theme .button-dark:hover,.portal-theme .button-gold:hover { background:#72fbff; }
+.portal-theme .button-outline { border-color:rgba(0,245,255,.45); color:#00f5ff; background:rgba(0,245,255,.045); }
+.portal-theme .button-outline:hover { border-color:#00f5ff; background:rgba(0,245,255,.12); }
+.portal-theme .text-button { color:#00f5ff; }
+.portal-theme .notice,.portal-theme .notice-success,.portal-theme .notice-error,.portal-theme .notice-warn {
+  border-color:rgba(0,245,255,.2);
+  color:#dbeafe;
+  background:rgba(19,26,46,.9);
+}
+.portal-theme .notice-success { border-color:rgba(0,255,136,.32); color:#9fffd0; background:rgba(0,255,136,.07); }
+.portal-theme .notice-error { border-color:rgba(248,113,113,.35); color:#fecaca; background:rgba(127,29,29,.16); }
+.portal-theme .notice-warn { border-color:rgba(250,204,21,.3); color:#fde68a; background:rgba(120,80,10,.15); }
+.portal-theme .table-wrap { border-radius:12px; }
+.portal-theme table { color:#e8f1ff; background:transparent; }
+.portal-theme th { color:#00f5ff; background:rgba(0,245,255,.07); border-color:rgba(0,245,255,.16); }
+.portal-theme td { color:#d5e0ee; border-color:rgba(148,163,184,.13); }
+.portal-theme tr:hover td { background:rgba(0,245,255,.035); }
+.portal-theme .admin-filters > span,.portal-theme .admin-filters label,
+.portal-theme .admin-pagination,.portal-theme .pagination { color:#94a3b8; }
+.portal-theme .admin-modal,.portal-theme .modal-backdrop > div { color:#e8f1ff; border-color:rgba(0,245,255,.28); background:#131a2e; }
+.portal-theme .modal-backdrop { background:rgba(0,0,0,.76); }
+.portal-theme .grievance-tabs { border-color:rgba(0,245,255,.2); }
+.portal-theme .grievance-tabs button { color:#a7b5c9; border-color:rgba(0,245,255,.16); background:rgba(19,26,46,.7); }
+.portal-theme .grievance-tabs button[aria-selected="true"],.portal-theme .grievance-tabs button.active { color:#00f5ff; border-color:#00f5ff; background:rgba(0,245,255,.09); }
+.portal-theme .grievance-success,.portal-theme .grievance-track-result { color:#e8f1ff; border-color:rgba(0,245,255,.2); background:rgba(19,26,46,.85); }
+.portal-theme .investigation-summary strong { color:#00f5ff; }
+.portal-theme .investigation-summary small,.portal-theme .incident-meta,.portal-theme .incident-topline { color:#94a3b8; }
+.portal-theme .incident-controls { border-color:rgba(0,245,255,.16); }
+.portal-theme .payment-status { color:#d8c8ff; background:rgba(124,58,237,.22); }
+.portal-theme .payment-status-paid { color:#00ff88; background:rgba(0,255,136,.12); }
+.portal-theme .payment-status-claimed,.portal-theme .payment-status-needs_review { color:#fde68a; background:rgba(245,158,11,.12); }
+.portal-theme .payment-amount strong,.portal-theme .payment-success > strong { color:#00ff88; }
+.portal-theme .payment-qr-card { border:1px solid rgba(0,245,255,.25); background:#fff; }
+.portal-theme .payment-warning { border-left-color:#7c3aed; color:#e9ddff!important; background:rgba(124,58,237,.15); }
+.portal-theme .payment-alert-error { border-color:rgba(248,113,113,.35); color:#fecaca; background:rgba(127,29,29,.18); }
+.portal-theme .payment-alert-info { border-color:rgba(0,255,136,.3); color:#9fffd0; background:rgba(0,255,136,.07); }
+.portal-theme .payment-alert-card > p { color:#d5e0ee; background:rgba(8,11,20,.7); }
+.portal-theme .payment-admin-tabs { border-color:rgba(0,245,255,.2); }
+.portal-theme .payment-admin-tabs button { color:#94a3b8; }
+.portal-theme .payment-admin-tabs button.is-active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.portal-theme .status-tag,.portal-theme .payment-status { border:1px solid rgba(0,245,255,.2); }
+.portal-theme .status-completed,.portal-theme .status-paid { color:#00ff88; background:rgba(0,255,136,.1); }
+.portal-theme .timeline-item strong,.portal-theme .tracking-result-head h2 { color:#fff; }
+.portal-theme .timeline-item small,.portal-theme .customer-remarks p,.portal-theme .approved-documents a { color:#a7b5c9; }
+.portal-theme .site-footer { border-top:1px solid rgba(0,245,255,.18); color:#cbd5e1; background:#080b14; }
+.portal-theme .site-footer h3 { color:#00f5ff; }
+.portal-theme .site-footer a:hover { color:#00f5ff; }
+.portal-theme .footer-bottom { border-color:rgba(0,245,255,.16); }
+.portal-theme .sound-control { border-color:rgba(0,245,255,.35); color:#00f5ff; background:rgba(19,26,46,.95); }
+.portal-theme .menu-toggle { color:#00f5ff; border-color:rgba(0,245,255,.25); }
+.portal-theme a:focus-visible,.portal-theme button:focus-visible,.portal-theme input:focus-visible,.portal-theme select:focus-visible,.portal-theme textarea:focus-visible { outline-color:#00f5ff; }
+@media(max-width:760px) {
+  .portal-theme .main-nav { border-color:rgba(0,245,255,.2); background:#080b14; }
+  .portal-theme .main-nav a { color:#e2e8f0; }
+}
