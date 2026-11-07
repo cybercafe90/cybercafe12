@@ -27,6 +27,8 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npm run test:edge
+      - run: npm run check:edge
       # Cloudflare Pages is connected directly to this GitHub repository and
       # deploys each main-branch push itself. Keep this workflow as CI only;
       # a second Wrangler deploy requires separate secrets and causes false failures.
