@@ -95,3 +95,8 @@
 .payment-admin-controls .payment-verify-checkbox { display: flex; flex: 1 1 100%; align-items: flex-start; gap: 10px; color: #55554d; font-size: 11px; line-height: 1.6; }
 .payment-admin-controls .payment-verify-checkbox input { width: 16px; min-width: 16px; min-height: 16px; margin: 2px 0 0; accent-color: var(--green); }
 .payment-verification-help { flex: 1 1 100%; margin: 0; padding: 10px 12px; border-left: 2px solid var(--gold); background: #f8f4ea; color: #67542f; font-size: 11px; line-height: 1.6; }
+
+.payment-verification-checklist { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 6px 14px; list-style: none; margin: 0; padding: 10px 12px; border: 1px solid #e8e1d2; border-radius: 8px; background: #fffdf8; color: #765d35; font-size: 11px; line-height: 1.5; }
+.payment-verification-checklist li { margin: 0; }
+.payment-verification-checklist li.is-ready { color: #236b45; font-weight: 700; }
+.payment-verification-checklist li:not(.is-ready) { color: #9a4f38; }
