@@ -1417,3 +1417,239 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .cyber-shield-card,.cyber-orbit,.cyber-orbit-b,.shield-aura { animation:none!important; }
   .cyber-button,.cyber-department-card { transition:none!important; }
 }
+
+
+/* Customer service assistant */
+.customer-chat-assistant { position:fixed; z-index:120; right:22px; bottom:22px; display:flex; align-items:flex-end; flex-direction:column; gap:12px; font-family:'Inter','DM Sans',sans-serif; }
+.customer-chat-launcher { display:flex; min-height:54px; align-items:center; justify-content:center; gap:10px; padding:0 19px; border:1px solid #00f5ff; border-radius:999px; color:#071018; background:#00f5ff; box-shadow:0 8px 35px rgba(0,245,255,.24),0 3px 10px rgba(0,0,0,.3); font-size:12px; font-weight:800; cursor:pointer; transition:transform .2s ease,box-shadow .2s ease; }
+.customer-chat-launcher:hover { transform:translateY(-2px); box-shadow:0 10px 42px rgba(0,245,255,.34); }
+.customer-chat-launcher.is-open { color:#e9fbff; background:#131a2e; }
+.customer-chat-panel { display:flex; width:min(390px,calc(100vw - 28px)); height:min(610px,calc(100dvh - 105px)); flex-direction:column; overflow:hidden; border:1px solid rgba(0,245,255,.48); border-radius:19px; background:#080b14; box-shadow:0 24px 90px rgba(0,0,0,.62),0 0 35px rgba(0,245,255,.12); animation:customer-chat-in .2s ease-out; }
+.customer-chat-header { display:flex; min-height:70px; align-items:center; gap:11px; padding:13px 15px; border-bottom:1px solid rgba(0,245,255,.18); background:linear-gradient(110deg,#131a2e,#101629); }
+.customer-chat-avatar { display:grid; width:39px; height:39px; flex:0 0 39px; place-items:center; border:1px solid rgba(0,245,255,.42); border-radius:12px; color:#00f5ff; background:rgba(0,245,255,.09); }
+.customer-chat-title { display:grid; min-width:0; flex:1; gap:5px; }
+.customer-chat-title b { color:#fff; font:700 10px 'Orbitron',sans-serif; letter-spacing:.055em; }
+.customer-chat-title small { display:flex; align-items:center; gap:6px; color:#9aabc0; font:700 7px 'Inter',sans-serif; letter-spacing:.1em; }
+.customer-chat-title small i { width:6px; height:6px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88; }
+.customer-chat-close { display:grid; width:34px; height:34px; place-items:center; border:1px solid rgba(148,163,184,.18); border-radius:9px; color:#b8c5d6; background:transparent; cursor:pointer; }
+.customer-chat-safety { display:flex; align-items:center; gap:7px; padding:9px 13px; border-bottom:1px solid rgba(0,255,136,.15); color:#9ce9c8; background:rgba(0,255,136,.045); font-size:8px; line-height:1.5; }
+.customer-chat-safety svg { flex:0 0 auto; color:#00ff88; }
+.customer-chat-messages { display:flex; min-height:0; flex:1; flex-direction:column; gap:13px; overflow-y:auto; padding:16px 13px; scrollbar-color:rgba(0,245,255,.28) transparent; }
+.customer-chat-row { display:flex; justify-content:flex-start; }
+.customer-chat-row.is-customer { justify-content:flex-end; }
+.customer-chat-bubble { max-width:91%; padding:11px 12px; border:1px solid rgba(0,245,255,.2); border-radius:4px 13px 13px 13px; color:#dce7f4; background:#131a2e; }
+.customer-chat-row.is-customer .customer-chat-bubble { border-color:rgba(124,58,237,.42); border-radius:13px 4px 13px 13px; color:#fff; background:rgba(124,58,237,.18); }
+.customer-chat-bubble p { margin:0; font-size:10px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; }
+.customer-chat-links { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.customer-chat-links a { display:inline-flex; align-items:center; gap:5px; padding:7px 9px; border:1px solid rgba(0,245,255,.32); border-radius:7px; color:#00f5ff; background:rgba(0,245,255,.06); font-size:9px; font-weight:700; text-decoration:none; }
+.customer-chat-links a:hover { border-color:#00f5ff; background:rgba(0,245,255,.13); }
+.customer-chat-quick { display:flex; flex-wrap:wrap; gap:7px; }
+.customer-chat-quick button { padding:8px 10px; border:1px solid rgba(0,245,255,.28); border-radius:999px; color:#bffaff; background:rgba(0,245,255,.055); font-size:9px; cursor:pointer; }
+.customer-chat-quick button:hover { border-color:#00f5ff; }
+.customer-chat-compose { display:flex; gap:8px; padding:11px 12px; border-top:1px solid rgba(0,245,255,.17); background:#0d1424; }
+.customer-chat-compose input { width:100%; min-width:0; min-height:42px; padding:0 12px; border:1px solid rgba(148,163,184,.24); border-radius:9px; outline:none; color:#fff; background:#080b14; font:11px 'Inter',sans-serif; }
+.customer-chat-compose input:focus { border-color:#00f5ff; box-shadow:0 0 0 2px rgba(0,245,255,.09); }
+.customer-chat-compose input::placeholder { color:#718198; }
+.customer-chat-compose button { display:grid; width:43px; flex:0 0 43px; place-items:center; border:0; border-radius:9px; color:#071018; background:#00f5ff; cursor:pointer; }
+.customer-chat-compose button:disabled { opacity:.4; cursor:not-allowed; }
+.customer-chat-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; border-top:1px solid rgba(148,163,184,.1); color:#8796aa; background:#080b14; font-size:8px; }
+.customer-chat-footer span,.customer-chat-footer a { display:inline-flex; align-items:center; gap:5px; }
+.customer-chat-footer span { color:#9ce9c8; }
+.customer-chat-footer a { color:#00f5ff; text-decoration:none; white-space:nowrap; }
+@keyframes customer-chat-in { from { opacity:0; transform:translateY(9px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media (max-width:560px) {
+ .customer-chat-assistant { right:12px; bottom:12px; gap:9px; }
+ .customer-chat-panel { width:calc(100vw - 24px); height:min(590px,calc(100dvh - 88px)); border-radius:16px; }
+ .customer-chat-launcher { min-height:49px; padding-inline:16px; }
+ .customer-chat-footer { font-size:7px; }
+}
+@media (prefers-reduced-motion:reduce) { .customer-chat-panel { animation:none; } .customer-chat-launcher { transition:none; } }
+
+/* BABA'S CYBER CAFE customer service assistant */
+.customer-chat-assistant { position:fixed; z-index:1000; right:22px; bottom:22px; display:flex; flex-direction:column; align-items:flex-end; gap:12px; font-family:'Inter','DM Sans',sans-serif; }
+.customer-chat-launcher { position:relative; display:flex; min-height:54px; align-items:center; justify-content:center; gap:10px; padding:0 20px; border:1px solid #00f5ff; border-radius:999px; color:#061016; background:#00f5ff; box-shadow:0 8px 28px rgba(0,245,255,.25),0 0 0 5px rgba(0,245,255,.07); font-size:12px; font-weight:800; cursor:pointer; transition:transform .2s ease,box-shadow .2s ease; }
+.customer-chat-launcher:hover { transform:translateY(-3px); box-shadow:0 12px 35px rgba(0,245,255,.35),0 0 0 6px rgba(0,245,255,.1); }
+.customer-chat-launcher.is-open { color:#00f5ff; background:#131a2e; }
+.customer-chat-launcher > i { position:absolute; top:2px; right:3px; width:10px; height:10px; border:2px solid #080b14; border-radius:50%; background:#00ff88; box-shadow:0 0 10px #00ff88; }
+.customer-chat-panel { display:flex; width:min(390px,calc(100vw - 28px)); height:min(610px,calc(100dvh - 115px)); min-height:370px; flex-direction:column; overflow:hidden; border:1px solid rgba(0,245,255,.43); border-radius:19px; color:#f5f8ff; background:rgba(8,11,20,.98); box-shadow:0 22px 80px rgba(0,0,0,.58),0 0 28px rgba(0,245,255,.1); backdrop-filter:blur(18px); animation:customer-chat-enter .2s ease-out; }
+.customer-chat-header { display:flex; min-height:76px; align-items:center; gap:12px; padding:14px 15px; border-bottom:1px solid rgba(0,245,255,.18); background:linear-gradient(110deg,rgba(19,26,46,.98),rgba(24,20,51,.98)); }
+.customer-chat-avatar { display:grid; width:41px; height:41px; flex:0 0 41px; place-items:center; border:1px solid rgba(0,245,255,.48); border-radius:13px; color:#00f5ff; background:rgba(0,245,255,.08); box-shadow:inset 0 0 15px rgba(124,58,237,.18); }
+.customer-chat-heading { display:grid; min-width:0; flex:1; gap:5px; }
+.customer-chat-heading strong { overflow:hidden; color:#fff; font:700 11px 'Orbitron','Inter',sans-serif; letter-spacing:.04em; text-overflow:ellipsis; white-space:nowrap; }
+.customer-chat-heading span { display:flex; align-items:center; gap:7px; color:#91a2b9; font:700 8px 'Inter',sans-serif; letter-spacing:.1em; }
+.customer-chat-heading span i { width:6px; height:6px; border-radius:50%; background:#00ff88; box-shadow:0 0 9px #00ff88; }
+.customer-chat-close { display:grid; width:34px; height:34px; flex:0 0 34px; place-items:center; border:1px solid rgba(148,163,184,.2); border-radius:10px; color:#aebbd0; background:transparent; cursor:pointer; }
+.customer-chat-close:hover { border-color:#00f5ff; color:#00f5ff; }
+.customer-chat-security { display:flex; align-items:flex-start; gap:8px; padding:9px 14px; border-bottom:1px solid rgba(255,177,74,.17); color:#ffd18c; background:rgba(124,58,237,.09); font-size:9px; line-height:1.55; }
+.customer-chat-security svg { flex:0 0 14px; margin-top:1px; }
+.customer-chat-messages { display:flex; min-height:0; flex:1; flex-direction:column; gap:14px; overflow-y:auto; padding:16px 13px 12px; scrollbar-color:rgba(0,245,255,.35) transparent; scrollbar-width:thin; }
+.customer-chat-message { display:flex; max-width:94%; align-items:flex-start; gap:7px; }
+.customer-chat-message.customer { align-self:flex-end; }
+.customer-chat-message.assistant { align-self:flex-start; }
+.customer-chat-message-mark { display:grid; width:23px; height:23px; flex:0 0 23px; place-items:center; border:1px solid rgba(0,245,255,.3); border-radius:8px; color:#00f5ff; background:#131a2e; }
+.customer-chat-bubble { min-width:0; padding:11px 12px; border:1px solid rgba(148,163,184,.16); border-radius:4px 13px 13px 13px; background:#131a2e; }
+.customer-chat-message.customer .customer-chat-bubble { border-color:rgba(0,245,255,.2); border-radius:13px 4px 13px 13px; color:#eafcff; background:rgba(0,245,255,.1); }
+.customer-chat-bubble p { margin:0; color:#dce5f2; font-size:10px; line-height:1.75; white-space:pre-line; overflow-wrap:anywhere; }
+.customer-chat-message.customer .customer-chat-bubble p { color:#eafcff; }
+.customer-chat-links { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+.customer-chat-links a { display:inline-flex; min-height:29px; align-items:center; gap:5px; padding:0 9px; border:1px solid rgba(0,245,255,.38); border-radius:7px; color:#00f5ff; background:rgba(0,245,255,.06); font-size:9px; font-weight:700; text-decoration:none; }
+.customer-chat-links a:hover { border-color:#00f5ff; background:rgba(0,245,255,.13); }
+.customer-chat-quick-actions { display:flex; flex-wrap:wrap; gap:7px; padding:0 13px 12px; }
+.customer-chat-quick-actions button { min-height:29px; padding:0 9px; border:1px solid rgba(124,58,237,.55); border-radius:999px; color:#d6caff; background:rgba(124,58,237,.12); font-size:9px; cursor:pointer; }
+.customer-chat-quick-actions button:hover { border-color:#00f5ff; color:#00f5ff; }
+.customer-chat-compose { display:flex; gap:8px; padding:11px 12px; border-top:1px solid rgba(0,245,255,.16); background:#0c1220; }
+.customer-chat-compose input { width:100%; min-width:0; min-height:42px; padding:0 12px; border:1px solid rgba(148,163,184,.23); border-radius:10px; outline:none; color:#fff; background:#080b14; font-size:10px; }
+.customer-chat-compose input::placeholder { color:#75839a; }
+.customer-chat-compose input:focus { border-color:#00f5ff; box-shadow:0 0 0 2px rgba(0,245,255,.1); }
+.customer-chat-compose button { display:grid; width:43px; height:42px; flex:0 0 43px; place-items:center; border:1px solid #00f5ff; border-radius:10px; color:#061016; background:#00f5ff; cursor:pointer; }
+.customer-chat-compose button:disabled { opacity:.35; cursor:not-allowed; }
+.customer-chat-footnote { display:flex; align-items:center; justify-content:center; gap:6px; padding:0 10px 10px; color:#718096; background:#0c1220; font-size:8px; }
+.customer-chat-footnote svg { color:#00ff88; }
+@keyframes customer-chat-enter { from { opacity:0; transform:translateY(9px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media(max-width:520px) {
+ .customer-chat-assistant { right:12px; bottom:12px; }
+ .customer-chat-panel { width:calc(100vw - 24px); height:min(590px,calc(100dvh - 92px)); }
+ .customer-chat-launcher { min-height:50px; padding-inline:17px; }
+}
+@media(prefers-reduced-motion:reduce) { .customer-chat-panel { animation:none; } .customer-chat-launcher { transition:none; } }
+
+
+/* Shared cyber dashboard theme for every customer and staff portal */
+.portal-theme {
+  --ink:#f8fbff;
+  --ink-soft:#dbe7f5;
+  --paper:#080b14;
+  --white:rgba(19,26,46,.86);
+  --muted:#94a3b8;
+  --line:rgba(0,245,255,.22);
+  --gold:#00f5ff;
+  --gold-light:#00ff88;
+  --gold-wash:rgba(124,58,237,.16);
+  --green:#00ff88;
+  min-height:100vh;
+  color:#fff;
+  background:
+    radial-gradient(ellipse at 12% 0%,rgba(0,245,255,.10),transparent 34%),
+    radial-gradient(ellipse at 88% 8%,rgba(124,58,237,.14),transparent 32%),
+    linear-gradient(rgba(0,245,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,245,255,.025) 1px,transparent 1px),
+    #080b14;
+  background-size:auto,auto,36px 36px,36px 36px,auto;
+}
+.portal-theme .topline { color:#a7b5c9; background:#080b14; border-bottom:1px solid rgba(0,245,255,.13); }
+.portal-theme .topline a { color:#00f5ff; }
+.portal-theme .site-header { border-color:rgba(0,245,255,.22); background:rgba(8,11,20,.96); box-shadow:0 8px 28px rgba(0,0,0,.2); }
+.portal-theme .brand-mark { border-color:#00f5ff; color:#00f5ff; box-shadow:0 0 16px rgba(0,245,255,.12); }
+.portal-theme .brand-name { color:#fff; }
+.portal-theme .brand-name small { color:#94a3b8; }
+.portal-theme .main-nav a { color:#c4d0e0; }
+.portal-theme .main-nav a:hover,.portal-theme .main-nav a.active { color:#00f5ff; }
+.portal-theme .main-nav .nav-button { border-color:#00f5ff; color:#071018; background:#00f5ff; }
+.portal-theme .content-page { min-height:62vh; color:#f8fbff; background:transparent; }
+.portal-theme .page-intro h1,.portal-theme .admin-page h1,.portal-theme .investigation-page h1,.portal-theme .payment-heading h1 { color:#fff; }
+.portal-theme .page-intro p,.portal-theme .admin-page p,.portal-theme .investigation-page p,.portal-theme .payment-heading p { color:#a7b5c9; }
+.portal-theme .eyebrow,.portal-theme .text-link,.portal-theme .investigation-access { color:#00f5ff; }
+.portal-theme .signin-panel,.portal-theme .track-empty,.portal-theme .tracking-result,
+.portal-theme .admin-section,.portal-theme .form-panel,.portal-theme .table-wrap,
+.portal-theme .grievance-panel,.portal-theme .investigation-summary > div,
+.portal-theme .incident-card,.portal-theme .investigator-management,
+.portal-theme .payment-panel,.portal-theme .payment-customer-card,
+.portal-theme .payment-method,.portal-theme .payment-success,.portal-theme .payment-empty,
+.portal-theme .payment-create-form,.portal-theme .payment-admin-card,.portal-theme .payment-alert-card,
+.portal-theme .payment-awaiting {
+  color:#e8f1ff;
+  border:1px solid rgba(0,245,255,.22);
+  background:rgba(19,26,46,.82);
+  box-shadow:0 8px 28px rgba(0,0,0,.16),inset 0 0 18px rgba(124,58,237,.045);
+  backdrop-filter:blur(16px);
+}
+.portal-theme .signin-panel h2,.portal-theme .track-empty h2,.portal-theme .tracking-result h2,
+.portal-theme .admin-section h2,.portal-theme .investigation-summary strong,
+.portal-theme .incident-card h2,.portal-theme .payment-panel h2,.portal-theme .payment-customer-card h2,
+.portal-theme .payment-success h2,.portal-theme .payment-empty h2,.portal-theme .payment-create-form h2,
+.portal-theme .payment-instructions h2,.portal-theme .payment-awaiting h2 { color:#fff; }
+.portal-theme .admin-section-head h2 { color:#fff; }
+.portal-theme .field,.portal-theme .payment-lookup label,.portal-theme .payment-utr-form label,
+.portal-theme .payment-admin-fields label,.portal-theme .payment-admin-controls label { color:#c5d2e3; }
+.portal-theme .field input,.portal-theme .field select,.portal-theme .field textarea,
+.portal-theme .search-box,.portal-theme .search-box input,
+.portal-theme .admin-search input,.portal-theme .settings-form input,.portal-theme .settings-form textarea,
+.portal-theme .settings-form select,.portal-theme .inline-service-form input,.portal-theme .inline-service-form select,
+.portal-theme .inline-service-form textarea,.portal-theme .investigator-grant-form input,
+.portal-theme .incident-controls input,.portal-theme .incident-controls textarea,
+.portal-theme .payment-lookup input,.portal-theme .payment-utr-form input,
+.portal-theme .payment-admin-fields input,.portal-theme .payment-admin-fields select,
+.portal-theme .payment-admin-controls input {
+  color:#f8fbff;
+  border-color:rgba(0,245,255,.24);
+  background:#080f1d;
+}
+.portal-theme input::placeholder,.portal-theme textarea::placeholder { color:#718198; }
+.portal-theme .field input:focus,.portal-theme .field select:focus,.portal-theme .field textarea:focus,
+.portal-theme .payment-lookup input:focus,.portal-theme .payment-utr-form input:focus,
+.portal-theme .payment-admin-fields input:focus,.portal-theme .payment-admin-fields select:focus {
+  border-color:#00f5ff;
+  box-shadow:0 0 0 3px rgba(0,245,255,.10);
+  outline:none;
+}
+.portal-theme .button-dark,.portal-theme .button-gold,.portal-theme .payment-deep-link {
+  border-color:#00f5ff;
+  color:#071018;
+  background:#00f5ff;
+  box-shadow:0 4px 18px rgba(0,245,255,.13);
+}
+.portal-theme .button-dark:hover,.portal-theme .button-gold:hover { background:#72fbff; }
+.portal-theme .button-outline { border-color:rgba(0,245,255,.45); color:#00f5ff; background:rgba(0,245,255,.045); }
+.portal-theme .button-outline:hover { border-color:#00f5ff; background:rgba(0,245,255,.12); }
+.portal-theme .text-button { color:#00f5ff; }
+.portal-theme .notice,.portal-theme .notice-success,.portal-theme .notice-error,.portal-theme .notice-warn {
+  border-color:rgba(0,245,255,.2);
+  color:#dbeafe;
+  background:rgba(19,26,46,.9);
+}
+.portal-theme .notice-success { border-color:rgba(0,255,136,.32); color:#9fffd0; background:rgba(0,255,136,.07); }
+.portal-theme .notice-error { border-color:rgba(248,113,113,.35); color:#fecaca; background:rgba(127,29,29,.16); }
+.portal-theme .notice-warn { border-color:rgba(250,204,21,.3); color:#fde68a; background:rgba(120,80,10,.15); }
+.portal-theme .table-wrap { border-radius:12px; }
+.portal-theme table { color:#e8f1ff; background:transparent; }
+.portal-theme th { color:#00f5ff; background:rgba(0,245,255,.07); border-color:rgba(0,245,255,.16); }
+.portal-theme td { color:#d5e0ee; border-color:rgba(148,163,184,.13); }
+.portal-theme tr:hover td { background:rgba(0,245,255,.035); }
+.portal-theme .admin-filters > span,.portal-theme .admin-filters label,
+.portal-theme .admin-pagination,.portal-theme .pagination { color:#94a3b8; }
+.portal-theme .admin-modal,.portal-theme .modal-backdrop > div { color:#e8f1ff; border-color:rgba(0,245,255,.28); background:#131a2e; }
+.portal-theme .modal-backdrop { background:rgba(0,0,0,.76); }
+.portal-theme .grievance-tabs { border-color:rgba(0,245,255,.2); }
+.portal-theme .grievance-tabs button { color:#a7b5c9; border-color:rgba(0,245,255,.16); background:rgba(19,26,46,.7); }
+.portal-theme .grievance-tabs button[aria-selected="true"],.portal-theme .grievance-tabs button.active { color:#00f5ff; border-color:#00f5ff; background:rgba(0,245,255,.09); }
+.portal-theme .grievance-success,.portal-theme .grievance-track-result { color:#e8f1ff; border-color:rgba(0,245,255,.2); background:rgba(19,26,46,.85); }
+.portal-theme .investigation-summary strong { color:#00f5ff; }
+.portal-theme .investigation-summary small,.portal-theme .incident-meta,.portal-theme .incident-topline { color:#94a3b8; }
+.portal-theme .incident-controls { border-color:rgba(0,245,255,.16); }
+.portal-theme .payment-status { color:#d8c8ff; background:rgba(124,58,237,.22); }
+.portal-theme .payment-status-paid { color:#00ff88; background:rgba(0,255,136,.12); }
+.portal-theme .payment-status-claimed,.portal-theme .payment-status-needs_review { color:#fde68a; background:rgba(245,158,11,.12); }
+.portal-theme .payment-amount strong,.portal-theme .payment-success > strong { color:#00ff88; }
+.portal-theme .payment-qr-card { border:1px solid rgba(0,245,255,.25); background:#fff; }
+.portal-theme .payment-warning { border-left-color:#7c3aed; color:#e9ddff!important; background:rgba(124,58,237,.15); }
+.portal-theme .payment-alert-error { border-color:rgba(248,113,113,.35); color:#fecaca; background:rgba(127,29,29,.18); }
+.portal-theme .payment-alert-info { border-color:rgba(0,255,136,.3); color:#9fffd0; background:rgba(0,255,136,.07); }
+.portal-theme .payment-alert-card > p { color:#d5e0ee; background:rgba(8,11,20,.7); }
+.portal-theme .payment-admin-tabs { border-color:rgba(0,245,255,.2); }
+.portal-theme .payment-admin-tabs button { color:#94a3b8; }
+.portal-theme .payment-admin-tabs button.is-active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.portal-theme .status-tag,.portal-theme .payment-status { border:1px solid rgba(0,245,255,.2); }
+.portal-theme .status-completed,.portal-theme .status-paid { color:#00ff88; background:rgba(0,255,136,.1); }
+.portal-theme .timeline-item strong,.portal-theme .tracking-result-head h2 { color:#fff; }
+.portal-theme .timeline-item small,.portal-theme .customer-remarks p,.portal-theme .approved-documents a { color:#a7b5c9; }
+.portal-theme .site-footer { border-top:1px solid rgba(0,245,255,.18); color:#cbd5e1; background:#080b14; }
+.portal-theme .site-footer h3 { color:#00f5ff; }
+.portal-theme .site-footer a:hover { color:#00f5ff; }
+.portal-theme .footer-bottom { border-color:rgba(0,245,255,.16); }
+.portal-theme .sound-control { border-color:rgba(0,245,255,.35); color:#00f5ff; background:rgba(19,26,46,.95); }
+.portal-theme .menu-toggle { color:#00f5ff; border-color:rgba(0,245,255,.25); }
+.portal-theme a:focus-visible,.portal-theme button:focus-visible,.portal-theme input:focus-visible,.portal-theme select:focus-visible,.portal-theme textarea:focus-visible { outline-color:#00f5ff; }
+@media(max-width:760px) {
+  .portal-theme .main-nav { border-color:rgba(0,245,255,.2); background:#080b14; }
+  .portal-theme .main-nav a { color:#e2e8f0; }
+}
