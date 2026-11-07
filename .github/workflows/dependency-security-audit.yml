@@ -20,8 +20,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply npm's proposed dev-toolchain security remediation on this branch
-        run: npm audit fix --force
+      - name: Pin vulnerable dev-tool transitive dependency to patched minimatch
+        run: |
+          npm pkg set "overrides.minimatch=11.0.1"
+          npm install --package-lock-only --ignore-scripts
+          npm ci
       - name: Require a clean full dependency audit
         run: npm audit
       - run: npm audit --omit=dev
@@ -38,7 +41,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "Fix vulnerable development toolchain dependencies"
+            git commit -m "Pin patched minimatch for development tooling"
             git push origin HEAD:dependency-audit-review-20261107
           else
             echo "No dependency changes to commit."
