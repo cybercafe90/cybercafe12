@@ -119,3 +119,29 @@ test("admin password recovery uses a generic confirmation and safe redirect", as
   const callbackUrl = new URL(recoveryUrl).searchParams.get("redirect_to");
   expect(callbackUrl).toBe(`${new URL(page.url()).origin}/admin/login`);
 });
+
+test("insurance quotation, payment and customer upload controls remain responsive", async ({ page }) => {
+  await page.goto("/insurance");
+  await expect(page.getByRole("heading", { name: "Request an insurance quotation." })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Submit quotation request/ })).toBeVisible();
+  await expect(page.locator(".insurance-premium")).toHaveCount(0);
+  let viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  let documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
+
+  await page.goto("/insurance/admin");
+  await expect(page.getByRole("heading", { name: "Insurance quotation desk" })).toBeVisible();
+  await expect(page.getByText("Owner sign-in required")).toBeVisible();
+
+  await page.goto("/pay");
+  await expect(page.getByRole("heading", { name: "Application payment" })).toBeVisible();
+  viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
+
+  await page.goto("/apply");
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
+  viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
+});
