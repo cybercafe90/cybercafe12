@@ -145,3 +145,35 @@ test("insurance quotation, payment and customer upload controls remain responsiv
   documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
 });
+
+
+test("customer portal guides visitors to secure reference-based tracking", async ({ page }) => {
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("heading", { name: "Track your application securely." }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Email OTP sign-in has been removed/),
+  ).toBeVisible();
+  await page.getByRole("link", { name: /Open tracking portal/ }).click();
+  await expect(page).toHaveURL(/\/track$/);
+  await expect(
+    page.getByRole("heading", { name: "A clear view of what comes next." }),
+  ).toBeVisible();
+});
+
+test("investigation portal denies unauthenticated visitors", async ({ page }) => {
+  await page.goto("/investigation");
+  await expect(
+    page.getByRole("heading", { name: "Investigation portal" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Restricted access" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Go to secure sign-in" }),
+  ).toHaveAttribute("href", "/admin/login");
+  await expect(
+    page.getByRole("heading", { name: "Security events" }),
+  ).toHaveCount(0);
+});
