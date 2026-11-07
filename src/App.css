@@ -1665,3 +1665,9 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .portal-theme .main-nav { border-color:rgba(0,245,255,.2); background:#080b14; }
   .portal-theme .main-nav a { color:#e2e8f0; }
 }
+
+/* Investigation telemetry and IP controls */
+.investigator-management .admin-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.investigation-page .incident-meta span { overflow-wrap:anywhere; }
+.investigation-page .investigator-management small { display:block; margin-top:12px; color:var(--muted); font-size:9px; line-height:1.6; }
+@media(max-width:640px){.investigator-grant-form{grid-template-columns:1fr}.investigation-summary{grid-template-columns:1fr}}
