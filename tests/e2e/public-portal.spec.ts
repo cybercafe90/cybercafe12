@@ -156,7 +156,7 @@ test("customer portal guides visitors to secure reference-based tracking", async
     page.getByText(/Email OTP sign-in has been removed/),
   ).toBeVisible();
   await page.getByRole("link", { name: /Open tracking portal/ }).click();
-  await expect(page).toHaveURL(/\\/track$/);
+  await expect(page).toHaveURL(/\/track$/);
   await expect(
     page.getByRole("heading", { name: "A clear view of what comes next." }),
   ).toBeVisible();
