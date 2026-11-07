@@ -45,12 +45,15 @@ Deno.serve(async (req: Request) => {
     const auth = await authorize(req);
     if (!auth.permissions.includes("view_events")) return reply(req, { error: "Investigation access required." }, 403);
     const { data, error } = await auth.admin.from("security_events")
-      .select("id,occurred_at,source,event_type,severity,status,source_ip,route,summary,customer_reference,correlation_id")
+      .select("id,occurred_at,source,event_type,severity,status,source_ip,route,summary,customer_reference,correlation_id,details")
       .order("occurred_at", { ascending: false }).limit(100);
     if (error) throw new Error("EVENT_QUERY_FAILED");
     const events = (data ?? []).map((event) => ({ ...event, customer_reference: maskReference(event.customer_reference) }));
+    const { data: activeBlocks, error: blockError } = await auth.admin.from("security_actions").select("id,target_ip,reason,performed_at,performed_by,provider_rule_id").eq("provider", "cloudflare").eq("status", "active").order("performed_at", { ascending: false }).limit(100);
+    if (blockError) throw new Error("BLOCK_LIST_QUERY_FAILED");
     return reply(req, {
       events,
+      active_blocks: activeBlocks ?? [],
       actor: { role: auth.role, permissions: auth.permissions },
       monitoring: {
         event_count: events.length,
