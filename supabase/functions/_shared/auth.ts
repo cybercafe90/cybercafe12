@@ -18,8 +18,6 @@ export async function verifyOwner(request: Request, admin: SupabaseClient): Prom
   })
   const { data: { user }, error } = await userClient.auth.getUser(token)
   if (error || !user) throw new Error('Owner sign-in required.')
-  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token)
-  if (claimsError || claimsData?.claims?.aal !== 'aal2') throw new Error('Owner MFA verification required.')
   const { data: role, error: roleError } = await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'owner').maybeSingle()
   if (roleError || role?.role !== 'owner') throw new Error('Owner authorization required.')
   return user
