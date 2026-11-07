@@ -1761,3 +1761,17 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .portal-theme .combined-payment-card .button,
   .portal-theme .payment-page .button { transition:none; }
 }
+
+
+/* Customer assistant advanced controls */
+.customer-chat-tools { display:flex; align-items:center; gap:6px; margin-left:auto; }
+.customer-chat-tools > button { display:inline-flex; min-width:33px; height:33px; align-items:center; justify-content:center; gap:5px; padding:0 8px; border:1px solid rgba(0,245,255,.24); border-radius:9px; color:#b9faff; background:rgba(0,245,255,.06); font-size:8px; font-weight:700; cursor:pointer; }
+.customer-chat-tools > button:hover { border-color:#00f5ff; color:#00f5ff; background:rgba(0,245,255,.12); }
+.customer-chat-tools > .customer-chat-close { min-width:34px; padding:0; }
+.customer-chat-quick-actions { max-height:92px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(0,245,255,.3) transparent; }
+.customer-chat-quick-actions button { min-height:30px; }
+.customer-chat-footnote { text-align:center; line-height:1.5; }
+@media (max-width:420px) {
+  .customer-chat-tools > button { min-width:30px; height:31px; padding-inline:6px; }
+  .customer-chat-tools > button span { font-size:7px; }
+}
