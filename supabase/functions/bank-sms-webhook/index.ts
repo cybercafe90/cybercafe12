@@ -57,15 +57,42 @@ Deno.serve(async (request) => {
       if (insertError.code === '23505') return response(request, { accepted: true, duplicate: true }, 200)
       throw insertError
     }
-    // SMS alerts are untrusted notifications, not bank-signed proof of funds.
-    // Keep every parsed alert pending manual statement/account verification.
+    // Match exact tracking + amount + UTR to a payment as a review suggestion only.
+    // SMS content is not bank-signed proof and must never mark an order paid.
+    let candidateMatched = false
+    let candidateNote = 'Could not identify a complete tracking, amount and UTR match; owner review required.'
     if (amount && utr && trackingId) {
-      await admin.from('bank_sms_alerts').update({
-        status: 'unmatched',
-        processing_note: 'Potential match only. Verify the corresponding transaction against the bank statement before manually marking payment as paid.',
-      }).eq('id', alert.id)
+      const { data: app } = await admin.from('applications').select('id').eq('tracking_id', trackingId).maybeSingle()
+      if (app) {
+        const { data: payment } = await admin.from('payment_orders')
+          .select('id, amount, status, utr, claimed_utr')
+          .eq('application_id', app.id).maybeSingle()
+        const { data: duplicateUtr } = await admin.from('payment_orders')
+          .select('id').or(`utr.eq.${utr},claimed_utr.eq.${utr}`).limit(1).maybeSingle()
+        const claimedReferenceMatches = !payment?.claimed_utr || payment.claimed_utr === utr
+        if (payment && Number(payment.amount).toFixed(2) === Number(amount).toFixed(2)
+          && ['pending','claimed','needs_review'].includes(payment.status)
+          && !payment.utr && claimedReferenceMatches && !duplicateUtr) {
+          const { error: candidateError } = await admin.from('bank_sms_alerts').update({
+            matched_payment_id: payment.id,
+            status: 'unmatched',
+            processing_note: 'Automatic exact-match candidate found for tracking ID, amount and UTR. NOT verified: owner must confirm the actual bank-statement credit before marking paid.',
+          }).eq('id', alert.id)
+          if (!candidateError) {
+            candidateMatched = true
+            candidateNote = 'Potential payment candidate found. Bank-statement verification is still mandatory.'
+          }
+        } else {
+          candidateNote = 'No safe exact candidate: check amount, UTR reuse, customer claim and payment status.'
+        }
+      } else {
+        candidateNote = 'No application matches the supplied tracking reference.'
+      }
+      if (!candidateMatched) {
+        await admin.from('bank_sms_alerts').update({ status: 'unmatched', processing_note: candidateNote }).eq('id', alert.id)
+      }
     }
-    return response(request, { accepted: true, matched: false, reviewRequired: true, alertId: alert.id }, 200)
+    return response(request, { accepted: true, matched: false, candidateMatched, reviewRequired: true, alertId: alert.id, note: candidateNote }, 200)
 
   } catch (reason) {
     console.error('bank-sms webhook failed:', reason instanceof Error ? reason.message.slice(0, 120) : 'unknown error')
