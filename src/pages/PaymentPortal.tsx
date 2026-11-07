@@ -92,10 +92,10 @@ function CustomerPayment() {
   const [mobile, setMobile] = useState(initialMobile);
   const [record, setRecord] = useState<PaymentRecord | null>(null);
   const [utr, setUtr] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(initialTrackingId && initialMobile));
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(Date.now());
+  const [clock, setClock] = useState(0);
   const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
   const remainingMs = expiresAt - clock;
   const qrExpired = Boolean(expiresAt && remainingMs <= 0);
@@ -121,7 +121,6 @@ function CustomerPayment() {
   useEffect(() => {
     if (!initialTrackingId || !initialMobile) return;
     let active = true;
-    setLoading(true);
     void callFunction<PaymentRecord>("payment-customer", {
       action: "lookup",
       trackingId: initialTrackingId,
