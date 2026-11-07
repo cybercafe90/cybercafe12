@@ -23,7 +23,7 @@ Deno.serve(async (request) => {
       ])
       if (apps.error || alerts.error || audit.error) throw new Error('Payment dashboard could not be loaded.')
       const ids = (apps.data ?? []).map(item => item.id)
-      const { data: orders } = ids.length ? await admin.from('payment_orders').select('id, application_id, amount, status, claimed_utr, utr, paid_at, created_at').in('application_id', ids) : { data: [] }
+      const { data: orders } = ids.length ? await admin.from('payment_orders').select('id, application_id, amount, status, claimed_utr, utr, paid_at, created_at, expires_at').in('application_id', ids) : { data: [] }
       const byApp = new Map((orders ?? []).map(item => [item.application_id, item]))
       return response(request, { applications: (apps.data ?? []).map(item => ({ ...item, payment: byApp.get(item.id) ?? null })), alerts: alerts.data ?? [], audit: audit.data ?? [] }, 200, { 'Cache-Control': 'no-store' })
     }
