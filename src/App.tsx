@@ -460,7 +460,7 @@ function HomePage() {
       <section className="cyber-command-wrap">
         <div className="cyber-command-intro"><span className="cyber-eyebrow">QUICK COMMAND</span><h2>Where would you like to go?</h2></div>
         <div className="cyber-command-grid">
-          <form className="cyber-command-card" onSubmit={(event) => { event.preventDefault(); navigate(`/track?trackingId=${encodeURIComponent(quickReference.trim())}`); }}>
+          <form className="cyber-command-card" onSubmit={(event) => { event.preventDefault(); navigate("/track", { state: { trackingId: quickReference.trim() } }); }}>
             <span className="cyber-command-icon"><Search size={18}/></span>
             <label htmlFor="quick-reference">Track by reference ID</label>
             <div className="cyber-command-input"><input id="quick-reference" value={quickReference} onChange={(event)=>setQuickReference(event.target.value.toUpperCase())} placeholder="Enter tracking reference" maxLength={32} required/><button aria-label="Continue to tracking"><ArrowRight size={17}/></button></div>
@@ -485,7 +485,7 @@ function HomePage() {
           {trackingError && <p className="cyber-error" role="alert">{trackingError}</p>}
           {trackingRecord && <div className="cyber-live-result" aria-live="polite"><div><span className="cyber-eyebrow">REFERENCE VERIFIED</span><h3>{trackingRecord.service}</h3><p>{trackingRecord.trackingId} · Submitted {new Date(trackingRecord.submittedAt).toLocaleDateString("en-IN")}</p></div><StatusTag status={trackingRecord.status}/></div>}
           <div className="cyber-pipeline">
-            {["Verified & Encrypted","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
+            {["Reference Received","Department Filing","Scrutiny","Issued / Ready"].map((label,index)=><div className={currentStage===index ? "cyber-pipeline-step is-current" : currentStage>index ? "cyber-pipeline-step is-done" : "cyber-pipeline-step"} key={label}><span>{currentStage>index ? <Check size={14}/> : String(index+1).padStart(2,"0")}</span><b>{label}</b></div>)}
           </div>
           <p className="cyber-pipeline-note">{trackingRecord ? `Current application status: ${trackingRecord.status}. The pipeline is an indicative view; final decisions are made by the relevant authority.` : "Typical workflow stages are shown above. Verify your reference to view your actual application status."}</p>
         </div>
@@ -1288,8 +1288,9 @@ type TrackedRecord = {
 
 function TrackPage() {
   const categoryList = useCategoryList();
-  const [searchParams] = useSearchParams();
-  const [trackingId, setTrackingId] = useState(searchParams.get("trackingId") ?? "");
+  const location = useLocation();
+  const initialTrackingId = (location.state as { trackingId?: unknown } | null)?.trackingId;
+  const [trackingId, setTrackingId] = useState(typeof initialTrackingId === "string" ? initialTrackingId : "");
   const [mobile, setMobile] = useState("");
   const [record, setRecord] = useState<TrackedRecord | null>(null);
   const [busy, setBusy] = useState(false);
