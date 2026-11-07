@@ -2210,32 +2210,69 @@ function AdminPage() {
   async function addService(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) return;
+    const officialUrl = serviceDraft.official_url.trim();
+    if (officialUrl && (!/^https:\/\//i.test(officialUrl) || !serviceDraft.official_url_verified)) {
+      setError("Use an HTTPS official website and confirm that you have checked the source.");
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
-    const { error: insertError } = await supabase.from("services").insert({
-      category_slug: serviceCategory,
-      name: serviceName.trim(),
-      description:
-        "Application assistance. Confirm current requirements with the responsible authority.",
-      required_documents: [],
-      eligibility:
-        "Confirm current eligibility with the responsible authority.",
-      application_method:
-        "Enquire with BABA'S CYBER CAFE for assistance. The responsible authority controls the official process.",
-      official_url: null,
-      official_url_verified: false,
-      is_active: true,
-      is_featured: featureService,
-    });
-    if (insertError) setError(insertError.message);
-    else {
+    try {
+      const { error: insertError } = await supabase.from("services").insert({
+        category_slug: serviceCategory,
+        name: serviceName.trim(),
+        description: serviceDraft.description.trim() || "Application assistance. Confirm current requirements with the responsible authority.",
+        required_documents: serviceDraft.required_documents.split("|").map((item) => item.trim()).filter(Boolean),
+        eligibility: serviceDraft.eligibility.trim() || "Confirm current eligibility with the responsible authority.",
+        application_method: serviceDraft.application_method.trim() || "Enquire with BABA'S CYBER CAFE for assistance. The responsible authority controls the official process.",
+        official_url: officialUrl || null,
+        official_url_verified: Boolean(officialUrl && serviceDraft.official_url_verified),
+        is_active: true,
+        is_featured: featureService,
+      });
+      if (insertError) throw insertError;
       setServiceName("");
       setFeatureService(false);
-      setNotice("Service added to the catalogue.");
+      setServiceDraft((draft) => ({ ...draft, description: "", required_documents: "", eligibility: "", application_method: "", official_url: "", official_url_verified: false }));
+      setNotice("Service added. It is now available in the catalogue according to its active status.");
       setCatalogVersion((version) => version + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Service could not be added.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
+  }
+
+  async function duplicateService(service: ServiceRecord) {
+    if (!supabase) return;
+    if (!window.confirm(`Create a copy of "${service.name}"? You can edit the copy before publishing it.`)) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const { error: insertError } = await supabase.from("services").insert({
+        category_slug: service.category_slug,
+        name: `${service.name} (Copy)`,
+        description: service.description,
+        required_documents: service.required_documents,
+        eligibility: service.eligibility,
+        application_method: service.application_method,
+        official_url: service.official_url,
+        official_url_verified: service.official_url_verified,
+        is_active: false,
+        is_featured: false,
+      });
+      if (insertError) throw insertError;
+      setNotice("Draft copy created as inactive. Edit it and activate it when ready.");
+      setServiceSearch(service.name);
+      setServicePage(1);
+      setCatalogVersion((version) => version + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Service could not be duplicated.");
+    } finally {
+      setBusy(false);
+    }
   }
   async function importCsv(file?: File) {
     if (!file || !supabase) return;
@@ -2843,18 +2880,43 @@ function AdminPage() {
                       ))}
                   </select>
                 </label>
+                <details className="service-advanced-fields">
+                  <summary>Advanced service details <span>Optional · documents, eligibility, process and official link</span></summary>
+                  <label className="field">
+                    <span>Short description</span>
+                    <textarea value={serviceDraft.description} onChange={(event) => setServiceDraft({ ...serviceDraft, description: event.target.value })} rows={2} maxLength={1200} placeholder="Explain what this service helps customers with." />
+                  </label>
+                  <label className="field">
+                    <span>Required documents (separate each with | )</span>
+                    <textarea value={serviceDraft.required_documents} onChange={(event) => setServiceDraft({ ...serviceDraft, required_documents: event.target.value })} rows={2} placeholder="Aadhaar card | Photograph | Proof of address" />
+                  </label>
+                  <label className="field">
+                    <span>Eligibility</span>
+                    <textarea value={serviceDraft.eligibility} onChange={(event) => setServiceDraft({ ...serviceDraft, eligibility: event.target.value })} rows={2} maxLength={1200} placeholder="Who can apply? Mention any known conditions." />
+                  </label>
+                  <label className="field">
+                    <span>Application method</span>
+                    <textarea value={serviceDraft.application_method} onChange={(event) => setServiceDraft({ ...serviceDraft, application_method: event.target.value })} rows={2} maxLength={1200} placeholder="Describe the steps or how customers can get assistance." />
+                  </label>
+                  <label className="field">
+                    <span>Official website (HTTPS only)</span>
+                    <input type="url" value={serviceDraft.official_url} onChange={(event) => setServiceDraft({ ...serviceDraft, official_url: event.target.value, official_url_verified: false })} placeholder="https://official.gov.in/" />
+                  </label>
+                  <label className="consent-check">
+                    <input type="checkbox" checked={serviceDraft.official_url_verified} onChange={(event) => setServiceDraft({ ...serviceDraft, official_url_verified: event.target.checked })} disabled={!serviceDraft.official_url.trim()} />
+                    <span>I have checked that this is the correct official source</span>
+                  </label>
+                </details>
                 <label className="consent-check">
                   <input
                     type="checkbox"
                     checked={featureService}
-                    onChange={(event) =>
-                      setFeatureService(event.target.checked)
-                    }
+                    onChange={(event) => setFeatureService(event.target.checked)}
                   />
                   <span>Feature on service listing</span>
                 </label>
-                <button className="button button-dark" disabled={busy}>
-                  Add service <ArrowRight size={15} />
+                <button className="button button-dark" disabled={busy || !serviceName.trim()}>
+                  {busy ? "Saving service…" : "Add service"} <ArrowRight size={15} />
                 </button>
               </form>
               <label className="csv-drop">
@@ -2938,6 +3000,9 @@ function AdminPage() {
                           onClick={() => editService(service)}
                         >
                           Edit <ArrowRight size={14} />
+                        </button>
+                        <button className="text-button" disabled={busy} onClick={() => void duplicateService(service)}>
+                          Duplicate
                         </button>
                       </td>
                     </tr>
