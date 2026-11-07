@@ -230,7 +230,7 @@ function Header() {
         >
           <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
           <span className="brand-name">
-            BABA'S <small>CYBER CAFE</small>
+            BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
           </span>
         </Link>
         <button
@@ -241,34 +241,13 @@ function Header() {
         >
           {open ? <X /> : <Menu />}
         </button>
-        <nav
-          className={open ? "main-nav is-open" : "main-nav"}
-          aria-label="Main navigation"
-        >
-          <NavLink to="/services" onClick={close}>
-            Services Hub
-          </NavLink>
-          <NavLink to="/about" onClick={close}>
-            About
-          </NavLink>
-          <NavLink to="/track" onClick={close}>
-            Track Reference
-          </NavLink>
-          <NavLink to="/pay" onClick={close}>
-            Make a payment
-          </NavLink>
-          <NavLink to="/grievance" onClick={close}>
-            Grievance portal
-          </NavLink>
-          <NavLink to="/investigation" onClick={close}>
-            Investigation
-          </NavLink>
-          <NavLink to="/contact" onClick={close}>
-            Direct Contact
-          </NavLink>
-          <Link className="nav-button" to="/track" onClick={close}>
-            Track Application <ArrowUpRight size={15} />
-          </Link>
+        <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
+          <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
+          <NavLink to="/track" onClick={close}>Track Reference</NavLink>
+          <NavLink to="/about" onClick={close}>About</NavLink>
+          <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
+          <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
         </nav>
       </header>
     </>
@@ -446,7 +425,6 @@ function HomePage() {
     trackingRecord.status === "Completed" || trackingRecord.status === "Rejected" ? 3 :
     trackingRecord.status === "Under Review" ? 2 :
     trackingRecord.status === "Documents Required" ? 1 : 0;
-  const [headlineLead, headlineFinish = ""] = settings.homepage.headline.split("|");
 
   return (
     <main className="cyber-home">
