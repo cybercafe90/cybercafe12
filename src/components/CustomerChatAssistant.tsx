@@ -61,22 +61,21 @@ function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" |
     };
   }
 
-  if (/\b(hello|hi|hey|salaam|assalam|assalamu|namaste)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Assalam-o-alaikum! BABA'S CYBER CAFE mein khush aamdeed. Main services, documents aur application tracking mein madad kar sakta hoon. Aap ko kis service ki maloomat chahiye?"
-        : "Hello! Welcome to BABA'S CYBER CAFE. I can help with our services, document checklists and application tracking. Which service would you like help with?",
-      links: [{ label: "Browse Services", href: SERVICE_LINK }, { label: "Track Status", href: TRACK_LINK }],
-    };
-  }
-
-
   const outsideScope = /\b(weather|forecast|politics|election|news|cricket|football|movie|song|joke|general knowledge|capital of|stock market|crypto|coding|programming|write code|translate|homework)\b/i.test(q);
 
 
   if (outsideScope) {
     return {
       text: "I only assist with BABA'S CYBER CAFE services on babacybercafe.in.",
+    };
+  }
+
+if (/\b(hello|hi|hey|salaam|assalam|assalamu|namaste)\b/i.test(q)) {
+    return {
+      text: romanUrdu
+        ? "Assalam-o-alaikum! BABA'S CYBER CAFE mein khush aamdeed. Main services, documents aur application tracking mein madad kar sakta hoon. Aap ko kis service ki maloomat chahiye?"
+        : "Hello! Welcome to BABA'S CYBER CAFE. I can help with our services, document checklists and application tracking. Which service would you like help with?",
+      links: [{ label: "Browse Services", href: SERVICE_LINK }, { label: "Track Status", href: TRACK_LINK }],
     };
   }
 
