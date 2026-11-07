@@ -2,7 +2,7 @@
 
 The admin portal uses Supabase's standard password-recovery email link. The app captures the `PASSWORD_RECOVERY` auth event as soon as the Supabase client initializes, so the recovery screen still appears if React mounts after the redirect has been processed.
 
-The repository template is `supabase/templates/recovery.html`. It must use `{{ .ConfirmationURL }}`, not a numeric code:
+The repository template is `supabase/templates/recovery.html`. It must use Supabase's secure confirmation link. Numeric verification-code instructions are not used:
 
 ```html
 <h2>BABA'S CYBER CAFE — Admin password recovery</h2>
