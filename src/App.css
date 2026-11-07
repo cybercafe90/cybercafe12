@@ -1653,3 +1653,109 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .portal-theme .main-nav { border-color:rgba(0,245,255,.2); background:#080b14; }
   .portal-theme .main-nav a { color:#e2e8f0; }
 }
+
+
+/* Unified dashboard colour system across every public page and service catalogue */
+.portal-theme .content-page,
+.portal-theme .category-section { color:#e8f1ff; background:transparent; }
+.portal-theme .content-page h1,
+.portal-theme .content-page h2,
+.portal-theme .content-page h3,
+.portal-theme .category-section h2,
+.portal-theme .category-card h3,
+.portal-theme .service-card h2,
+.portal-theme .about-copy h2 { color:#f8fbff; }
+.portal-theme .content-page p,
+.portal-theme .category-card p,
+.portal-theme .service-card > p,
+.portal-theme .service-card > .service-documents,
+.portal-theme .about-copy p,
+.portal-theme .about-principles small,
+.portal-theme .catalog-meta,
+.portal-theme .pagination { color:#a7b5c9; }
+.portal-theme .category-grid,
+.portal-theme .service-grid { border-color:rgba(0,245,255,.2); }
+.portal-theme .category-card,
+.portal-theme .service-card,
+.portal-theme .catalog-toolbar,
+.portal-theme .empty-state,
+.portal-theme .search-box,
+.portal-theme .select-wrap,
+.portal-theme .about-principles,
+.portal-theme .about-principles > div {
+  color:#e8f1ff;
+  border-color:rgba(0,245,255,.2);
+  background:rgba(19,26,46,.82);
+  box-shadow:inset 0 0 18px rgba(124,58,237,.035);
+}
+.portal-theme .category-card:hover,
+.portal-theme .service-card:hover { background:rgba(25,39,66,.96); }
+.portal-theme .category-number,
+.portal-theme .service-card-bottom span,
+.portal-theme .select-wrap > span { color:#8fa2bc; }
+.portal-theme .category-icon,
+.portal-theme .service-card-top .category-icon {
+  border-color:rgba(0,245,255,.35);
+  color:#00f5ff;
+  background:rgba(0,245,255,.07);
+}
+.portal-theme .featured-label,
+.portal-theme .service-department,
+.portal-theme .official-service-link,
+.portal-theme .service-card-bottom a,
+.portal-theme .text-link { color:#00f5ff; }
+.portal-theme .search-box input,
+.portal-theme .select-wrap select {
+  color:#f8fbff;
+  border-color:rgba(0,245,255,.22);
+  background:#080f1d;
+}
+.portal-theme .search-box input::placeholder { color:#718198; }
+.portal-theme .search-box kbd { color:#a7b5c9; border-color:rgba(0,245,255,.2); background:#101a2d; }
+.portal-theme .disclaimer-box {
+  color:#e9ddff;
+  border-color:rgba(124,58,237,.38);
+  background:rgba(124,58,237,.12);
+}
+.portal-theme .disclaimer-box > svg { color:#c4a7ff; }
+.portal-theme .empty-state { border-color:rgba(0,245,255,.2); }
+.portal-theme .empty-state h2 { color:#fff; }
+.portal-theme .about-portrait { background:#131a2e; }
+.portal-theme .about-portrait > span { color:#e8f1ff; background:rgba(8,11,20,.88); }
+.portal-theme .about-principles { border-color:rgba(0,245,255,.2); }
+.portal-theme .about-principles > div { border-color:rgba(0,245,255,.16); }
+.portal-theme .about-principles span { color:#00f5ff; }
+.portal-theme .contact-band {
+  color:#f8fbff;
+  border-block:1px solid rgba(0,245,255,.2);
+  background:linear-gradient(110deg,#101a2d,#171432 75%,#0b1725);
+}
+.portal-theme .contact-band h2 { color:#fff; }
+.portal-theme .not-found h1 { color:#fff; }
+.portal-theme .not-found p { color:#a7b5c9; }
+.portal-theme .content-page a:not(.button),
+.portal-theme .category-section a:not(.button) { color:#00f5ff; }
+.portal-theme .content-page a.button { color:#071018; }
+.portal-theme .content-page .button-outline { color:#00f5ff; }
+.portal-theme .content-page input,
+.portal-theme .content-page select,
+.portal-theme .content-page textarea {
+  color:#f8fbff;
+  border-color:rgba(0,245,255,.24);
+  background:#080f1d;
+}
+.portal-theme .content-page input::placeholder,
+.portal-theme .content-page textarea::placeholder { color:#718198; }
+.portal-theme .content-page input:focus,
+.portal-theme .content-page select:focus,
+.portal-theme .content-page textarea:focus {
+  border-color:#00f5ff;
+  box-shadow:0 0 0 3px rgba(0,245,255,.1);
+  outline:none;
+}
+.portal-theme .content-page hr { border-color:rgba(0,245,255,.18); }
+@media(max-width:760px) {
+  .portal-theme .category-grid,
+  .portal-theme .service-grid { border-color:rgba(0,245,255,.18); }
+  .portal-theme .catalog-toolbar { border-color:rgba(0,245,255,.2); }
+}
