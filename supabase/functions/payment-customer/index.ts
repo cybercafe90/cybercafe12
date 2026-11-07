@@ -10,7 +10,7 @@ async function getRecord(admin: ReturnType<typeof serviceClient>, trackingId: st
     .eq('tracking_id', trackingId).eq('mobile', mobile).maybeSingle()
   if (error || !app) return null
   const { data: payment } = await admin.from('payment_orders')
-    .select('id, amount, currency, status, claimed_utr, utr, paid_at, created_at')
+    .select('id, amount, currency, status, claimed_utr, utr, paid_at, created_at, expires_at')
     .eq('application_id', app.id).maybeSingle()
   return { application: app, payment: payment ?? { id: undefined, amount: 0, currency: 'INR', status: 'pending', claimed_utr: null, utr: null, paid_at: null } }
 }

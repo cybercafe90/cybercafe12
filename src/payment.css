@@ -89,3 +89,5 @@
  .payment-success { position: absolute; inset: 0; border: 0; width: 100%; }
  .payment-success .button { display: none; }
 }
+
+.payment-countdown { display: block; margin-top: 10px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }

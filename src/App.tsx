@@ -2189,6 +2189,20 @@ function AdminPage() {
       setBusy(false);
     }
   }
+  async function deleteApplication(item: AdminApplication) {
+    const confirmed = window.confirm(`Permanently delete application ${item.tracking_id} for ${item.full_name}? This also deletes its payment record, remarks, status history and customer documents. The deletion action remains in the owner audit log.`);
+    if (!confirmed || !supabase) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const result = await callFunction<{deleted:boolean; storageCleanupPending?:boolean}>("admin-delete-application", { applicationId: item.id }, data.session?.access_token);
+      if (active?.id === item.id) setActive(null);
+      setNotice(result.storageCleanupPending ? `Application ${item.tracking_id} deleted. Private document cleanup needs administrator review.` : `Application ${item.tracking_id} and its linked records were deleted.`);
+      setOverviewVersion(version => version + 1);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Application could not be deleted."); }
+    finally { setBusy(false); }
+  }
+
   async function addService(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) return;
@@ -2751,6 +2765,7 @@ function AdminPage() {
                         <Link className="text-button" to={`/admin/payments?application=${item.id}`}>
                           Payment <ArrowRight size={14} />
                         </Link>
+                        <button className="text-button" disabled={busy} onClick={() => void deleteApplication(item)}>Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -3054,6 +3069,7 @@ function AdminPage() {
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
+                    <button type="button" className="text-button" disabled={busy} onClick={() => void deleteApplication(active)}>Delete this application</button>
                   </div>
                   <button
                     className="icon-button"
