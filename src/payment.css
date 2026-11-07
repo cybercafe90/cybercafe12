@@ -91,3 +91,7 @@
 }
 
 .payment-countdown { display: block; margin-top: 10px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; }
+
+.payment-admin-controls .payment-verify-checkbox { display: flex; flex: 1 1 100%; align-items: flex-start; gap: 10px; color: #55554d; font-size: 11px; line-height: 1.6; }
+.payment-admin-controls .payment-verify-checkbox input { width: 16px; min-width: 16px; min-height: 16px; margin: 2px 0 0; accent-color: var(--green); }
+.payment-verification-help { flex: 1 1 100%; margin: 0; padding: 10px 12px; border-left: 2px solid var(--gold); background: #f8f4ea; color: #67542f; font-size: 11px; line-height: 1.6; }
