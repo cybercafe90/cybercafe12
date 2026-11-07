@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   audit:
@@ -20,13 +20,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run full dependency audit and print advisory details
-        shell: bash
-        run: |
-          npm audit --json > npm-audit.json || true
-          node -e 'const a=require("./npm-audit.json"); const items=Object.values(a.vulnerabilities||{}).map(v=>({name:v.name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range})})); console.log(JSON.stringify({totals:a.metadata?.vulnerabilities,advisories:items},null,2));'
-      - name: Preview npm audit remediation without changing the lockfile
-        run: npm audit fix --dry-run || true
+      - name: Apply npm's proposed dev-toolchain security remediation on this branch
+        run: npm audit fix --force
+      - name: Require a clean full dependency audit
+        run: npm audit
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm run build
@@ -34,3 +31,15 @@ jobs:
       - run: npm run test:e2e
       - run: npm run test:edge
       - run: npm run check:edge
+      - name: Commit tested dependency remediation to this branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/dependency-audit-review-20261107'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix vulnerable development toolchain dependencies"
+            git push origin HEAD:dependency-audit-review-20261107
+          else
+            echo "No dependency changes to commit."
+          fi
