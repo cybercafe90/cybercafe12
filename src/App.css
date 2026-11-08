@@ -393,6 +393,8 @@ td small { display: block; margin-top: 4px; color: #89887e; font-size: 8px; }
 .csv-drop b { color: var(--ink); font: 500 16px var(--serif); }
 .csv-drop small { max-width: 250px; color: #77766d; font-size: 9px; line-height: 1.6; }
 .csv-drop input { width: min(220px,85%); color: #77766d; font-size: 9px; }
+.csv-submit-help { display: block; margin-top: 8px; color: #77766d; font-size: 10px; line-height: 1.5; }
+.csv-submit:disabled { opacity: .55; cursor: not-allowed; }
 .modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; align-items: center; justify-items: center; padding: 20px; overflow-y: auto; background: rgba(18,18,15,.68); }
 .admin-modal { width: min(540px,100%); max-height: min(90vh,820px); padding: 23px; overflow-y: auto; background: var(--white); box-shadow: 0 12px 50px rgba(0,0,0,.2); }
 .modal-head { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 18px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
