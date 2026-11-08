@@ -14,7 +14,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.filter((key) => key.startsWith("babas-cyber-cafe-") && key !== CACHE_NAME).map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   );
@@ -34,6 +34,8 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/rest/") ||
     url.pathname.startsWith("/storage/") ||
     url.pathname.startsWith("/track") ||
+    url.pathname.startsWith("/dashboard") ||
+    url.pathname.startsWith("/insurance/admin") ||
     url.pathname.startsWith("/apply") ||
     url.pathname.startsWith("/pay") ||
     url.pathname.startsWith("/admin") ||
