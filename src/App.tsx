@@ -3253,7 +3253,7 @@ function AdminPage() {
                     </Link>
                     <a
                       className="text-button"
-                      href={`https://wa.me/${(() => { const digits = active.mobile.replace(/\\D/g, ""); return digits.length === 10 ? `91${digits}` : digits; })()}?text=${encodeURIComponent(`Hello ${active.full_name}, this is BABA'S CYBER CAFE regarding your application ${active.tracking_id} for ${active.service_name}. Current status: ${active.status}. You can view updates at https://babacybercafe.in/track. Please reply here if you need assistance.`)}`}
+                      href={`https://wa.me/${(() => { const digits = active.mobile.replace(/\D/g, ""); return digits.length === 10 ? `91${digits}` : digits; })()}?text=${encodeURIComponent(`Hello ${active.full_name}, this is BABA'S CYBER CAFE regarding your application ${active.tracking_id} for ${active.service_name}. Current status: ${active.status}. You can view updates at https://babacybercafe.in/track. Please reply here if you need assistance.`)}`}
                       target="_blank"
                       rel="noreferrer"
                     >
