@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { callFunction } from "../lib/supabase";
 import {
   ArrowUpRight,
   FileText,
@@ -12,12 +13,16 @@ import {
 } from "lucide-react";
 
 type ChatLink = { label: string; href: string };
+type ChatSource = { title: string; url: string };
 type ChatMessage = {
   id: number;
   role: "assistant" | "customer";
   text: string;
   links?: ChatLink[];
+  sources?: ChatSource[];
+  searched?: boolean;
 };
+type AssistantApiResponse = { answer: string; sources?: ChatSource[]; searched?: boolean; checkedAt?: string };
 
 const SITE = "https://babacybercafe.in";
 const SERVICE_LINK = `${SITE}/#services`;
@@ -48,132 +53,6 @@ function isSensitive(text: string) {
 function isRomanUrdu(text: string) {
   return /\b(assalam|salam|mujhe|mujhay|kya|kaise|kaisay|kaisa|chahiye|chaiye|hai|hain|karna|krna|batao|bataye|madad|darkar|kahan|kidhar|mera|meri|mere|ke liye|kitna|kitne|documents|dastavez|apply|banwana|banwani|status|maloom)\b/i.test(text);
 }
-
-function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> {
-  const q = input.toLowerCase();
-
-  if (isSensitive(input)) {
-    return {
-      text: romanUrdu
-        ? "Security warning: barah-e-karam OTP, password, PIN, bank account number, IFSC ya card details yahan share na karein. Main in details ko process ya store nahi karta. Agar aap ne koi secret share kiya hai to usay dobara post na karein; apne bank/account ki security settings check karein."
-        : "Security warning: Please do not share an OTP, password, PIN, bank account number, IFSC, or card details here. I cannot process or store these details. If you have shared a secret, do not post it again; review the security of the relevant account.",
-    };
-  }
-
-  const outsideScope = /\b(weather|forecast|politics|election|news|cricket|football|movie|song|joke|general knowledge|capital of|stock market|crypto|coding|programming|write code|translate|homework)\b/i.test(q);
-  const websiteTopic = /\b(domicile|jamabandi|girdawari|land records?|mutation|income certificate|category certificate|revenue|birth|death|trade licen[cs]e|smc|municipal|driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto|insurance|third.party|comprehensive|motor policy|bike|car|pan|udyam|msme|abha|passport|health id|bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft|application|tracking|track|reference id|status|service|documents?|apply|enquir(?:y|e)|price|prices|cost|rate|rates|fee|fees|charges|contact|phone|call|whatsapp|email|location|srinagar|support|hello|hi|hey|salam|assalam|namaste)\b/i.test(q);
-
-  if (outsideScope || !websiteTopic) {
-    return {
-      text: "I only assist with BABA'S CYBER CAFE services on babacybercafe.in.",
-    };
-  }
-
-  if (/\b(track|tracking|status|reference id|application id|where is my application)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Apni application ka status dekhne ke liye Track Status page kholen. Wahan apna reference ID aur registered mobile number enter karein. Apna OTP, password ya bank details chat mein share na karein."
-        : "To check an existing application, open Track Status and enter your reference ID and registered mobile number there. Do not send an OTP, password or bank details in this chat.",
-      links: [{ label: "Track Status", href: TRACK_LINK }],
-    };
-  }
-
-  if (/\b(insurance|third.party|comprehensive|motor policy|bike insurance|car insurance)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Motor Insurance Desk bike, car aur commercial vehicle ke liye Third-Party aur Comprehensive cover enquiries leta hai. Shuruat ke liye ye documents paas rakhein:\n• Vehicle RC copy\n• Previous insurance policy copy (agar available ho)\n\nExact premium aur terms vehicle details dekh kar confirm honge; fixed rate yahan quote nahi kiya ja sakta."
-        : "Our Motor Insurance Desk handles Third-Party and Comprehensive insurance enquiries for bikes, cars and commercial vehicles. Keep these ready:\n• Vehicle RC copy\n• Previous policy copy, if available\n\nThe premium and policy terms depend on the vehicle and cover selected. Please enquire for an exact quotation; no fixed price is promised here.",
-      links: [{ label: "Open Insurance Desk", href: INSURANCE_LINK }],
-    };
-  }
-
-  if (/\b(domicile|jamabandi|girdawari|land record|land records|mutation|income certificate|category certificate|revenue)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Revenue Department ki assistance (Domicile, Land Records/Jamabandi/Girdawari, Income ya Category Certificate) ke liye aam tor par ye documents paas rakhein:\n• Aadhaar Card\n• Ration Card ya Voter ID\n• Purane land records ya parent documents (jahan lagu hon)\n\nExact requirement case ke mutabiq badal sakti hai."
-        : "For Revenue Department assistance—Domicile, Land Records/Jamabandi/Girdawari, Income or Category Certificates—keep these ready:\n• Aadhaar Card\n• Ration Card or Voter ID\n• Previous land records or parent documents, where applicable\n\nThe exact requirement can vary by application.",
-      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
-    };
-  }
-
-  if (/\b(birth|death|trade licen[cs]e|smc|municipal)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "SMC / Municipal Services (Birth Certificate, Death Certificate ya Trade Licence) ke liye ye documents paas rakhein:\n• Hospital discharge slip (birth/death ke liye, jahan lagu ho)\n• ID proof\n• Address proof\n\nCase ke mutabiq mazeed documents lag sakte hain."
-        : "For SMC / Municipal Services—Birth Certificate, Death Certificate or Trade Licence—keep these ready:\n• Hospital discharge slip, where applicable for birth/death cases\n• Identity proof\n• Address proof\n\nAdditional documents may be needed depending on the case.",
-      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
-    };
-  }
-
-  if (/\b(driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "RTO & Transport assistance (Learner/Permanent Driving Licence, RC Transfer, Fitness) ke liye ye documents ready rakhein:\n• Aadhaar Card\n• Existing DL ya RC copy\n• Recent photo; Form 1-A medical certificate agar applicable ho\n\nFinal checklist service aur eligibility par depend karegi."
-        : "For RTO & Transport assistance—Learner/Permanent Driving Licence, RC Transfer or Fitness—keep these ready:\n• Aadhaar Card\n• Existing Driving Licence or RC copy\n• Recent photo; Form 1-A medical certificate if applicable\n\nThe final checklist depends on the service and eligibility.",
-      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
-    };
-  }
-
-  if (/\b(pan|udyam|msme|abha|passport|health id|business scheme)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Central & Business Services (PAN, MSME Udyam, ABHA Health ID aur Passport Assistance) ke liye:\n• Aadhaar Card\n• PAN, agar service ke liye relevant ho\n• Business records, agar Udyam ke liye relevant hon\n\nAadhaar-linked mobile verification ki zaroorat ho sakti hai, lekin OTP kabhi chat mein share na karein. Bank account number ya bank details yahan na bhejein."
-        : "For Central & Business Services—PAN, MSME Udyam, ABHA Health ID and Passport Assistance—keep these in mind:\n• Aadhaar Card\n• PAN, where relevant to the service\n• Relevant business records for Udyam, if applicable\n\nAn Aadhaar-linked mobile may be needed for verification, but never share an OTP in chat. Do not send bank account numbers or bank details here.",
-      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
-    };
-  }
-
-  if (/\b(bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Labour & Handicrafts (BOCW Labour Card, e-Shram, Artisan/Weaver ID) ke liye aam tor par ye documents chahiye ho sakte hain:\n• Aadhaar Card\n• Recent photo\n• Work certificate / endorsement\n\nBank passbook ki zaroorat ho sakti hai; uski photo, account number ya details chat mein share na karein. Secure submission ka tareeqa support se confirm karein."
-        : "For Labour & Handicrafts services—BOCW Labour Card, e-Shram, Artisan or Weaver ID—these may be required:\n• Aadhaar Card\n• Recent photograph\n• Work certificate or endorsement\n\nA bank passbook may be required for some services, but do not share its image, account number or details in chat. Contact support to confirm the secure submission process.",
-      links: [{ label: "Apply / Enquire", href: SERVICE_LINK }],
-    };
-  }
-
-  if (/\b(price|prices|cost|rate|rates|fee|fees|charges|kitna|kitne paise)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Service charges aur government fees case aur service ke mutabiq alag ho sakti hain. Main fixed price invent nahi karunga. Exact rate ke liye website par enquiry submit karein ya support se rabta karein."
-        : "Service charges and government fees vary by service and application. I won't invent a fixed price. Please submit an enquiry on the website or contact our support team for the exact amount.",
-      links: [
-        { label: "Submit an Enquiry", href: `${SITE}/apply` },
-        { label: "Contact Support", href: CONTACT_LINK },
-      ],
-    };
-  }
-
-  if (/\b(contact|phone|call|whatsapp|email|location|address|srinagar|support)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nAap website ke Contact page se bhi rabta kar sakte hain."
-        : "BABA'S CYBER CAFE · Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nYou can also use the website Contact page.",
-      links: [
-        { label: "Contact Page", href: CONTACT_LINK },
-        { label: "Call +91 7006865909", href: "tel:+917006865909" },
-        { label: "Email Support", href: "mailto:support@babacybercafe.in" },
-      ],
-    };
-  }
-
-  if (/\b(apply|enquire|enquiry|document|documents|requirement|requirements|what do i need|how to apply)\b/i.test(q)) {
-    return {
-      text: romanUrdu
-        ? "Main documents aur application navigation mein madad kar sakta hoon. Aap kis service ke liye apply karna chahte hain—Revenue, SMC, RTO, Motor Insurance, PAN/MSME/ABHA, ya Labour/Handloom?"
-        : "I can help with document checklists and application navigation. Which service do you need—Revenue, SMC, RTO, Motor Insurance, PAN/MSME/ABHA, or Labour/Handloom?",
-      links: [{ label: "Browse All Services", href: SERVICE_LINK }],
-    };
-  }
-
-  return {
-    text: romanUrdu
-      ? "Main sirf BABA'S CYBER CAFE ki services, required documents aur website navigation mein madad karta hoon. Aap service ka naam batayein—Revenue, SMC, RTO, Insurance, PAN/MSME/ABHA, Labour/Handloom, ya application tracking."
-      : "I can help with BABA'S CYBER CAFE services, document requirements and website navigation only. Tell me the service name—Revenue, SMC, RTO, Insurance, PAN/MSME/ABHA, Labour/Handloom, or application tracking.",
-    links: [{ label: "Browse Services", href: SERVICE_LINK }],
-  };
-}
-
 
 function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> | null {
   const q = input.toLowerCase();
@@ -223,6 +102,7 @@ export default function CustomerChatAssistant() {
     },
   ]);
   const [romanUrdu, setRomanUrdu] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [nextId, setNextId] = useState(2);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -237,25 +117,71 @@ export default function CustomerChatAssistant() {
       bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       inputRef.current?.focus();
     }
-  }, [messages, open]);
+  }, [messages, open, isTyping]);
 
-  function sendMessage(raw: string) {
+  async function sendMessage(raw: string) {
     const value = raw.trim();
-    if (!value) return;
+    if (!value || isTyping) return;
     const language = isRomanUrdu(value) || romanUrdu;
     setRomanUrdu(language);
-    const sensitive = isSensitive(value);
-    const customerMessage: ChatMessage | null = sensitive
-      ? null
-      : { id: nextId, role: "customer", text: value };
-    const reply = buildAdvancedReply(value, language) ?? buildReply(value, language);
-    setMessages((current) => [
-      ...current,
-      ...(customerMessage ? [customerMessage] : []),
-      { id: nextId + 1, role: "assistant", ...reply },
-    ]);
-    setNextId((current) => current + 2);
+    if (isSensitive(value)) {
+      setMessages((current) => [...current, {
+        id: nextId,
+        role: "assistant",
+        text: language
+          ? "Security warning: please remove personal details, Aadhaar/PAN numbers, phone numbers, email addresses, OTPs, passwords, PINs and bank details. Only ask a general service question here."
+          : "Security warning: please remove personal details, Aadhaar/PAN numbers, phone numbers, email addresses, OTPs, passwords, PINs and bank details. This assistant accepts general service questions only.",
+      }]);
+      setNextId((current) => current + 1);
+      setInput("");
+      return;
+    }
+    const localReply = buildAdvancedReply(value, language);
+    const customerMessage: ChatMessage = { id: nextId, role: "customer", text: value };
+    if (localReply) {
+      setMessages((current) => [...current, customerMessage, { id: nextId + 1, role: "assistant", ...localReply }]);
+      setNextId((current) => current + 2);
+      setInput("");
+      return;
+    }
+    const recentHistory = messages.slice(-6).map((item) => ({
+      role: item.role === "assistant" ? "model" : "user",
+      text: item.text,
+    }));
+    setMessages((current) => [...current, customerMessage]);
+    setNextId((current) => current + 1);
     setInput("");
+    setIsTyping(true);
+    try {
+      const result = await callFunction<AssistantApiResponse>("customer-ai-assistant", {
+        message: value,
+        history: recentHistory,
+        language: language ? "Roman Urdu" : "English",
+      });
+      setMessages((current) => [...current, {
+        id: nextId + 1,
+        role: "assistant",
+        text: result.answer || (language ? "Maazrat, main is sawal ka verified jawab nahin de saka." : "Sorry, I could not prepare a verified answer for that question."),
+        sources: result.sources ?? [],
+        searched: Boolean(result.searched),
+      }]);
+      setNextId((current) => current + 1);
+    } catch {
+      setMessages((current) => [...current, {
+        id: nextId + 1,
+        role: "assistant",
+        text: language
+          ? "Live AI research filhaal available nahin hai. Main current documents ki tasdeeq nahin kar sakta. Barah-e-karam BABA'S CYBER CAFE support se rabta karein."
+          : "Live AI research is temporarily unavailable, so I cannot verify current document requirements right now. Please contact BABA'S CYBER CAFE support for confirmation.",
+        links: [
+          { label: "Contact Support", href: CONTACT_LINK },
+          { label: "WhatsApp", href: "https://wa.me/917006865909" },
+        ],
+      }]);
+      setNextId((current) => current + 1);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -271,7 +197,7 @@ export default function CustomerChatAssistant() {
             <div className="customer-chat-avatar"><ShieldCheck size={21}/></div>
             <div className="customer-chat-heading">
               <strong>BABA'S CYBER CAFE</strong>
-              <span><i/> SERVICE ASSISTANT · SRINAGAR</span>
+              <span><i/> AI SERVICE ASSISTANT · LIVE RESEARCH</span>
             </div>
             <div className="customer-chat-tools">
               <button type="button" onClick={() => setRomanUrdu((value) => !value)} aria-label="Switch language" title="Switch English / Roman Urdu"><Globe2 size={15}/><span>{romanUrdu ? "اردو / EN" : "EN / اردو"}</span></button>
@@ -295,9 +221,24 @@ export default function CustomerChatAssistant() {
                       ))}
                     </div>
                   )}
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="customer-chat-sources">
+                      <strong>{message.searched ? "Official sources checked" : "Sources"}</strong>
+                      {message.sources.map((source) => (
+                        <a href={source.url} key={source.url} target="_blank" rel="noreferrer">
+                          {source.title}<ArrowUpRight size={12}/>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
+            {isTyping && (
+              <article className="customer-chat-message assistant customer-chat-typing">
+                <div className="customer-chat-bubble"><p>Checking the service catalogue and official sources…</p><span className="customer-chat-dots"><i/><i/><i/></span></div>
+              </article>
+            )}
             <div ref={bottomRef}/>
           </div>
           <div className="customer-chat-quick-actions" aria-label="Quick help topics">
@@ -308,14 +249,14 @@ export default function CustomerChatAssistant() {
               ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about a service or documents…"
+              placeholder="Ask about a service or required documents…"
               aria-label="Ask about BABA'S CYBER CAFE services"
               maxLength={500}
               autoComplete="off"
             />
-            <button type="submit" disabled={!input.trim()} aria-label="Send message"><Send size={17}/></button>
+            <button type="submit" disabled={!input.trim() || isTyping} aria-label="Send message"><Send size={17}/></button>
           </form>
-          <div className="customer-chat-footnote"><FileText size={11}/> Website guidance only · Not monitored live · Messages are not saved</div>
+          <div className="customer-chat-footnote"><FileText size={11}/> AI guidance · Public service questions only · Chat history stays in this session</div>
         </section>
       )}
       <button className={open ? "customer-chat-launcher is-open" : "customer-chat-launcher"} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={open ? "Close customer assistant" : "Open customer assistant"}>
