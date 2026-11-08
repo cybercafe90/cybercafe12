@@ -17,7 +17,7 @@ The Google free tier may use prompts and responses to improve Google products. T
 - For service/document questions, Gemini Google Search grounding is enabled. The UI displays only sources on official-looking .gov.in or .nic.in domains.
 - If no official source is returned, the assistant says it could not verify the current requirement instead of inventing a checklist.
 - Chat history is held in the browser session only and is not written to Supabase.
-- The public endpoint is rate-limited to 12 requests per 10 minutes per client IP using the existing rate-limit infrastructure.
+- The public endpoint is rate-limited to 12 requests per 10 minutes per client IP and 400 requests per day globally, using the existing rate-limit infrastructure. The daily cap stays below the documented 500 requests/day free Google Search grounding quota for Gemini 2.5 Flash.
 - The assistant does not access customer applications, admin data, uploaded documents, payment records, or authentication details.
 - It never quotes public service rates.
 
