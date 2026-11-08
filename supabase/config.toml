@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.investigation-ip-control]
 verify_jwt = true
+
+[functions.customer-ai-assistant]
+verify_jwt = false
