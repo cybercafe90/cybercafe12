@@ -3009,12 +3009,24 @@ function AdminPage() {
                       ))}
                       {csvRows.length > 5 && <small>and {csvRows.length - 5} more rows…</small>}
                     </div>
-                    <button type="button" className="button button-dark csv-submit" onClick={() => void submitCsvImport()} disabled={busy}>
-                      {busy ? "Updating catalogue…" : `Submit and update ${csvRows.length} rows`} <ArrowRight size={15} />
-                    </button>
                     <button type="button" className="text-button csv-cancel" onClick={() => { setCsvRows([]); setCsvFileName(""); setCsvPreviewError(""); }} disabled={busy}>Remove selected CSV</button>
                   </div>
                 )}
+                <button
+                  type="button"
+                  className="button button-dark csv-submit"
+                  onClick={() => void submitCsvImport()}
+                  disabled={busy || csvRows.length === 0}
+                  aria-describedby="csv-submit-help"
+                >
+                  {busy ? "Updating catalogue…" : csvRows.length ? `Submit and update ${csvRows.length} rows` : "Submit CSV"}
+                  <ArrowRight size={15} />
+                </button>
+                <small id="csv-submit-help" className="csv-submit-help">
+                  {csvRows.length
+                    ? "Review the preview above, then submit to publish these catalogue changes."
+                    : "Choose a valid CSV file to enable submission. The preview and any CSV errors will appear here."}
+                </small>
               </div>
             </div>
           </section>
