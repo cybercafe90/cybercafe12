@@ -11,6 +11,7 @@ export default function AdminGrievancePage() {
   const [items,setItems]=useState<Grievance[]>([]);
   const [drafts,setDrafts]=useState<Record<string,Draft>>({});
   const [search,setSearch]=useState("");
+  const [statusFilter,setStatusFilter]=useState("all");
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
   const [busy,setBusy]=useState(false);
@@ -23,12 +24,12 @@ export default function AdminGrievancePage() {
       if(!supabase)throw new Error("Secure backend is not configured.");
       const {data}=await supabase.auth.getSession();
       if(!data.session){setAuthorized(false);throw new Error("Sign in with the owner account to manage grievances.");}
-      const result=await callFunction<{grievances:Grievance[];total:number}>("admin-grievances",{action:"list",page:0,search},data.session.access_token);
+      const result=await callFunction<{grievances:Grievance[];total:number}>("admin-grievances",{action:"list",page:0,search,status:statusFilter},data.session.access_token);
       setAuthorized(true);setItems(result.grievances);
       setDrafts(current=>{const next={...current};for(const g of result.grievances)if(!next[g.id])next[g.id]={status:g.status,publicRemark:"",internalRemark:""};return next;});
     }catch(reason){setError(reason instanceof Error?reason.message:"Grievances could not be loaded.");}
     finally{setLoading(false);}
-  },[search]);
+  },[search,statusFilter]);
 
   // The load callback synchronizes remote data into this page's state.
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -53,7 +54,7 @@ export default function AdminGrievancePage() {
       {!isSupabaseConfigured&&<div className="notice notice-warn">Secure backend configuration is required.</div>}
       {error&&<div className="notice notice-error">{error} {!authorized&&<Link to="/admin/login">Owner sign-in</Link>}</div>}
       {notice&&<div className="notice notice-success">{notice}</div>}
-      <div className="grievance-admin-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by grievance reference or name"/><span><ShieldCheck size={15}/> Owner access required</span></div>
+      <div className="grievance-admin-toolbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search reference, name, mobile, email or subject"/><select aria-label="Filter grievance status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{statuses.map(status=><option key={status} value={status}>{status}</option>)}</select><span><ShieldCheck size={15}/> Owner access required</span></div>
       {loading?<div className="investigation-empty">Loading grievances…</div>:items.length===0?<div className="investigation-empty"><h2>No grievances found</h2><p>New public submissions will appear here.</p></div>:items.map(item=>{
         const draft=drafts[item.id]??{status:item.status,publicRemark:"",internalRemark:""};
         return <article className="grievance-admin-card" key={item.id}>
