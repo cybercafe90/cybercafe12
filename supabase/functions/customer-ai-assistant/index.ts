@@ -76,6 +76,12 @@ Deno.serve(async (request: Request) => {
     if (!await checkRateLimit(admin, request, "customer-ai-assistant", "public", 12, 10)) {
       return response(request, { error: "Too many questions. Please try again in a few minutes." }, 429, { "Retry-After": "600", "Cache-Control": "no-store" });
     }
+    const globalHeaders = new Headers(request.headers);
+    globalHeaders.set("cf-connecting-ip", "baba-ai-global");
+    const globalRateRequest = new Request(request.url, { headers: globalHeaders });
+    if (!await checkRateLimit(admin, globalRateRequest, "customer-ai-assistant-global", "daily", 400, 1440)) {
+      return response(request, { error: "Today's AI assistant allowance has been reached. Please try again tomorrow or contact support." }, 429, { "Retry-After": "86400", "Cache-Control": "no-store" });
+    }
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) return response(request, { error: "AI assistant is not configured yet." }, 503, { "Cache-Control": "no-store" });
 
