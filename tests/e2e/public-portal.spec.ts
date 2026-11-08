@@ -147,19 +147,32 @@ test("insurance quotation, payment and customer upload controls remain responsiv
 });
 
 
-test("customer portal guides visitors to secure reference-based tracking", async ({ page }) => {
+test("customer dashboard provides the self-service journeys", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(
-    page.getByRole("heading", { name: "Track your application securely." }),
+    page.getByRole("heading", { name: "Your service requests, in one place." }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/Email OTP sign-in has been removed/),
-  ).toBeVisible();
-  await page.getByRole("link", { name: /Open tracking portal/ }).click();
-  await expect(page).toHaveURL(/\/track$/);
-  await expect(
-    page.getByRole("heading", { name: "A clear view of what comes next." }),
-  ).toBeVisible();
+  await expect(page.locator(".customer-hub-card")).toHaveCount(4);
+  await expect(page.getByRole("link", { name: /Submit an enquiry/ })).toHaveAttribute("href", "/apply");
+  await expect(page.getByRole("link", { name: /Track application/ })).toHaveAttribute("href", "/track");
+  await expect(page.getByRole("link", { name: /Browse catalogue/ })).toHaveAttribute("href", "/services");
+  await expect(page.getByRole("link", { name: /Open grievance desk/ })).toHaveAttribute("href", "/grievance");
+  await expect(page.getByRole("link", { name: /WhatsApp support/ })).toHaveAttribute("href", "https://wa.me/917006865909");
+});
+
+test("mobile app manifest and icons are available", async ({ page }) => {
+  await page.goto("/");
+  const response = await page.request.get("/manifest.webmanifest");
+  expect(response.ok()).toBeTruthy();
+  const manifest = await response.json();
+  expect(manifest.name).toBe("BABA'S CYBER CAFE");
+  expect(manifest.display).toBe("standalone");
+  expect(manifest.theme_color).toBe("#c9a45c");
+  expect(manifest.icons.length).toBeGreaterThanOrEqual(2);
+  for (const icon of manifest.icons) {
+    const iconResponse = await page.request.get(icon.src);
+    expect(iconResponse.ok(), `Missing app icon: ${icon.src}`).toBeTruthy();
+  }
 });
 
 test("investigation portal denies unauthenticated visitors", async ({ page }) => {
