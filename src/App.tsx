@@ -3251,6 +3251,14 @@ function AdminPage() {
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
+                    <a
+                      className="text-button"
+                      href={`https://wa.me/${(() => { const digits = active.mobile.replace(/\\D/g, ""); return digits.length === 10 ? `91${digits}` : digits; })()}?text=${encodeURIComponent(`Hello ${active.full_name}, this is BABA'S CYBER CAFE regarding your application ${active.tracking_id} for ${active.service_name}. Current status: ${active.status}. You can view updates at https://babacybercafe.in/track. Please reply here if you need assistance.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <MessageCircle size={14} /> Open customer WhatsApp chat
+                    </a>
                     <button
                       type="button"
                       className="text-button"
