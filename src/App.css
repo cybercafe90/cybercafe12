@@ -1777,3 +1777,29 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .customer-chat-tools > button { min-width:30px; height:31px; padding-inline:6px; }
   .customer-chat-tools > button span { font-size:7px; }
 }
+
+
+/* Customer self-service hub */
+.customer-hub-page { display: grid; gap: 28px; }
+.customer-hub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.customer-hub-card { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px; border: 1px solid rgba(201,164,92,.24); border-radius: 14px; background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015)); color: inherit; text-decoration: none; transition: border-color .2s ease, transform .2s ease, background .2s ease; }
+.customer-hub-card:hover { border-color: rgba(201,164,92,.7); transform: translateY(-2px); background: rgba(201,164,92,.055); }
+.customer-hub-icon { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid rgba(201,164,92,.4); border-radius: 12px; color: #c9a45c; }
+.customer-hub-card h2 { margin: 0; font-size: clamp(19px, 2.4vw, 24px); }
+.customer-hub-card p { margin: 0; color: var(--muted, #aaa); line-height: 1.65; }
+.customer-hub-action { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: #d8b875; font-weight: 700; font-size: 13px; }
+.customer-hub-help { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; border: 1px solid rgba(201,164,92,.28); border-radius: 14px; background: rgba(201,164,92,.055); }
+.customer-hub-help h2 { margin: 7px 0; }
+.customer-hub-help p { margin: 0; color: var(--muted, #aaa); line-height: 1.6; }
+.customer-hub-help .button { flex: 0 0 auto; }
+.customer-hub-privacy { display: flex; align-items: flex-start; gap: 9px; margin: 0; color: var(--muted, #aaa); font-size: 13px; line-height: 1.6; }
+.customer-hub-privacy svg { flex: 0 0 auto; color: #c9a45c; margin-top: 2px; }
+@media (max-width: 640px) {
+  .customer-hub-grid { grid-template-columns: 1fr; }
+  .customer-hub-card { padding: 20px; }
+  .customer-hub-help { align-items: flex-start; flex-direction: column; }
+  .customer-hub-help .button { width: 100%; justify-content: center; }
+}
+
+.grievance-admin-toolbar select { min-height:40px; max-width:220px; padding:0 10px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-size:10px; }
+@media(max-width:720px) { .grievance-admin-toolbar { align-items:stretch; flex-direction:column; } .grievance-admin-toolbar input,.grievance-admin-toolbar select { width:100%; max-width:none; } }

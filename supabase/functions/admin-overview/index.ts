@@ -22,7 +22,7 @@ Deno.serve(async (request) => {
     if (status !== 'all') query = query.eq('status', status)
     if (term) {
       const safe = term.replace(/[(),]/g, ' ').trim()
-      if (safe) query = query.or(`full_name.ilike.%${safe}%,mobile.ilike.%${safe}%,tracking_id.ilike.%${safe}%`)
+      if (safe) query = query.or(`full_name.ilike.%${safe}%,mobile.ilike.%${safe}%,tracking_id.ilike.%${safe}%,email.ilike.%${safe}%,service_name.ilike.%${safe}%`)
     }
     const [applications, total, pending, completed, documents] = await Promise.all([
       query.range((page - 1) * pageSize, page * pageSize - 1),

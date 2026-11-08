@@ -631,8 +631,8 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
       .eq("is_active", true);
     if (category !== "all") request = request.eq("category_slug", category);
     if (department !== "all") request = request.eq("category_slug", department);
-    const needle = search.trim().replace(/[%,_]/g, "");
-    if (needle) request = request.ilike("name", `%${needle}%`);
+    const needle = search.trim().replace(/[%,_(),]/g, "").slice(0, 80);
+    if (needle) request = request.or(`name.ilike.%${needle}%,description.ilike.%${needle}%,eligibility.ilike.%${needle}%,application_method.ilike.%${needle}%,category_slug.ilike.%${needle}%`);
     if (sort === "alphabetical")
       request = request.order("name", { ascending: true });
     else if (sort === "recent")
@@ -1552,18 +1552,35 @@ function StatusTag({ status }: { status: string }) {
 }
 
 function CustomerDashboard() {
+  const actions = [
+    { to: "/apply", icon: <FileText size={22} />, eyebrow: "START HERE", title: "New application", copy: "Tell us which service you need and receive a unique tracking reference.", action: "Submit an enquiry" },
+    { to: "/track", icon: <Activity size={22} />, eyebrow: "APPLICATION STATUS", title: "Track a request", copy: "Check the latest status and customer-visible updates using your reference and registered mobile.", action: "Track application" },
+    { to: "/services", icon: <BookOpen size={22} />, eyebrow: "SERVICE DIRECTORY", title: "Explore services", copy: "Search departments, service requirements and available assistance before applying.", action: "Browse catalogue" },
+    { to: "/grievance", icon: <HeartHandshake size={22} />, eyebrow: "CUSTOMER SUPPORT", title: "Raise a grievance", copy: "Submit a service concern or follow up an existing grievance reference.", action: "Open grievance desk" },
+  ];
   return (
-    <main className="content-page narrow-page">
+    <main className="content-page customer-hub-page">
       <PageIntro
-        eyebrow="CUSTOMER PORTAL"
-        title="Track your application securely."
-        copy="Email OTP sign-in has been removed. Use your tracking reference and registered mobile number to view the latest status and customer-visible updates."
+        eyebrow="CUSTOMER SELF-SERVICE"
+        title="Your service requests, in one place."
+        copy="Start an enquiry, follow its progress, explore service requirements or contact the support desk. No customer OTP or MFA is required."
       />
-      <div className="signin-panel">
-        <h2>Continue to application tracking</h2>
-        <p>Keep your tracking reference private. Your registered mobile number is required to look up the request.</p>
-        <Link className="button button-dark" to="/track">Open tracking portal <ArrowRight size={16} /></Link>
+      <section className="customer-hub-grid" aria-label="Customer portal actions">
+        {actions.map((item) => (
+          <Link className="customer-hub-card" to={item.to} key={item.to}>
+            <span className="customer-hub-icon">{item.icon}</span>
+            <span className="eyebrow">{item.eyebrow}</span>
+            <h2>{item.title}</h2>
+            <p>{item.copy}</p>
+            <span className="customer-hub-action">{item.action} <ArrowRight size={15} /></span>
+          </Link>
+        ))}
+      </section>
+      <div className="customer-hub-help">
+        <div><span className="eyebrow">NEED PERSONAL ASSISTANCE?</span><h2>Talk to the service desk.</h2><p>For help with an existing request, keep your tracking reference ready when you contact us.</p></div>
+        <a className="button button-gold" href="https://wa.me/917006865909" target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp support <ArrowUpRight size={15}/></a>
       </div>
+      <p className="customer-hub-privacy"><ShieldCheck size={15}/> Your application lookup requires its tracking reference and registered mobile number. Do not share either publicly.</p>
     </main>
   );
 }
@@ -3234,6 +3251,14 @@ function AdminPage() {
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
+                    <a
+                      className="text-button"
+                      href={`https://wa.me/${(() => { const digits = active.mobile.replace(/\D/g, ""); return digits.length === 10 ? `91${digits}` : digits; })()}?text=${encodeURIComponent(`Hello ${active.full_name}, this is BABA'S CYBER CAFE regarding your application ${active.tracking_id} for ${active.service_name}. Current status: ${active.status}. You can view updates at https://babacybercafe.in/track. Please reply here if you need assistance.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <MessageCircle size={14} /> Open customer WhatsApp chat
+                    </a>
                     <button
                       type="button"
                       className="text-button"

@@ -1,0 +1,18 @@
+{
+  "id": "/",
+  "name": "BABA'S CYBER CAFE",
+  "short_name": "BABA'S CAFE",
+  "description": "Digital service assistance and application tracking in Srinagar, Jammu & Kashmir.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#080a0d",
+  "theme_color": "#c9a45c",
+  "categories": ["business", "utilities"],
+  "icons": [
+    { "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/app-icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
