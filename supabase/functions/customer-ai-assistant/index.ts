@@ -1,7 +1,7 @@
 import { checkRateLimit, serviceClient } from "./_shared/auth.ts";
 import { preflight, response } from "./_shared/http.ts";
 
-const MODEL = "gemini-3.8-flash";
+const MODEL = "gemini-2.5-flash-lite";
 const MAX_MESSAGE_CHARS = 1200;
 const MAX_HISTORY_ITEMS = 6;
 const OFFICIAL_SUFFIXES = [".gov.in", ".nic.in"];
