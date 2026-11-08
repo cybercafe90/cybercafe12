@@ -5,7 +5,7 @@ const MODEL = "gemini-2.5-flash";
 const MAX_MESSAGE_CHARS = 1200;
 const MAX_HISTORY_ITEMS = 6;
 const OFFICIAL_SUFFIXES = [".gov.in", ".nic.in"];
-const SERVICE_QUERY = /\b(document|documents|requirement|requirements|eligibility|eligible|apply|application|certificate|licence|license|fee|fees|latest|current|official|process|procedure|domicile|jamabandi|girdawari|mutation|income|birth|death|trade|driving|learner|rto|pan|udyam|msme|abha|fssai|labour|labor|handloom|handicraft|weaver|artisan|pension|scholarship|e.?shram|bocw|parivahan|aadhaar|revenue|smc)\b/i;
+const SERVICE_QUERY = /\b(document|documents|requirement|requirements|eligibility|eligible|apply|application|certificate|licence|license|fee|fees|latest|current|official|process|procedure|domicile|jamabandi|girdawari|mutation|income|birth|death|trade|driving|learner|rto|pan|udyam|msme|abha|fssai|labour|labor|handloom|handicraft|weaver|artisan|pension|scholarship|e.?shram|bocw|parivahan|aadhaar|revenue|smc|passport|rc|trademark|food)\b/i;
 
 function hasPersonalData(value: string) {
   const patterns = [
