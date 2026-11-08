@@ -1800,3 +1800,6 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .customer-hub-help { align-items: flex-start; flex-direction: column; }
   .customer-hub-help .button { width: 100%; justify-content: center; }
 }
+
+.grievance-admin-toolbar select { min-height:40px; max-width:220px; padding:0 10px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-size:10px; }
+@media(max-width:720px) { .grievance-admin-toolbar { align-items:stretch; flex-direction:column; } .grievance-admin-toolbar input,.grievance-admin-toolbar select { width:100%; max-width:none; } }
