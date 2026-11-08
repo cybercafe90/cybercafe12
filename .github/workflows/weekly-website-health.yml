@@ -1,0 +1,54 @@
+name: Weekly Website Health Monitor
+
+on:
+  schedule:
+    # Every Monday at 10:00 Asia/Kolkata (04:30 UTC)
+    - cron: "30 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-website-health
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check public website availability
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check HTTPS reachability for both website domains
+        shell: bash
+        run: |
+          set -uo pipefail
+          failures=0
+          {
+            echo "## BABA'S CYBER CAFE — Weekly website health"
+            echo
+            echo "- Checked at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- TLS certificate validation: enabled (curl default)"
+            echo
+            echo "| Domain | HTTP status | Result |"
+            echo "|---|---:|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for url in "https://babacybercafe.in" "https://www.babacybercafe.in"; do
+            status="$(curl --silent --show-error --location --retry 2 --retry-delay 5 --retry-all-errors --connect-timeout 10 --max-time 25 --output /dev/null --write-out '%{http_code}' "$url" 2>/dev/null || true)"
+            if [[ "$status" =~ ^[0-9]{3}$ ]] && (( 10#$status >= 200 && 10#$status < 400 )); then
+              result="PASS"
+            else
+              result="FAIL"
+              failures=$((failures + 1))
+            fi
+            echo "| $url | ${status:-000} | $result |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$result $url (HTTP ${status:-000})"
+          done
+
+          echo >> "$GITHUB_STEP_SUMMARY"
+          if (( failures > 0 )); then
+            echo "**Overall result: FAIL** — one or more website domains did not return a successful response." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "**Overall result: PASS** — both website domains returned successful HTTP responses." >> "$GITHUB_STEP_SUMMARY"
