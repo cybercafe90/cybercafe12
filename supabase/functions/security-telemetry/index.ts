@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import { checkRateLimit, serviceClient } from "../_shared/auth.ts";
 
 const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in"];
 function reply(req: Request, body: unknown, status = 200) {
@@ -20,9 +21,14 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   if (origin && !allowedOrigins.includes(origin)) return reply(req, { error: "Origin not allowed." }, 403);
   try {
-    const url = Deno.env.get("SUPABASE_URL"), serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !serviceKey) return reply(req, { error: "Telemetry service unavailable." }, 503);
-    const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const admin = serviceClient();
+
+    // Public telemetry is best-effort, but its database writes must be bounded.
+    // A throttled event is acknowledged without being stored or retried by clients.
+    if (!await checkRateLimit(admin, req, "security-telemetry", "all", 240, 15)) {
+      return reply(req, { ok: true, skipped: true }, 202);
+    }
+
     const raw = await req.text();
     if (raw.length > 1500) return reply(req, { error: "Request too large." }, 413);
     const body = JSON.parse(raw || "{}");
@@ -31,10 +37,15 @@ Deno.serve(async (req: Request) => {
     const ip = getIp(req);
     const ua = (req.headers.get("user-agent") ?? "").slice(0, 512);
     const country = (req.headers.get("cf-ipcountry") ?? "").slice(0, 2);
-    const token = req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+    const token = req.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
     let actorId: string | null = null;
-    if (token && Deno.env.get("SUPABASE_ANON_KEY")) {
-      const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } });
+    const url = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (token && url && anonKey) {
+      const userClient = createClient(url, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
       const { data } = await userClient.auth.getUser(token);
       actorId = data.user?.id ?? null;
     }
