@@ -1552,18 +1552,35 @@ function StatusTag({ status }: { status: string }) {
 }
 
 function CustomerDashboard() {
+  const actions = [
+    { to: "/apply", icon: <FileText size={22} />, eyebrow: "START HERE", title: "New application", copy: "Tell us which service you need and receive a unique tracking reference.", action: "Submit an enquiry" },
+    { to: "/track", icon: <Activity size={22} />, eyebrow: "APPLICATION STATUS", title: "Track a request", copy: "Check the latest status and customer-visible updates using your reference and registered mobile.", action: "Track application" },
+    { to: "/services", icon: <BookOpen size={22} />, eyebrow: "SERVICE DIRECTORY", title: "Explore services", copy: "Search departments, service requirements and available assistance before applying.", action: "Browse catalogue" },
+    { to: "/grievance", icon: <HeartHandshake size={22} />, eyebrow: "CUSTOMER SUPPORT", title: "Raise a grievance", copy: "Submit a service concern or follow up an existing grievance reference.", action: "Open grievance desk" },
+  ];
   return (
-    <main className="content-page narrow-page">
+    <main className="content-page customer-hub-page">
       <PageIntro
-        eyebrow="CUSTOMER PORTAL"
-        title="Track your application securely."
-        copy="Email OTP sign-in has been removed. Use your tracking reference and registered mobile number to view the latest status and customer-visible updates."
+        eyebrow="CUSTOMER SELF-SERVICE"
+        title="Your service requests, in one place."
+        copy="Start an enquiry, follow its progress, explore service requirements or contact the support desk. No customer OTP or MFA is required."
       />
-      <div className="signin-panel">
-        <h2>Continue to application tracking</h2>
-        <p>Keep your tracking reference private. Your registered mobile number is required to look up the request.</p>
-        <Link className="button button-dark" to="/track">Open tracking portal <ArrowRight size={16} /></Link>
+      <section className="customer-hub-grid" aria-label="Customer portal actions">
+        {actions.map((item) => (
+          <Link className="customer-hub-card" to={item.to} key={item.to}>
+            <span className="customer-hub-icon">{item.icon}</span>
+            <span className="eyebrow">{item.eyebrow}</span>
+            <h2>{item.title}</h2>
+            <p>{item.copy}</p>
+            <span className="customer-hub-action">{item.action} <ArrowRight size={15} /></span>
+          </Link>
+        ))}
+      </section>
+      <div className="customer-hub-help">
+        <div><span className="eyebrow">NEED PERSONAL ASSISTANCE?</span><h2>Talk to the service desk.</h2><p>For help with an existing request, keep your tracking reference ready when you contact us.</p></div>
+        <a className="button button-gold" href="https://wa.me/917006865909" target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp support <ArrowUpRight size={15}/></a>
       </div>
+      <p className="customer-hub-privacy"><ShieldCheck size={15}/> Your application lookup requires its tracking reference and registered mobile number. Do not share either publicly.</p>
     </main>
   );
 }
