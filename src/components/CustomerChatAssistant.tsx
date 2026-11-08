@@ -25,9 +25,7 @@ type ChatMessage = {
 type AssistantApiResponse = { answer: string; sources?: ChatSource[]; searched?: boolean; checkedAt?: string };
 
 const SITE = "https://babacybercafe.in";
-const SERVICE_LINK = `${SITE}/#services`;
 const TRACK_LINK = `${SITE}/track`;
-const INSURANCE_LINK = `${SITE}/insurance`;
 const CONTACT_LINK = `${SITE}/contact`;
 
 const QUICK_ACTIONS = [
