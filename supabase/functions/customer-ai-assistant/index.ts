@@ -1,5 +1,5 @@
-import { checkRateLimit, serviceClient } from "../_shared/auth.ts";
-import { preflight, response } from "../_shared/http.ts";
+import { checkRateLimit, serviceClient } from "./_shared/auth.ts";
+import { preflight, response } from "./_shared/http.ts";
 
 const MODEL = "gemini-2.5-flash";
 const MAX_MESSAGE_CHARS = 1200;
