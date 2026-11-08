@@ -3,9 +3,14 @@ type PostHogClient = {
   capture: (event: string, properties?: Record<string, string>) => void
 }
 
+type PostHogQueue = PostHogClient & {
+  _i?: unknown[][]
+  push: (...args: unknown[]) => number
+}
+
 declare global {
   interface Window {
-    posthog?: PostHogClient
+    posthog?: PostHogQueue
   }
 }
 
@@ -31,48 +36,52 @@ export function initializeAnalytics() {
 
   analyticsStarted = true
 
-  const script = document.createElement('script')
+  // PostHog's supported snippet queue records init/capture calls until
+  // the regional SDK bundle has loaded.
+  const queue = [] as unknown as PostHogQueue
+  queue._i = []
+  queue.push = Array.prototype.push.bind(queue) as PostHogQueue['push']
+  queue.init = (projectToken, options) => {
+    queue._i?.push([projectToken, options])
+  }
+  queue.capture = (event, properties) => {
+    queue.push(['capture', event, properties])
+  }
+  window.posthog = queue
+
   const assetHost = apiHost.replace(/\.i\.posthog\.com\/?$/, '-assets.i.posthog.com')
+  const script = document.createElement('script')
   script.src = `${assetHost}/static/array.js`
   script.async = true
-
-  script.onload = () => {
-    const posthog = window.posthog
-    if (!posthog || typeof posthog.init !== 'function') {
-      analyticsStarted = false
-      console.warn('PostHog loaded without an available client.')
-      return
-    }
-
-    posthog.init(token, {
-      api_host: apiHost,
-      person_profiles: 'identified_only',
-      capture_pageview: 'history_change',
-      capture_pageleave: true,
-      autocapture: false,
-      disable_session_recording: true,
-      respect_dnt: true,
-    })
-
-    // Record form completion only. Never inspect or send submitted field values.
-    document.addEventListener(
-      'submit',
-      (event) => {
-        const form = event.target
-        if (!(form instanceof HTMLFormElement)) return
-        posthog.capture('form_submitted', {
-          form_id: form.id || 'unnamed',
-          form_name: form.getAttribute('name') || 'unnamed',
-        })
-      },
-      true,
-    )
-  }
-
+  script.crossOrigin = 'anonymous'
   script.onerror = () => {
     analyticsStarted = false
     console.warn('PostHog analytics script could not be loaded.')
   }
+
+  queue.init(token, {
+    api_host: apiHost,
+    person_profiles: 'identified_only',
+    capture_pageview: 'history_change',
+    capture_pageleave: true,
+    autocapture: false,
+    disable_session_recording: true,
+    respect_dnt: true,
+  })
+
+  // Record form completion only. Never inspect or send submitted field values.
+  document.addEventListener(
+    'submit',
+    (event) => {
+      const form = event.target
+      if (!(form instanceof HTMLFormElement)) return
+      queue.capture('form_submitted', {
+        form_id: form.id || 'unnamed',
+        form_name: form.getAttribute('name') || 'unnamed',
+      })
+    },
+    true,
+  )
 
   document.head.appendChild(script)
 }
