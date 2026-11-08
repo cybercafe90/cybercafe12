@@ -2,6 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { initializeAnalytics } from './analytics'
+
+// Analytics is opt-in at build time and does not collect form field values.
+initializeAnalytics()
 
 // Register the lightweight PWA worker. API, authentication and customer data
 // are deliberately excluded from caching by the worker.
