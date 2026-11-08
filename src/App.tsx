@@ -631,8 +631,8 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
       .eq("is_active", true);
     if (category !== "all") request = request.eq("category_slug", category);
     if (department !== "all") request = request.eq("category_slug", department);
-    const needle = search.trim().replace(/[%,_]/g, "");
-    if (needle) request = request.ilike("name", `%${needle}%`);
+    const needle = search.trim().replace(/[%,_(),]/g, "").slice(0, 80);
+    if (needle) request = request.or(`name.ilike.%${needle}%,description.ilike.%${needle}%,eligibility.ilike.%${needle}%,application_method.ilike.%${needle}%,category_slug.ilike.%${needle}%`);
     if (sort === "alphabetical")
       request = request.order("name", { ascending: true });
     else if (sort === "recent")
