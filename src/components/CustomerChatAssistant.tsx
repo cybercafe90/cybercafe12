@@ -54,6 +54,12 @@ function isRomanUrdu(text: string) {
 
 function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> | null {
   const q = input.toLowerCase();
+  if (/\b(track my application|track application|track status|application tracking|check application status)\b/i.test(q)) {
+    return {
+      text: romanUrdu ? "Apni application ka status dekhne ke liye Track Status page kholen. Reference ID aur registered mobile number sirf secure tracking form mein enter karein—chat mein nahin." : "To check an application, open Track Status and enter your reference ID and registered mobile number only in the secure tracking form, not in this chat.",
+      links: [{ label: "Track Status", href: TRACK_LINK }],
+    };
+  }
   if (/\b(payment|pay|paid|utr|transaction|refund|fee payment)\b/i.test(q)) {
     return {
       text: romanUrdu
@@ -203,7 +209,7 @@ export default function CustomerChatAssistant() {
               <button className="customer-chat-close" type="button" onClick={() => setOpen(false)} aria-label="Close assistant"><X size={19}/></button>
             </div>
           </header>
-          <div className="customer-chat-security"><ShieldAlert size={14}/><span>Never share OTPs, passwords, PINs or bank details in chat.</span></div>
+          <div className="customer-chat-security"><ShieldAlert size={14}/><span>Public questions may be processed by Google AI; its free tier may use prompts to improve products. Never share personal details, OTPs, passwords, PINs or bank details.</span></div>
           <div className="customer-chat-messages" role="log" aria-live="polite" aria-relevant="additions">
             {messages.map((message) => (
               <article className={message.role === "assistant" ? "customer-chat-message assistant" : "customer-chat-message customer"} key={message.id}>
