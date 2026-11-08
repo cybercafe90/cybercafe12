@@ -29,7 +29,7 @@ export async function sendCustomerEmail(admin: SupabaseClient, details: {
     : details.type === 'customer_enquiry'
       ? `A new customer enquiry was received.\n\nCustomer: ${details.name}\nService: ${details.service}\nReference: ${details.trackingId}\n\nOpen the owner dashboard to review the request.`
     : details.type === 'status_update'
-      ? `Hello ${details.name},\n\nYour application ${details.trackingId} (${details.service}) is now marked: ${details.status}. Sign in to the customer portal or use the tracking page with your registered mobile number to view approved updates.\n\nBABA'S CYBER CAFE`
+      ? `Hello ${details.name},\n\nYour application ${details.trackingId} (${details.service}) is now marked: ${details.status}. Open the tracking page and use your reference with your registered mobile number to view approved updates.\n\nBABA'S CYBER CAFE`
       : `Hello ${details.name},\n\nA document update is available for application ${details.trackingId} (${details.service}). Use the secure tracking page with your registered mobile number to access approved documents.\n\nBABA'S CYBER CAFE`
   const greeting = details.type === 'customer_enquiry' ? 'New customer enquiry' : `Hello ${details.name}`
   const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#24241e"><p>${escapeHtml(greeting)},</p><p>${escapeHtml(plainText.split('\n\n')[1] ?? '')}</p><p><strong>Reference:</strong> ${escapeHtml(details.trackingId)}<br><strong>Service:</strong> ${escapeHtml(details.service)}${details.status ? `<br><strong>Status:</strong> ${escapeHtml(details.status)}` : ''}</p><p>BABA'S CYBER CAFE is an independent assistance business; official decisions are made by the responsible authority.</p></div>`
