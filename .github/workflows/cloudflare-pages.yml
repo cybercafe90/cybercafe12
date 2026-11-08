@@ -20,6 +20,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Audit all production and development dependencies
+        run: npm audit
       - run: npm audit --omit=dev
       - run: npm run lint
       - run: npm run build
