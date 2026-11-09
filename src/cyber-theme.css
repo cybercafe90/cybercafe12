@@ -16,11 +16,13 @@
 }
 
 html, body {
-  background: var(--bg-void);
-  color: var(--text-heading);
+  min-height: 100%;
+  background: #f7f6f1;
+  color: #171713;
+  color-scheme: light;
 }
-body { color: var(--text-heading); }
-::selection { color: #061018; background: var(--accent-cyan); }
+body { color: #171713; }
+::selection { color: #171713; background: #d3b674; }
 
 .portal-theme {
   min-height: 100vh;
