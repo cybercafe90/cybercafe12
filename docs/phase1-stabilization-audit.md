@@ -95,3 +95,85 @@ Separate explicit approval is required before:
 5. Verify all WhatsApp references are removed from the branch source and customer-facing copy, then rerun CI after any additional code edits.
 6. Expand the service catalogue only with independently verified official source URLs; keep unverified URLs blank and never fabricate government links.
 7. Add multilingual support only with complete reviewed English/Urdu/Kashmiri strings, not partial machine-translated UI.
+
+
+## Expanded release-readiness investigation — 9 November 2026
+
+### Migration drift — exact version inventory
+The production database currently reports 21 migration versions. The development branch contains 16 SQL migration files. Only four versions match exactly:
+- 202611020001
+- 202611020002
+- 202611020003
+- 20261106113057
+
+Remote versions with no same-version local file:
+- 20261106072346 — grievance_management
+- 20261106072445 — grievance_email_notifications
+- 20261106093417 — add_missing_foreign_key_indexes
+- 20261106103208 — create_security_investigation_foundation
+- 20261106150825 — require_aal2_for_owner_rls
+- 20261106182555 — bank_sms_vault_secret
+- 20261106182648 — require_aal2_for_owner_rls
+- 20261106182916 — upi_payment_portal
+- 20261107031517 — remove_owner_mfa_requirement
+- 20261107035806 — add_upi_qr_expiry
+- 20261107063158 — motor_insurance_quote_requests
+- 20261107063824 — motor_insurance_comparison_quotes
+- 20261107083909 — investigation_ip_controls
+- 20261107145249 — least_privilege_public_api_grants
+- 20261107145337 — insurance_email_notifications
+- 20261107145941 — move_owner_helper_to_private_schema
+- 20261108143104 — add_missing_payment_foreign_key_indexes
+
+Local-only versions:
+- 20261106130000 — require_aal2_for_owner_rls
+- 20261106140000 — remove_aal2_owner_rls_requirement
+- 20261106170000 — upi_payment_portal
+- 20261106230000 — bank_sms_vault_secret
+- 20261106231500 — require_aal2_for_owner_rls
+- 20261107000100 — public_read_policies_without_owner_helper
+- 20261107000200 — remove_owner_mfa_requirement
+- 20261107000300 — upi_qr_expiry
+- 20261107000400 — investigation_ip_controls
+- 20261107150000 — least_privilege_public_api_grants
+- 20261107151000 — insurance_email_notifications
+- 20261107152000 — move_owner_helper_to_private_schema
+
+Some filenames are clearly semantically related but have different timestamps. Similar names do not prove identical SQL or ordering. The remote list and local directory are not safely reconciled by timestamp-only repair. No repair, push, reset, or migration was run. A remote schema dump and statement-by-statement comparison are still required before any history repair.
+
+### MFA and password controls
+- The repository contains multiple migrations that alternately require and remove AAL2 for owner authorization. The final local migration moves the owner helper to the private schema, but the live `private.is_owner()` function currently checks owner role and does not require JWT AAL2.
+- The live Security Advisor reports leaked-password protection disabled and insufficient MFA options.
+- The Supabase organization is on the Free plan. Supabase documentation says leaked-password protection is available on Pro and above, so that specific control cannot be marked green on the current plan without a plan change.
+- No available connected action exposes the project's Auth configuration or enrolls the account owner in TOTP. Enabling an owner-only AAL2 policy before the owner has enrolled and verified a second factor risks locking the owner out. Keep the current production auth configuration unchanged until owner enrollment, recovery, and sign-in are tested on an isolated project.
+- The current migration history includes a deliberate removal of owner MFA enforcement. This needs an explicit, tested security decision rather than another blind migration.
+
+### RLS / privileged-function review
+- The 13 tables with RLS enabled and no policies have no direct `anon` or `authenticated` table grants in the inspected catalog. They appear intended for service-role Edge Function access. This is not a blanket proof of safety; every function using service-role credentials must continue to perform authorization and input validation.
+- The 8 inspected SECURITY DEFINER functions use an empty or restricted search_path. The privilege query found no EXECUTE for `anon`, `authenticated`, or `PUBLIC` on the public helper/RPC functions; the private owner helper is executable by authenticated users only.
+- Owner Edge Functions inspected use `auth.getUser(token)` and query the explicit owner role before service-role operations. The application update path passes the verified actor ID into a service-role-only RPC.
+- **Code issue found:** `admin-grievances` updates a grievance row and then inserts its history row in a separate request. If the history insert fails, the grievance status may change without a matching history event while the API reports failure. Fix this with one transactional database RPC, then test it on an isolated database before any production migration.
+- Public tracking, application, grievance, and payment lookup functions are intentionally JWT-optional and rely on reference/mobile verification and rate limits. Their privacy and abuse controls require adversarial tests on the isolated project before release.
+
+### Test isolation and release
+- Supabase organization plan is Free. The only visible organization is the current project organization. Creating a dedicated Supabase branch can incur hourly compute charges; the owner must select the organization and approve any quoted non-zero cost before it is created.
+- The existing branch listing contains no healthy isolated development branch; its listed branch status is `MIGRATIONS_FAILED`. Do not use it for write testing.
+- Cloudflare preview is configured with the production Supabase URL and publishable key. No write-capable test should be run against it.
+- The latest audit-report commit preview build and deploy completed successfully at https://e24373c2.babacybercafe.pages.dev. This is a code/documentation preview only and still points at production Supabase.
+- The GitHub CI run previously recorded as 42583900046 passed the full workflow. It predates the latest documentation-only commits; the latest Cloudflare preview independently confirms the new branch commit builds and deploys.
+
+### Service catalogue evidence
+- A source-backed shortlist of 23 revenue services and 6 SMC/urban-development service entries has been added to `docs/verified-jk-service-catalogue-research.md`.
+- Sources include official District Budgam, District Srinagar, J&K ServicePlus, Srinagar Municipal Corporation, and J&K Housing & Urban Development pages.
+- This is research only. It has not been imported into Supabase. Srinagar jurisdiction and each service-to-portal relationship still need final verification before setting `official_url_verified=true`.
+- The existing live catalogue has 55 active services and zero active records with a verified official URL. No service records were changed.
+
+### Multilingual UI
+- The current application has no shared i18n framework or language dictionaries; most user-facing text is hard-coded in English across the main app and feature pages.
+- No complete English/Urdu/Kashmiri translations have been committed. A language selector alone would not constitute a complete translation. This remains pending a full string inventory, translation review, RTL layout testing, and accessibility checks.
+
+### Current release decision
+- **GREEN:** code-only branch CI previously passed; latest Cloudflare preview build/deploy succeeded; production database has not been modified; catalogue source research document added.
+- **ORANGE:** privileged-function review is partially complete; most direct RLS exposure is constrained by grants, but public lookup flows need isolated adversarial testing; auth MFA setup requires account-owner enrollment and project Auth settings; catalogue shortlist needs Srinagar verification.
+- **RED:** production deployment is blocked by unresolved migration drift, missing isolated test backend, incomplete end-to-end customer/admin tests, unfinished translations, the grievance status/history atomicity bug, and unresolved password/MFA controls.
+- No production deployment, migration repair, schema change, auth-setting change, customer test submission, or real customer email was performed.
