@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -56,13 +56,13 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
-import InvestigationPage from "./pages/InvestigationPage";
-import GrievancePage from "./pages/GrievancePage";
-import AdminGrievancePage from "./pages/AdminGrievancePage";
-import PaymentPortal from "./pages/PaymentPortal";
-import InsurancePortal from "./pages/InsurancePortal";
-import CustomerChatAssistant from "./components/CustomerChatAssistant";
-import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
+const InvestigationPage = lazy(() => import("./pages/InvestigationPage"));
+const GrievancePage = lazy(() => import("./pages/GrievancePage"));
+const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
+const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
+const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
+const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
+const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
 import "./cyber-theme.css";
 
@@ -423,7 +423,7 @@ function HomePage() {
         <div className="cyber-announcement"><BadgeCheck size={15}/>{settings.announcement.text}</div>
       )}
       <section className="cyber-hero">
-        <CyberNetworkCanvas />
+        <Suspense fallback={null}><CyberNetworkCanvas /></Suspense>
         <div className="cyber-hero-grid"/>
         <div className="cyber-hero-copy">
           <span className="cyber-eyebrow"><i/> DIGITAL CIVIC INFRASTRUCTURE · SECURE DOCUMENT ASSISTANCE</span>
@@ -3981,6 +3981,7 @@ function RoutedApp() {
   return (
     <div className="portal-theme">
       <Header />
+      <Suspense fallback={<main className="content-page" role="status">Loading page…</main>}>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
@@ -4003,9 +4004,10 @@ function RoutedApp() {
         <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       <Footer />
       <SoundControls />
-      <CustomerChatAssistant />
+      <Suspense fallback={null}><CustomerChatAssistant /></Suspense>
     </div>
   );
 }
