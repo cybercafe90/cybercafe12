@@ -1,4 +1,4 @@
-import { Component, StrictMode, type ErrorInfo, type ReactNode } from 'react'
+import { Component, StrictMode, useEffect, type ErrorInfo, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
@@ -14,8 +14,9 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryS
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Keep diagnostic details in the browser console without exposing them to visitors.
-    console.error('BABA\'S CYBER CAFE application render failed:', error, info.componentStack)
+    const root = document.getElementById('root')
+    if (root) root.dataset.appBooting = 'false'
+    console.error("BABA'S CYBER CAFE application render failed:", error, info.componentStack)
   }
 
   render() {
@@ -72,16 +73,21 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryS
   }
 }
 
-// Analytics is opt-in at build time and does not collect form field values.
+function StartupComplete({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const root = document.getElementById('root')
+    if (root) root.dataset.appBooting = 'false'
+  }, [])
+  return children
+}
+
+// Analytics must never prevent the customer website from starting.
 try {
   initializeAnalytics()
 } catch (error) {
-  // Analytics must never prevent the customer website from starting.
   console.warn('Analytics initialization failed:', error)
 }
 
-// Register the lightweight PWA worker. API, authentication and customer data
-// are deliberately excluded from caching by the worker.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register('/sw.js').catch((error) => {
@@ -98,8 +104,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <AppErrorBoundary>
-      <App />
+      <StartupComplete>
+        <App />
+      </StartupComplete>
     </AppErrorBoundary>
   </StrictMode>,
 )
-rootElement.dataset.appBooting = 'false'
