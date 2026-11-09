@@ -1,10 +1,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
 const allowedOrigins = ["https://babacybercafe.in", "https://www.babacybercafe.in"];
+function isAllowedOrigin(origin: string) {
+  if (allowedOrigins.includes(origin)) return true;
+  try {
+    const url = new URL(origin);
+    return url.protocol === "https:" && (url.hostname === "babacybercafe.pages.dev" || url.hostname.endsWith(".babacybercafe.pages.dev"));
+  } catch { return false; }
+}
 function reply(req: Request, body: unknown, status = 200) {
   const origin = req.headers.get("origin") ?? "";
   return new Response(JSON.stringify(body), { status, headers: {
-    "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+    "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : allowedOrigins[0],
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
     "Access-Control-Allow-Methods": "POST, OPTIONS", "Vary": "Origin",
     "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
@@ -39,7 +46,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return reply(req, { ok: true });
   if (req.method !== "POST") return reply(req, { error: "Method not allowed." }, 405);
   const origin = req.headers.get("origin");
-  if (origin && !allowedOrigins.includes(origin)) return reply(req, { error: "Origin not allowed." }, 403);
+  if (origin && !isAllowedOrigin(origin)) return reply(req, { error: "Origin not allowed." }, 403);
   try {
     const { admin, user } = await owner(req);
     const raw = await req.text();
