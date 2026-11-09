@@ -56,3 +56,42 @@ Separate explicit approval is required before:
 ## Rollback
 - Branch-only workflow/documentation changes can be reverted by reverting the branch commits or closing the PR.
 - No production state has been changed by this phase.
+
+
+## Latest verification — 9 November 2026
+
+### Confirmed green checks
+- GitHub Actions run [42583900046](https://github.com/cybercafe90/cybercafe12/actions/runs/42583900046) completed successfully. All 13 job steps passed: locked install, dependency audits, lint, production build, Playwright browser regression tests, Edge Function unit tests, and Edge Function type checks.
+- Cloudflare Pages preview deployment [2cb5f14f](https://2cb5f14f.babacybercafe.pages.dev) completed build and deploy successfully from this branch at commit `c95ac005c4d8ea984bb0500de739ade4584773f2`.
+- Cloudflare production's latest observed deployment is still from `main`, commit `30ea0be0f899560bc40364e1bb53dd25ebf8aeef`, deployed 8 November 2026. No production deployment was triggered by Phase 1.
+- The latest Supabase health advisor returned no health lint findings.
+
+### Current Supabase security evidence (read-only)
+- Security advisor currently reports 13 RLS-enabled tables without policies: `bank_sms_alerts`, `grievance_email_notifications`, `grievance_history`, `grievances`, `insurance_email_notifications`, `insurance_quote_requests`, `insurance_quotes`, `payment_audit_events`, `payment_orders`, `request_rate_limits`, `security_actions`, `security_events`, and `security_investigators`.
+- A catalog/grant check found no direct `anon` or `authenticated` table grants on those 13 tables. The separate `application_documents` table does have an authenticated grant and an owner-manage policy; that path still needs end-to-end authorization review.
+- The 8 observed SECURITY DEFINER functions in `public` had no EXECUTE privilege for `anon`, `authenticated`, or `PUBLIC` in the privilege check. The private `is_owner` helper was executable by authenticated users only. This reduces direct callable surface but does not replace source review of function bodies and all indirect call paths.
+- Security advisor still reports leaked-password protection disabled and insufficient MFA options. Project config shows TOTP enrollment and verification disabled. Do not enable MFA until owner login, recovery, and privileged workflows are tested and approved.
+- Performance advisor still reports 4 multiple-permissive-policy warnings, 1 duplicate-index warning, and 28 unused-index notices. Do not drop indexes based only on current usage counters; review workload and query plans first.
+- Health advisor currently returned no lint findings.
+
+### Cloudflare preview isolation — release blocker
+- The Phase 1 preview build configuration currently points to the production Supabase project. Therefore, preview is suitable for static/build review only. Do not submit applications, grievances, payments, upload documents, change settings, or perform any write-capable journey on this preview.
+- A separate non-production Supabase project and isolated test credentials are required before safe end-to-end write testing. No project or production environment settings were changed.
+
+### Supabase platform compatibility note
+- Supabase announced removal of four legacy CBC-mode TLS 1.2 cipher suites from project HTTP APIs beginning 10 November 2026 at the earliest. Current browsers and supported OS versions should use TLS 1.2 AEAD suites or TLS 1.3; no code/config change is indicated by the available evidence. See [Supabase notice](https://supabase.com/changelog/cbc-tls-ciphers-deprecated).
+- Supabase CLI v3 changed hosted-vs-local command defaults and requires explicit remote targeting for hosted operations. Any future CLI-based reconciliation must pin/check CLI version and follow the v3 migration guidance; no CLI migration command was run in this audit. See [Supabase CLI v3 notice](https://supabase.com/changelog?tags=supabase-server).
+
+### Updated disposition
+- **GREEN:** branch CI; branch preview build/deploy; health advisor; no production deployment or database mutation.
+- **ORANGE:** code changes are preview-only; current preview is connected to production Supabase and must not be used for write tests; RLS/SECURITY DEFINER paths require source-level review; performance notices require workload review.
+- **RED / release blockers:** remote/local migration history is not reconciled; leaked-password protection and MFA posture remain unresolved; no isolated test Supabase project is configured; customer application, tracking, grievance, document, admin and insurance write journeys have not been safely re-tested against an isolated backend; production rollout remains unapproved.
+
+### Next safe actions
+1. Complete source-level review of the RLS/SECURITY DEFINER and Edge Function paths without changing production.
+2. Produce a full remote-to-local migration mapping and backup/restore checklist; no migration commands until separate approval.
+3. Set up a dedicated test Supabase project and separate preview environment before any write-capable tests.
+4. Prepare the MFA/password-protection rollout and owner recovery test plan.
+5. Verify all WhatsApp references are removed from the branch source and customer-facing copy, then rerun CI after any additional code edits.
+6. Expand the service catalogue only with independently verified official source URLs; keep unverified URLs blank and never fabricate government links.
+7. Add multilingual support only with complete reviewed English/Urdu/Kashmiri strings, not partial machine-translated UI.
