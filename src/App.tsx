@@ -3979,7 +3979,7 @@ function RoutedApp() {
     return () => { cancelled = true; };
   }, [location.pathname]);
   return (
-    <div className="portal-theme">
+    <div className="site-shell">
       <Header />
       <Suspense fallback={<main className="content-page" role="status">Loading page…</main>}>
       <Routes>
