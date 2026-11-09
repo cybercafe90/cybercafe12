@@ -177,3 +177,19 @@ Some filenames are clearly semantically related but have different timestamps. S
 - **ORANGE:** privileged-function review is partially complete; most direct RLS exposure is constrained by grants, but public lookup flows need isolated adversarial testing; auth MFA setup requires account-owner enrollment and project Auth settings; catalogue shortlist needs Srinagar verification.
 - **RED:** production deployment is blocked by unresolved migration drift, missing isolated test backend, incomplete end-to-end customer/admin tests, unfinished translations, the grievance status/history atomicity bug, and unresolved password/MFA controls.
 - No production deployment, migration repair, schema change, auth-setting change, customer test submission, or real customer email was performed.
+
+
+### End-to-end test coverage review
+- Playwright currently runs desktop Chromium and Pixel 7 mobile Chromium.
+- Existing browser tests cover route availability, horizontal overflow, navigation, service search, service pagination, application form enabled/disabled state, tracking form enabled/disabled state, owner-only admin messaging, password-recovery generic response, insurance portal display, payment page display, customer portal route guidance, and unauthenticated investigation denial.
+- These tests do **not** submit a customer application, create/track a grievance, upload/download a document, execute a payment, update an application status, create a grievance history record, or exercise authenticated owner/admin workflows against a real backend.
+- Therefore, the existing green Playwright job is a UI smoke/regression result, not proof that the full customer/admin data journey works end to end. Isolated-backend tests remain required.
+
+### Latest preview build after documentation updates
+- Latest development branch commit: `eeef3964612ccbd56a7a063a9580a5722d131f59`.
+- Cloudflare preview: https://a83b915f.babacybercafe.pages.dev
+- Cloudflare queued, initialize, clone, build and deploy stages all completed successfully.
+- This remains a preview only and still has production Supabase environment variables. No write-capable tests were run.
+
+### Additional code-level finding
+- In the `admin-grievances` Edge Function, the grievance status update and grievance history insert are separate Supabase requests. A history insert failure can leave the status changed without a corresponding history event. A single transactional RPC is the appropriate fix; it must be introduced and tested only after the migration baseline is reconstructed in an isolated test database.
