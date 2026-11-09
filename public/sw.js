@@ -1,4 +1,4 @@
-const CACHE_NAME = "babas-cyber-cafe-static-v2";
+const CACHE_NAME = "babas-cyber-cafe-static-v3";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [OFFLINE_URL, "/favicon.svg", "/manifest.webmanifest"];
 
@@ -43,9 +43,8 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/grievance")
   ) return;
 
-  // Always fetch the HTML shell and JavaScript/CSS bundles from the current
-  // deployment. Caching versioned chunks can cause stale-chunk crashes after
-  // a release, leaving users with a blank page.
+  // The HTML shell and executable JS/CSS are network-only. This prevents a
+  // previous release's cached application bundle from breaking a new release.
   if (request.mode === "navigate" || ["script", "style"].includes(request.destination)) {
     if (request.mode === "navigate") {
       event.respondWith(
