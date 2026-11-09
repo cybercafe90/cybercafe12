@@ -1,0 +1,79 @@
+name: Phase 1 remediation checks
+
+on:
+  push:
+    branches:
+      - phase1/stabilization-20261109
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-remediation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build, security and regression checks (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser regression tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Run Edge Function unit tests
+        run: npm run test:edge
+
+      - name: Type-check Edge Functions
+        run: npm run check:edge
+
+      - name: Publish safety summary
+        if: always()
+        run: |
+          {
+            echo "## Phase 1 safety boundary"
+            echo "- This workflow performs repository checks only."
+            echo "- It does not deploy to Cloudflare."
+            echo "- It does not connect to or mutate Supabase."
+            echo "- It does not run database migrations or send emails."
+          } >> "$GITHUB_STEP_SUMMARY"
