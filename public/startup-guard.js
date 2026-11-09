@@ -32,7 +32,7 @@
       try {
         const scriptUrl = new URL(event.target.src, window.location.href);
         if (scriptUrl.origin === window.location.origin) {
-          showStartupError("A required website JavaScript file could not be loaded. Check your connection and reload.");
+          showStartupError("A website JavaScript file failed to load: " + scriptUrl.pathname + ". Check your connection and reload.");
         }
       } catch {
         // Ignore malformed or optional script URLs; the startup timeout remains.
