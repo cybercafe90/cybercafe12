@@ -302,13 +302,6 @@ function Footer() {
             {settings.contact.email}
           </a>
           <a
-            href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            WhatsApp <ArrowUpRight size={13} />
-          </a>
-          <a
             href={settings.social.business_profile}
             target="_blank"
             rel="noreferrer"
@@ -485,7 +478,7 @@ function HomePage() {
       </section>
 
       <section className="cyber-concierge">
-        <div><span className="cyber-eyebrow">DIRECT CONCIERGE · SRINAGAR LOCAL DESK</span><h2>Real help. <em>Right here.</em></h2><p>Speak with our team about services, application requirements and next steps.</p><div className="cyber-contact-actions"><a className="cyber-button cyber-button-primary" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp desk <span className="cyber-online-dot"/></a><a className="cyber-button cyber-button-ghost" href={`tel:${settings.contact.phone.replace(/[^+\d]/g,"")}`}><PhoneCall size={16}/> {settings.contact.phone}</a></div></div>
+        <div><span className="cyber-eyebrow">DIRECT CONCIERGE · SRINAGAR LOCAL DESK</span><h2>Real help. <em>Right here.</em></h2><p>Speak with our team about services, application requirements and next steps.</p><div className="cyber-contact-actions"><a className="cyber-button cyber-button-ghost" href={`tel:${settings.contact.phone.replace(/[^+\d]/g,"")}`}><PhoneCall size={16}/> {settings.contact.phone}</a></div></div>
         <div className="cyber-location-card"><span className="cyber-location-icon"><MapPin size={23}/></span><span className="cyber-eyebrow">OUR SERVICE AREA</span><h3>Srinagar, Jammu &amp; Kashmir</h3><p>For the exact business pin, opening hours and directions, use our verified Google Business Profile.</p><a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open Google Business Profile <ArrowUpRight size={15}/></a></div>
       </section>
       <section className="cyber-social-wrap"><SocialPreviewSection/></section>
@@ -1103,14 +1096,6 @@ function ApplicationPage() {
             <Link className="button button-dark" to="/track">
               Track application <ArrowRight size={16} />
             </Link>
-            <a
-              className="button button-outline"
-              href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello BABA'S CYBER CAFE, I submitted enquiry ${result.trackingId}.`)}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open WhatsApp <ArrowUpRight size={15} />
-            </a>
           </div>
           {result.emailSent ? (
             <p className="success-note">A confirmation email has been sent.</p>
@@ -3593,7 +3578,7 @@ function ContactPage() {
           className="contact-card"
         >
           <span>
-            <MessageCircle size={21} />
+            <PhoneCall size={21} />
           </span>
           <small>CALL</small>
           <strong>{settings.contact.phone}</strong>
