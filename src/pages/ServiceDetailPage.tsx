@@ -25,11 +25,7 @@ export default function ServiceDetailPage({ serviceId }: Props) {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!supabase) {
-      setLoading(false);
-      setNotFound(!seedServices.some((item) => item.id === serviceId));
-      return;
-    }
+    if (!supabase) return;
     let current = true;
     void supabase
       .from("services")
