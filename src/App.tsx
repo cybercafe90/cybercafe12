@@ -1895,6 +1895,104 @@ type AdminApplication = {
   created_at: string;
 };
 
+type AdminFeedbackOverviewData = {
+  items: Array<{
+    id: string;
+    reference_id: string;
+    full_name: string | null;
+    feedback_type: string;
+    service_name: string;
+    rating: number;
+    message: string;
+    status: string;
+    created_at: string;
+  }>;
+  stats: { total: number; average: number; open: number; resolved: number };
+};
+
+function AdminFeedbackOverview() {
+  const [overview, setOverview] = useState<AdminFeedbackOverviewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshVersion, setRefreshVersion] = useState(0);
+
+  useEffect(() => {
+    let current = true;
+    const load = async () => {
+      if (!supabase) throw new Error("Feedback data is not configured.");
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) throw new Error("Please sign in again to view feedback.");
+      const result = await callFunction<AdminFeedbackOverviewData>(
+        "feedback-admin",
+        { action: "list", search: "", status: "", page: 0 },
+        data.session.access_token,
+      );
+      if (current) setOverview(result);
+    };
+    queueMicrotask(() => {
+      if (!current) return;
+      setLoading(true);
+      setError("");
+      void load()
+        .catch((reason) => {
+          if (current) setError(reason instanceof Error ? reason.message : "Feedback overview could not be loaded.");
+        })
+        .finally(() => {
+          if (current) setLoading(false);
+        });
+    });
+    return () => {
+      current = false;
+    };
+  }, [refreshVersion]);
+
+  const stats = overview?.stats;
+  return (
+    <section className="admin-section" aria-labelledby="admin-feedback-title">
+      <div className="admin-section-head">
+        <div>
+          <span className="eyebrow">CUSTOMER VOICE</span>
+          <h2 id="admin-feedback-title">Feedback overview</h2>
+          <p>Recent customer compliments, suggestions and complaints.</p>
+        </div>
+        <div className="admin-portal-shortcuts">
+          <button className="button button-outline" type="button" onClick={() => setRefreshVersion((value) => value + 1)} disabled={loading}>
+            {loading ? "Refreshing…" : "Refresh feedback"}
+          </button>
+          <Link className="button button-dark" to="/feedback">
+            Manage all feedback <ArrowUpRight size={14} />
+          </Link>
+        </div>
+      </div>
+      {error && <div className="notice notice-error" role="alert">{error}</div>}
+      <div className="metric-grid" aria-live="polite">
+        <div><span>Total feedback</span><strong>{loading ? "—" : stats?.total ?? 0}</strong><small>All submissions</small></div>
+        <div><span>Average rating</span><strong>{loading ? "—" : `${(stats?.average ?? 0).toFixed(1)}/5`}</strong><small>Customer experience</small></div>
+        <div><span>Open cases</span><strong>{loading ? "—" : stats?.open ?? 0}</strong><small>Need review</small></div>
+        <div><span>Resolved</span><strong>{loading ? "—" : stats?.resolved ?? 0}</strong><small>Resolved or closed</small></div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Reference / customer</th><th>Service &amp; feedback</th><th>Rating</th><th>Status</th><th>Received</th></tr></thead>
+          <tbody>
+            {(overview?.items ?? []).slice(0, 5).map((item) => (
+              <tr key={item.id}>
+                <td><b>{item.reference_id}</b><small>{item.full_name || "Anonymous"}</small></td>
+                <td><b>{item.service_name}</b><small>{item.feedback_type} · {item.message.slice(0, 90)}{item.message.length > 90 ? "…" : ""}</small></td>
+                <td><span aria-label={`${item.rating} out of 5 stars`}>{"★".repeat(item.rating)}{"☆".repeat(5 - item.rating)}</span><small>{item.rating}/5</small></td>
+                <td><StatusTag status={item.status === "under_review" ? "Under Review" : item.status === "resolved" ? "Completed" : item.status === "closed" ? "Closed" : "New"} /></td>
+                <td>{new Date(item.created_at).toLocaleDateString("en-IN")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!loading && !error && (overview?.items.length ?? 0) === 0 && <p className="table-empty">No customer feedback has been submitted yet.</p>}
+        {!loading && !error && (overview?.items.length ?? 0) > 0 && <p className="form-footnote">Showing the latest feedback available in this dashboard preview.</p>}
+      </div>
+    </section>
+  );
+}
+
 function AdminPage() {
   const adminCategories = useCategoryList(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -2780,6 +2878,7 @@ function AdminPage() {
               <small>Marked complete</small>
             </div>
           </div>
+          <AdminFeedbackOverview />
           <section className="admin-section">
             <div className="admin-section-head">
               <div>
