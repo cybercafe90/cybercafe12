@@ -971,7 +971,6 @@ function printApplicationReceipt(details: {
 }
 
 function ApplicationPage() {
-  const settings = useSiteSettings();
   const categoryList = useCategoryList();
   const [params] = useSearchParams();
   const [serviceList, setServiceList] = useState(seedServices);
