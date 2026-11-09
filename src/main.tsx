@@ -102,3 +102,4 @@ createRoot(rootElement).render(
     </AppErrorBoundary>
   </StrictMode>,
 )
+rootElement.dataset.appBooting = 'false'
