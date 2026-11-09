@@ -12,7 +12,7 @@ test("public navigation and service search work with either backend mode", async
   // Wait for React hydration before checking the mobile menu; the static HTML
   // title is present before the interactive navigation is mounted.
   await expect(page.locator("#root .site-shell")).toBeVisible();
-  const menuToggle = page.getByRole("button", { name: "Open menu" });
+  const menuToggle = page.locator(".menu-toggle");
   if (await menuToggle.isVisible()) {
     await menuToggle.click();
     await expect(menuToggle).toHaveAttribute("aria-expanded", "true");
