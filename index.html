@@ -57,6 +57,8 @@
           if (event instanceof ErrorEvent || event.target?.type === 'module') showStartupError();
         }, true);
         window.addEventListener('unhandledrejection', showStartupError);
+        // If the entry module stalls without throwing, replace the endless loading screen with a useful recovery message.
+        window.setTimeout(showStartupError, 15000);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
