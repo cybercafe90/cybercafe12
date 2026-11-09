@@ -75,9 +75,9 @@ function csvFlag(value?: string, fallback = false) {
 
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
-const facebook = "https://www.facebook.com/babascybercafe";
+const facebook = "https://www.facebook.com/share/1cKyxm9dZ/";
 const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
-const instagramProfile = "https://www.instagram.com/babascybercafe/";
+const instagramProfile = "";
 
 function useCategoryList(activeOnly = true) {
   const [items, setItems] = useState<Category[]>(categories);
@@ -183,7 +183,7 @@ function useSiteSettings() {
               ? social.business_profile
               : businessProfile,
           instagram:
-            typeof social.instagram === "string" && social.instagram.trim()
+            typeof social.instagram === "string"
               ? social.instagram
               : instagramProfile,
         },
