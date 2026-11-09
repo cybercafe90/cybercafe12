@@ -1777,3 +1777,74 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .customer-chat-tools > button { min-width:30px; height:31px; padding-inline:6px; }
   .customer-chat-tools > button span { font-size:7px; }
 }
+
+
+/* Public service detail and assisted-application experience */
+.service-detail-page { max-width: 1440px; margin: 0 auto; }
+.service-breadcrumb { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:0 0 28px; color:#89877d; font-size:10px; }
+.service-breadcrumb a { display:inline-flex; align-items:center; gap:6px; color:#705a34; }
+.service-breadcrumb [aria-current="page"] { color:#4c4b43; }
+.service-detail-hero { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(245px,.7fr); gap:34px; align-items:stretch; padding:34px; border:1px solid var(--line); background:var(--white); }
+.service-detail-heading h1 { max-width:760px; margin:15px 0 12px; font:500 clamp(35px,4vw,52px)/1.12 var(--serif); }
+.service-detail-heading > p { max-width:690px; color:#6f6e64; font-size:13px; line-height:1.8; }
+.service-detail-meta { display:flex; flex-wrap:wrap; gap:17px; margin:22px 0; color:#747268; font-size:9px; }
+.service-detail-meta span { display:inline-flex; align-items:center; gap:7px; }
+.service-detail-meta svg { color:#927745; }
+.service-detail-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:23px; }
+.service-reference-card { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:24px; border:1px solid #e3dccb; background:#f5f1e8; }
+.service-reference-icon { display:grid; width:48px; height:48px; place-items:center; margin-bottom:20px; border:1px solid #d2c19d; color:#856b3b; background:#fffdf8; }
+.service-reference-card strong { margin-top:10px; font:500 21px/1.35 var(--serif); }
+.service-reference-card p { color:#706e63; font-size:10px; line-height:1.8; }
+.service-reference-card small { margin-top:12px; color:#8b7958; font-size:8px; }
+.service-detail-layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(240px,.65fr); gap:22px; align-items:start; margin-top:24px; }
+.service-detail-main { display:grid; gap:13px; }
+.service-info-panel { padding:25px; border:1px solid var(--line); background:var(--white); }
+.service-info-title { display:flex; align-items:flex-start; gap:13px; margin-bottom:17px; }
+.service-info-title > span { color:var(--gold); font:16px var(--serif); }
+.service-info-title h2 { margin:0 0 5px; font:500 21px var(--serif); }
+.service-info-title p { margin:0; color:#8a887d; font-size:9px; }
+.service-info-panel > p { color:#66655c; font-size:11px; line-height:1.85; }
+.service-document-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:0; list-style:none; }
+.service-document-list li { display:flex; align-items:flex-start; gap:8px; padding:11px; border:1px solid #e9e6dd; color:#55544b; font-size:10px; line-height:1.5; }
+.service-document-list svg { flex:0 0 auto; color:#64816a; }
+.service-info-note { display:flex; gap:10px; padding:13px; border:1px solid #e8dfcb; color:#71664f; background:#f8f5ed; }
+.service-info-note svg { flex:0 0 auto; margin-top:2px; }
+.service-info-note p { margin:0; font-size:10px; line-height:1.8; }
+.service-process-list { display:grid; gap:0; margin:17px 0 0; padding:0; list-style:none; counter-reset:process; }
+.service-process-list li { position:relative; display:grid; grid-template-columns:1fr; gap:5px; padding:14px 12px 14px 42px; border-top:1px solid #ece9e1; counter-increment:process; }
+.service-process-list li::before { position:absolute; top:13px; left:4px; display:grid; width:25px; height:25px; place-items:center; border:1px solid #d8c9a8; color:#826b41; content:counter(process,decimal-leading-zero); font:11px var(--serif); }
+.service-process-list b { font-size:10px; }
+.service-process-list span { color:#77766d; font-size:9px; line-height:1.7; }
+.service-official-source { display:flex; gap:12px; padding:18px; border:1px solid #dce6dd; color:#45664e; background:#f3f8f3; }
+.service-official-source > svg { flex:0 0 auto; }
+.service-official-source b { font-size:10px; }
+.service-official-source p { margin:6px 0; color:#667568; font-size:9px; line-height:1.7; }
+.service-official-source a { display:inline-flex; align-items:center; gap:6px; color:#365f42; font-size:9px; font-weight:700; }
+.service-detail-aside { display:grid; gap:13px; }
+.service-aside-card { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:23px; border:1px solid #d9d3c4; background:#f1eee5; }
+.service-aside-card h2 { margin:0; font:500 23px/1.25 var(--serif); }
+.service-aside-card p { margin:0 0 5px; color:#6e6c62; font-size:10px; line-height:1.8; }
+.service-aside-card .button { width:100%; }
+.service-aside-secondary { color:#705a34; font-size:9px; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+.service-aside-muted { background:var(--white); }
+.service-aside-muted > svg { color:#907749; }
+.service-aside-muted b { font:500 17px var(--serif); }
+.service-independence-notice { display:flex; gap:12px; margin-top:20px; padding:17px; border:1px solid #e6decb; color:#655b46; background:#f6f2e9; }
+.service-independence-notice svg { flex:0 0 auto; }
+.service-independence-notice p { margin:0; font-size:10px; line-height:1.8; }
+.service-detail-empty { display:flex; min-height:360px; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; }
+.service-detail-empty h1 { margin:0; font:500 32px var(--serif); }
+.service-detail-empty p { color:#77766d; font-size:11px; }
+@media (max-width:800px) {
+ .service-detail-hero,.service-detail-layout { grid-template-columns:1fr; }
+ .service-reference-card { min-height:190px; }
+ .service-detail-page { padding-inline:6%; }
+}
+@media (max-width:520px) {
+ .service-detail-hero,.service-info-panel { padding:19px; }
+ .service-detail-heading h1 { font-size:35px; }
+ .service-detail-actions { flex-direction:column; align-items:stretch; }
+ .service-detail-actions .button { width:100%; }
+ .service-document-list { grid-template-columns:1fr; }
+ .service-detail-meta { flex-direction:column; gap:9px; }
+}
