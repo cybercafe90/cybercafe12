@@ -6,11 +6,9 @@ import {
   BadgeCheck,
   BookOpen,
   CheckCircle2,
-  ClipboardList,
   Clock3,
   ExternalLink,
   FileCheck2,
-  FileText,
   Info,
   ShieldCheck,
 } from "lucide-react";
