@@ -1,7 +1,11 @@
 const defaultOrigins = ['https://babacybercafe.in', 'https://www.babacybercafe.in']
 
 function isAllowedOrigin(origin: string, configured: string[] = []) {
-  return [...defaultOrigins, ...configured].includes(origin) || /^https:\/\/(?:[a-z0-9-]+\\.)?babacybercafe\\.pages\\.dev$/i.test(origin)
+  if ([...defaultOrigins, ...configured].includes(origin)) return true
+  try {
+    const url = new URL(origin)
+    return url.protocol === 'https:' && (url.hostname === 'babacybercafe.pages.dev' || url.hostname.endsWith('.babacybercafe.pages.dev'))
+  } catch { return false }
 }
 
 export function allowedOrigin(request: Request) {
@@ -14,7 +18,6 @@ export function allowedOrigin(request: Request) {
 export function corsHeaders(request: Request): HeadersInit {
   const origin = request.headers.get('origin')
   const configured = Deno.env.get('ALLOWED_ORIGINS')?.split(',').map((item) => item.trim()).filter(Boolean) ?? []
-  const origins = [...defaultOrigins, ...configured]
   return {
     'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin, configured) ? origin : 'https://babacybercafe.in',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
