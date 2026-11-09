@@ -73,6 +73,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryS
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function StartupComplete({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.getElementById('root')
