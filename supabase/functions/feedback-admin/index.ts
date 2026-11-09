@@ -1,28 +1,15 @@
-import {serviceClient,verifyOwner} from '../_shared/auth.ts'
-import {preflight,response} from '../_shared/http.ts'
-Deno.serve(async(req)=>{
- const early=preflight(req);if(early)return early;
- try{
-  const db=serviceClient(),owner=await verifyOwner(req,db),b=await req.json();
-  if(b.action==='list'){
-   const page=Math.max(0,Math.min(100,Number(b.page)||0)),size=25;
-   let q=db.from('customer_feedback').select('id,reference_id,full_name,email,mobile,feedback_type,service_name,rating,message,is_anonymous,status,priority,internal_note,created_at,updated_at,resolved_at',{count:'exact'}).order('created_at',{ascending:false}).range(page*size,page*size+size-1);
-   if(typeof b.search==='string'&&b.search.trim()){const term=b.search.trim().replace(/[,%()]/g,'');q=q.or('reference_id.ilike.%'+term+'%,service_name.ilike.%'+term+'%,full_name.ilike.%'+term+'%');}
-   if(['new','under_review','resolved','closed'].includes(b.status))q=q.eq('status',b.status);
-   const {data,error,count}=await q;if(error)throw error;
-   const {data:stats,error:statsError}=await db.from('customer_feedback').select('rating,status');
-   if(statsError)throw statsError;
-   const rows=stats??[],total=rows.length,average=total?Math.round(rows.reduce((s,x)=>s+x.rating,0)/total*10)/10:0;
-   return response(req,{items:data??[],count:count??0,pageSize:size,stats:{total,average,open:rows.filter(x=>['new','under_review'].includes(x.status)).length,resolved:rows.filter(x=>['resolved','closed'].includes(x.status)).length}});
-  }
-  if(b.action==='update'){
-   const id=typeof b.id==='string'?b.id:'',status=['new','under_review','resolved','closed'].includes(b.status)?b.status:'',priority=['low','normal','high','urgent'].includes(b.priority)?b.priority:'normal',note=typeof b.internalNote==='string'?b.internalNote.trim().slice(0,2000):'';
-   if(!id||!status)return response(req,{error:'Invalid feedback update.'},400);
-   const {data:old,error:readError}=await db.from('customer_feedback').select('status').eq('id',id).single();if(readError)throw readError;
-   const {error}=await db.from('customer_feedback').update({status,priority,internal_note:note,updated_at:new Date().toISOString(),resolved_at:status==='resolved'||status==='closed'?new Date().toISOString():null}).eq('id',id);if(error)throw error;
-   const {error:historyError}=await db.from('customer_feedback_history').insert({feedback_id:id,actor_id:owner.id,action:'owner_update',old_status:old.status,new_status:status,note});if(historyError)throw historyError;
-   return response(req,{updated:true});
-  }
-  return response(req,{error:'Unknown action.'},400);
- }catch(e){const m=e instanceof Error?e.message:'',s=m.includes('Unauthorized')||m.includes('sign-in required')?401:m.includes('Owner authorization')?403:500;console.error('feedback-admin:',s,m.slice(0,120));return response(req,{error:s===401?'Verified owner sign-in required.':s===403?'Owner authorization required.':'Feedback could not be loaded.'},s)}
-});
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+const origins=['https://babacybercafe.in','https://www.babacybercafe.in']
+function cors(req:Request):HeadersInit{const origin=req.headers.get('origin')??'';let allowed=origins.includes(origin);try{const u=new URL(origin);allowed=allowed||u.protocol==='https:'&&(u.hostname==='babacybercafe.pages.dev'||u.hostname.endsWith('.babacybercafe.pages.dev'))}catch{}return {'Access-Control-Allow-Origin':allowed?origin:'https://babacybercafe.in','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Max-Age':'86400','Vary':'Origin'}}
+function reply(req:Request,body:unknown,status=200,extra:Record<string,string>={}){return new Response(JSON.stringify(body),{status,headers:{...cors(req),'Content-Type':'application/json; charset=utf-8',...extra}})}
+function preflight(req:Request){if(req.method==='OPTIONS')return new Response('ok',{headers:cors(req)});if(req.method!=='POST')return reply(req,{error:'Method not allowed.'},405);return null}
+function db(){const url=Deno.env.get('SUPABASE_URL'),key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');if(!url||!key)throw new Error('Backend unavailable.');return createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}})}
+async function rateLimit(client:ReturnType<typeof db>,req:Request,purpose:string,limit:number,minutes:number){const secret=Deno.env.get('TRACK_RATE_SECRET');if(!secret)throw new Error('Rate limit unavailable.');const ip=req.headers.get('cf-connecting-ip')??req.headers.get('x-real-ip')??'unknown';const raw=secret+':'+purpose+':'+ip+':all';const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));const hash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');const windowMs=minutes*60000,start=new Date(Math.floor(Date.now()/windowMs)*windowMs).toISOString();const {data,error}=await client.rpc('consume_rate_limit',{p_scope_hash:hash,p_window_start:start,p_limit:limit});if(error)throw new Error('Rate limit unavailable.');return data===true}
+
+async function owner(req:Request,client:ReturnType<typeof db>){const token=req.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1],anon=Deno.env.get('SUPABASE_ANON_KEY');if(!token||!anon)throw new Error('Unauthorized.');const userClient=createClient(Deno.env.get('SUPABASE_URL')!,anon,{global:{headers:{Authorization:'Bearer '+token}},auth:{autoRefreshToken:false,persistSession:false}});const {data:{user},error}=await userClient.auth.getUser(token);if(error||!user)throw new Error('Unauthorized.');const {data:role,error:roleError}=await client.from('user_roles').select('role').eq('user_id',user.id).eq('role','owner').maybeSingle();if(roleError||role?.role!=='owner')throw new Error('Owner authorization required.');return user}
+Deno.serve(async(req)=>{const early=preflight(req);if(early)return early;try{
+ const client=db(),actor=await owner(req,client),b=await req.json();
+ if(b.action==='list'){const page=Math.max(0,Math.min(100,Number(b.page)||0)),size=25;let q=client.from('customer_feedback').select('id,reference_id,full_name,email,mobile,feedback_type,service_name,rating,message,is_anonymous,status,priority,internal_note,created_at,updated_at,resolved_at',{count:'exact'}).order('created_at',{ascending:false}).range(page*size,page*size+size-1);if(typeof b.search==='string'&&b.search.trim()){const term=b.search.trim().replace(/[,%()]/g,'');q=q.or('reference_id.ilike.%'+term+'%,service_name.ilike.%'+term+'%,full_name.ilike.%'+term+'%')}if(['new','under_review','resolved','closed'].includes(b.status))q=q.eq('status',b.status);const {data,error,count}=await q;if(error)throw error;const {data:rows,error:statsError}=await client.from('customer_feedback').select('rating,status');if(statsError)throw statsError;const all=rows??[],total=all.length;return reply(req,{items:data??[],count:count??0,pageSize:size,stats:{total,average:total?Math.round(all.reduce((s,x)=>s+x.rating,0)/total*10)/10:0,open:all.filter(x=>['new','under_review'].includes(x.status)).length,resolved:all.filter(x=>['resolved','closed'].includes(x.status)).length}})}
+ if(b.action==='update'){const id=typeof b.id==='string'?b.id:'',status=['new','under_review','resolved','closed'].includes(b.status)?b.status:'',priority=['low','normal','high','urgent'].includes(b.priority)?b.priority:'normal',note=typeof b.internalNote==='string'?b.internalNote.trim().slice(0,2000):'';if(!id||!status)return reply(req,{error:'Invalid feedback update.'},400);const {data:old,error:readError}=await client.from('customer_feedback').select('status').eq('id',id).single();if(readError)throw readError;const now=new Date().toISOString();const {error}=await client.from('customer_feedback').update({status,priority,internal_note:note,updated_at:now,resolved_at:['resolved','closed'].includes(status)?now:null}).eq('id',id);if(error)throw error;const {error:historyError}=await client.from('customer_feedback_history').insert({feedback_id:id,actor_id:actor.id,action:'owner_update',old_status:old.status,new_status:status,note});if(historyError)throw historyError;return reply(req,{updated:true})}
+ return reply(req,{error:'Unknown action.'},400)
+}catch(e){const m=e instanceof Error?e.message:'',status=m.includes('Unauthorized')?401:m.includes('Owner authorization')?403:500;console.error('feedback-admin:',status,m.slice(0,120));return reply(req,{error:status===401?'Verified owner sign-in required.':status===403?'Owner authorization required.':'Feedback could not be loaded.'},status)}})
