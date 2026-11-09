@@ -1929,15 +1929,18 @@ function AdminFeedbackOverview() {
       );
       if (current) setOverview(result);
     };
-    setLoading(true);
-    setError("");
-    void load()
-      .catch((reason) => {
-        if (current) setError(reason instanceof Error ? reason.message : "Feedback overview could not be loaded.");
-      })
-      .finally(() => {
-        if (current) setLoading(false);
-      });
+    queueMicrotask(() => {
+      if (!current) return;
+      setLoading(true);
+      setError("");
+      void load()
+        .catch((reason) => {
+          if (current) setError(reason instanceof Error ? reason.message : "Feedback overview could not be loaded.");
+        })
+        .finally(() => {
+          if (current) setLoading(false);
+        });
+    });
     return () => {
       current = false;
     };
