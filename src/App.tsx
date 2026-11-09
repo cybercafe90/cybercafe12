@@ -59,6 +59,7 @@ import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery,
 const InvestigationPage = lazy(() => import("./pages/InvestigationPage"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
+const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
@@ -2592,6 +2593,7 @@ function AdminPage() {
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/feedback">Customer feedback centre <ArrowUpRight size={14} /></Link>
             </div>
           )}
         </div>
@@ -3944,6 +3946,7 @@ function RoutedApp() {
       "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
+      "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -4002,6 +4005,7 @@ function RoutedApp() {
         <Route path="/investigation" element={<InvestigationPage />} />
         <Route path="/grievance" element={<GrievancePage />} />
         <Route path="/grievance/admin" element={<AdminGrievancePage />} />
+        <Route path="/feedback" element={<FeedbackCentre />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
