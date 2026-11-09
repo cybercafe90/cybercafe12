@@ -62,6 +62,7 @@ import AdminGrievancePage from "./pages/AdminGrievancePage";
 import PaymentPortal from "./pages/PaymentPortal";
 import InsurancePortal from "./pages/InsurancePortal";
 import CustomerChatAssistant from "./components/CustomerChatAssistant";
+import ServiceDetailPage from "./pages/ServiceDetailPage";
 import CyberNetworkCanvas from "./components/CyberNetworkCanvas";
 import "./App.css";
 import "./cyber-theme.css";
@@ -814,7 +815,7 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
               )}
               <div className="service-card-bottom">
                 <Link
-                  to={`/apply?service=${encodeURIComponent(service.name)}&category=${service.category_slug}`}
+                  to={`/service/${encodeURIComponent(service.id)}`}
                 >
                   Enquire <ArrowRight size={15} />
                 </Link>
@@ -3933,6 +3934,7 @@ function RoutedApp() {
       "/": "BABA'S CYBER CAFE | Digital Service Assistance in Srinagar",
       "/about": "About Us | BABA'S CYBER CAFE",
       "/services": "Service Directory | BABA'S CYBER CAFE",
+      "/service": "Service Details | BABA'S CYBER CAFE",
       "/apply": "New Enquiry | BABA'S CYBER CAFE",
       "/track": "Track Application | BABA'S CYBER CAFE",
       "/dashboard": "Customer Dashboard | BABA'S CYBER CAFE",
@@ -3986,6 +3988,7 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
+        <Route path="/service/:serviceId" element={<ServiceDetailRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
@@ -4008,6 +4011,11 @@ function RoutedApp() {
       <CustomerChatAssistant />
     </div>
   );
+}
+
+function ServiceDetailRoute() {
+  const { serviceId = "" } = useParams();
+  return <ServiceDetailPage serviceId={serviceId} />;
 }
 
 function CategoryRoute() {
