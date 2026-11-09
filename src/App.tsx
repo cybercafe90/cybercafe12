@@ -34,7 +34,6 @@ import {
   LockKeyhole,
   MapPin,
   Menu,
-  MessageCircle,
   PhoneCall,
   Search,
   ShieldCheck,
@@ -76,7 +75,6 @@ function csvFlag(value?: string, fallback = false) {
 
 const phone = "+91 7006865909";
 const email = "support@babacybercafe.in";
-const whatsapp = "917006865909";
 const facebook = "https://www.facebook.com/babascybercafe";
 const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
 const instagramProfile = "https://www.instagram.com/babascybercafe/";
@@ -114,7 +112,7 @@ function categoryLabel(slug: string, items: Category[]) {
 type SiteSettings = {
   announcement: { enabled: boolean; text: string };
   homepage: { eyebrow: string; headline: string; description: string };
-  contact: { phone: string; whatsapp: string; email: string };
+  contact: { phone: string; email: string };
   social: { facebook: string; business_profile: string; instagram: string };
 };
 
@@ -126,7 +124,7 @@ const defaultSiteSettings: SiteSettings = {
     description:
       "Friendly help with digital applications, documents and service enquiries, all in one place.",
   },
-  contact: { phone, whatsapp, email },
+  contact: { phone, email },
   social: { facebook, business_profile: businessProfile, instagram: instagramProfile },
 };
 
@@ -175,8 +173,6 @@ function useSiteSettings() {
         },
         contact: {
           phone: typeof contact.phone === "string" ? contact.phone : phone,
-          whatsapp:
-            typeof contact.whatsapp === "string" ? contact.whatsapp : whatsapp,
           email: typeof contact.email === "string" ? contact.email : email,
         },
         social: {
@@ -1031,7 +1027,7 @@ function ApplicationPage() {
     setError("");
     if (!isSupabaseConfigured) {
       setError(
-        "Online applications are not configured yet. Please call or WhatsApp the cafe to send your enquiry.",
+        "Online applications are not configured yet. Please call or email the cafe to send your enquiry.",
       );
       return;
     }
@@ -1040,7 +1036,6 @@ function ApplicationPage() {
       return;
     }
     setBusy(true);
-    const whatsappWindow = window.open("", "_blank");
     try {
       const response = await callFunction<{
         trackingId: string;
@@ -1060,11 +1055,7 @@ function ApplicationPage() {
         },
       );
       setResult(response);
-      const message = `Hello BABA'S CYBER CAFE, I have submitted an enquiry. Reference: ${response.trackingId}. Please let me know the next steps.`;
-      if (whatsappWindow)
-        whatsappWindow.location.href = `https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
     } catch (reason) {
-      whatsappWindow?.close();
       setError(
         reason instanceof Error
           ? reason.message
@@ -1611,10 +1602,6 @@ function WebsiteSettingsEditor() {
           },
           contact: {
             phone: typeof contact.phone === "string" ? contact.phone : phone,
-            whatsapp:
-              typeof contact.whatsapp === "string"
-                ? contact.whatsapp
-                : whatsapp,
             email: typeof contact.email === "string" ? contact.email : email,
           },
           social: {
@@ -1773,7 +1760,7 @@ function WebsiteSettingsEditor() {
         <div className="settings-group">
           <div>
             <span className="eyebrow">CONTACT DETAILS</span>
-            <p>Update public phone, WhatsApp and email.</p>
+            <p>Update public phone and email.</p>
           </div>
           <div className="field-grid">
             <label className="field">
@@ -1787,20 +1774,6 @@ function WebsiteSettingsEditor() {
                   })
                 }
                 maxLength={22}
-                required
-              />
-            </label>
-            <label className="field">
-              <span>WhatsApp number (country code)</span>
-              <input
-                value={form.contact.whatsapp}
-                onChange={(event) =>
-                  update("contact", {
-                    ...form.contact,
-                    whatsapp: event.target.value,
-                  })
-                }
-                maxLength={20}
                 required
               />
             </label>
@@ -3622,7 +3595,7 @@ function ContactPage() {
           <span>
             <MessageCircle size={21} />
           </span>
-          <small>CALL OR WHATSAPP</small>
+          <small>CALL</small>
           <strong>{settings.contact.phone}</strong>
           <p>For a quick enquiry or follow-up.</p>
           <ArrowUpRight size={16} />
@@ -3765,9 +3738,9 @@ function LegalPage({ privacy = false }: { privacy?: boolean }) {
             <h2>Third-party services</h2>
             <p>
               Authentication, hosting and email providers may process
-              information to operate the portal. WhatsApp, Facebook, Instagram
-              and Google links are governed by their own privacy policies. Do
-              not use the portal for emergencies.
+              information to operate the portal. Facebook, Instagram and Google
+              links are governed by their own privacy policies. Do not use the
+              portal for emergencies.
             </p>
             <h2>Contact</h2>
             <p>
@@ -3802,8 +3775,8 @@ function LegalPage({ privacy = false }: { privacy?: boolean }) {
             <p>
               Online services depend on configured third-party systems and may
               be unavailable. A confirmation email is sent only when the email
-              integration is configured and reports success. WhatsApp is an
-              optional communication channel.
+              integration is configured and reports success. Telephone and email are
+              the available direct contact channels.
             </p>
             <h2>Contact</h2>
             <p>
