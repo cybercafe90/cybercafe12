@@ -9,8 +9,14 @@ test("public navigation and service search work with either backend mode", async
 }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/BABA'S CYBER CAFE/);
+  // Wait for React hydration before checking the mobile menu; the static HTML
+  // title is present before the interactive navigation is mounted.
+  await expect(page.locator("#root .site-shell")).toBeVisible();
   const menuToggle = page.getByRole("button", { name: "Open menu" });
-  if (await menuToggle.isVisible()) await menuToggle.click();
+  if (await menuToggle.isVisible()) {
+    await menuToggle.click();
+    await expect(menuToggle).toHaveAttribute("aria-expanded", "true");
+  }
   await page.getByRole("link", { name: "Services Hub", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(
