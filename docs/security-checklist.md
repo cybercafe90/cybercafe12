@@ -11,7 +11,7 @@
 - [ ] Confirm `application-documents` is private, file limits/types are enforced in the owner UI and storage policy, and signed URLs expire quickly.
 - [ ] Set `TRACK_RATE_SECRET` and email provider secrets in Supabase only; rotate any credential accidentally exposed.
 - [ ] Confirm email logs and UI distinguish sent, failed and not-configured outcomes for applications, grievances and insurance requests.
-- [x] Restrict investigation Edge Function CORS allowlists to the two production domains; remove the obsolete security-audit preview hostname.
+- [x] Retire the Investigation portal and investigator-management endpoints; preserve background security telemetry and audit logging.
 - [ ] Verify the hosted Supabase Auth settings match the repository's link-only email templates and password-recovery redirect allowlist. TOTP and code-based email templates are disabled by business request.
 - [ ] Enable leaked-password protection if available in the hosted Auth settings; use strong unique passwords because MFA is intentionally disabled.
 - [ ] Keep customer database backups and define retention/deletion procedures appropriate to the business.
