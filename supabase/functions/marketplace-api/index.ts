@@ -242,12 +242,13 @@ Deno.serve(async (request) => {
       const membership = await currentMembership(admin, seller.id)
 
       if (action === 'seller_dashboard') {
-        const [payments, products, orders] = await Promise.all([
+        const [payments, products, orders, reminders] = await Promise.all([
           membership ? admin.from('marketplace_membership_payments').select('id,amount,status,claimed_utr,created_at,verified_at').eq('membership_id', membership.id).order('created_at', { ascending: false }) : Promise.resolve({ data: [], error: null }),
-          admin.from('marketplace_products').select('id,name,category_slug,price,stock,image_url,status,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
+          admin.from('marketplace_products').select('id,name,description,category_slug,price,stock,image_url,status,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
           admin.from('marketplace_orders').select('id,order_ref,customer_name,customer_email,customer_mobile,shipping_address,total_amount,payment_method,payment_status,status,carrier,tracking_number,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
+          membership ? admin.from('marketplace_membership_reminders').select('id,reminder_month,reminder_type,status,sent_at').eq('membership_id', membership.id).order('created_at', { ascending: false }).limit(24) : Promise.resolve({ data: [], error: null }),
         ])
-        if (payments.error || products.error || orders.error) throw new Error('SELLER_DASHBOARD_FAILED')
+        if (payments.error || products.error || orders.error || reminders.error) throw new Error('SELLER_DASHBOARD_FAILED')
         const orderIds = (orders.data ?? []).map((order) => order.id)
         const { data: orderItems, error: itemsError } = orderIds.length
           ? await admin.from('marketplace_order_items').select('order_id,product_name,quantity,unit_price').in('order_id', orderIds)
@@ -260,7 +261,7 @@ Deno.serve(async (request) => {
           itemsByOrder.set(item.order_id, group)
         }
         const sellerOrders = (orders.data ?? []).map((order) => ({ ...order, items: itemsByOrder.get(order.id) ?? [] }))
-        return response(request, { seller, membership, payments: payments.data ?? [], products: products.data ?? [], orders: sellerOrders }, 200, { 'Cache-Control': 'no-store' })
+        return response(request, { seller, membership, payments: payments.data ?? [], products: products.data ?? [], orders: sellerOrders, reminders: reminders.data ?? [] }, 200, { 'Cache-Control': 'no-store' })
       }
 
       if (action === 'create_membership_payment') {
