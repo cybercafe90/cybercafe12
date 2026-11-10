@@ -29,7 +29,17 @@ create table if not exists public.marketplace_sellers (
   store_name text not null check (char_length(store_name) between 2 and 120),
   legal_name text not null check (char_length(legal_name) between 2 and 160),
   contact_email text not null check (char_length(contact_email) <= 254),
-  upi_id text not null check (upi_id ~* '^[a-z0-9._+-]{2,64}@[a-z0-9.-]{2,64}
+  upi_id text not null check (
+    char_length(upi_id) between 5 and 129
+    and position('@' in upi_id) > 1
+    and position('@' in upi_id) < char_length(upi_id)
+    and char_length(upi_id) - char_length(replace(upi_id, '@', '')) = 1
+    and char_length(split_part(upi_id, '@', 1)) between 2 and 64
+    and char_length(split_part(upi_id, '@', 2)) between 2 and 64
+    and split_part(upi_id, '@', 1) !~* '[^a-z0-9._+-]'
+    and split_part(upi_id, '@', 2) !~* '[^a-z0-9.-]'
+  ),
+  mobile text not null check (char_length(mobile) between 8 and 20),
   business_type text not null default 'individual' check (business_type in ('individual','proprietorship','partnership','company','cooperative','other')),
   address text not null check (char_length(address) between 5 and 500),
   city text not null check (char_length(city) between 2 and 100),
