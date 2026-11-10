@@ -333,7 +333,7 @@ Deno.serve(async (request) => {
           admin.from('marketplace_membership_payments').select('id,seller_id,membership_id,amount,status,claimed_utr,created_at').order('created_at', { ascending: false }).limit(200),
           admin.from('marketplace_products').select('id,seller_id,name,category_slug,price,stock,status,created_at').order('created_at', { ascending: false }).limit(200),
           admin.from('marketplace_orders').select('id,order_ref,seller_id,customer_name,customer_mobile,total_amount,payment_method,payment_status,claimed_utr,status,carrier,tracking_number,created_at').order('created_at', { ascending: false }).limit(200),
-          admin.from('marketplace_membership_reminders').select('id,membership_id,reminder_month,status,sent_at,error_message').order('created_at', { ascending: false }).limit(100),
+          admin.from('marketplace_membership_reminders').select('id,membership_id,reminder_month,reminder_type,status,sent_at,error_message').order('created_at', { ascending: false }).limit(100),
         ])
         if ([sellers,memberships,payments,products,orders,reminders].some((r) => r.error)) throw new Error('OWNER_DASHBOARD_FAILED')
         const sellerMap = new Map((sellers.data ?? []).map((s) => [s.id, s]))
