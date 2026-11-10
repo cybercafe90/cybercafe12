@@ -331,6 +331,8 @@ Deno.serve(async (request) => {
         const { data: existingOrder, error: existingError } = await admin.from('marketplace_orders')
           .select('id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
         if (existingError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
+        const allowedNext: Record<string, string[]> = { placed: ['confirmed','cancelled'], confirmed: ['processing','cancelled'], processing: ['shipped','cancelled'], shipped: ['delivered'], delivered: [], cancelled: [], returned: [] }
+        if (!(allowedNext[existingOrder.status] ?? []).includes(nextStatus)) return response(request, { error: 'This order cannot move to that status.' }, 409)
         if (existingOrder.payment_method === 'upi' && existingOrder.payment_status !== 'paid' && ['confirmed','processing','shipped','delivered'].includes(nextStatus)) {
           return response(request, { error: 'Wait until the owner verifies the UPI payment before processing this order.' }, 409)
         }
