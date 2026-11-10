@@ -406,53 +406,38 @@ Deno.serve(async (request) => {
         const decision = body.decision
         if (!isUuid(paymentId) || !['verified','rejected'].includes(String(decision))) return response(request, { error: 'Invalid membership payment review.' }, 400)
         if (decision === 'verified' && body.bankStatementVerified !== true) return response(request, { error: 'Confirm that the payment is visible in the bank statement before verification.' }, 400)
-        const { data: payment, error: lookupError } = await admin.from('marketplace_membership_payments').select('*').eq('id', paymentId).maybeSingle()
-        if (lookupError || !payment || (decision === 'verified' ? payment.status !== 'claimed' || !payment.claimed_utr : !['claimed','pending'].includes(payment.status))) return response(request, { error: 'This membership payment is not awaiting review or has no submitted UTR.' }, 409)
-        const { data: updated, error } = await admin.from('marketplace_membership_payments').update({
-          status: decision, verified_utr: decision === 'verified' ? payment.claimed_utr : null,
-          verified_by: actor.id, verified_at: new Date().toISOString(),
-          rejection_note: decision === 'rejected' ? 'Payment could not be verified by the owner.' : '', updated_at: new Date().toISOString(),
-        }).eq('id', paymentId).select('id,status').single()
-        if (error || !updated) throw new Error('MEMBERSHIP_PAYMENT_REVIEW_FAILED')
-        if (decision === 'verified') {
-          const { data: membership, error: mError } = await admin.from('marketplace_memberships').select('*').eq('id', payment.membership_id).single()
-          if (mError || !membership) throw new Error('MEMBERSHIP_LOOKUP_FAILED')
-          const newPaid = Math.min(Number(membership.fee_amount), Number(membership.paid_amount) + Number(payment.amount))
-          const full = newPaid >= Number(membership.fee_amount)
-          const patch: Json = { paid_amount: newPaid, updated_at: new Date().toISOString() }
-          if (full) {
-            patch.status = 'active'
-            patch.renewal_grace = false
-            if (membership.status === 'paused') {
-              const start = new Date()
-              const expiry = new Date(start); expiry.setFullYear(expiry.getFullYear() + 1)
-              const grace = new Date(expiry); grace.setDate(grace.getDate() + 15)
-              patch.period_start = start.toISOString()
-              patch.expires_at = expiry.toISOString()
-              patch.grace_until = grace.toISOString()
-            }
-          }
-          const { error: updateMembershipError } = await admin.from('marketplace_memberships').update(patch).eq('id', membership.id)
-          if (updateMembershipError) throw updateMembershipError
-        }
-        await ownerAudit(admin, actor.id, 'marketplace_membership_payment_' + decision, 'marketplace_membership_payment', paymentId, { amount: payment.amount })
-        return response(request, { payment: updated })
+        const { data: review, error } = await admin.rpc('marketplace_review_membership_payment', {
+          p_payment_id: paymentId,
+          p_decision: decision,
+          p_actor_id: actor.id,
+          p_bank_statement_verified: body.bankStatementVerified === true,
+        })
+        if (error || !review) return response(request, { error: 'This payment is no longer awaiting review or could not be verified.' }, 409)
+        await ownerAudit(admin, actor.id, 'marketplace_membership_payment_' + decision, 'marketplace_membership_payment', paymentId, { review })
+        return response(request, { payment: review })
       }
 
       if (action === 'owner_update_order') {
         const orderId = body.orderId
         if (!isUuid(orderId)) return response(request, { error: 'Invalid order.' }, 400)
+        const { data: existingOrder, error: existingOrderError } = await admin.from('marketplace_orders')
+          .select('id,payment_method,payment_status,status').eq('id', orderId).maybeSingle()
+        if (existingOrderError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
         const patch: Json = { updated_at: new Date().toISOString() }
         if (typeof body.status === 'string' && ['confirmed','processing','shipped','delivered','cancelled','returned'].includes(body.status)) patch.status = body.status
         if (typeof body.paymentStatus === 'string' && ['paid','rejected','cod_paid','refunded'].includes(body.paymentStatus)) {
-          if (body.paymentStatus === 'paid' && body.bankStatementVerified !== true) return response(request, { error: 'Confirm bank statement verification before marking a UPI order paid.' }, 400)
+          if (body.paymentStatus === 'paid' && (body.bankStatementVerified !== true || existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be marked paid after bank statement verification.' }, 409)
+          if (body.paymentStatus === 'rejected' && (existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be rejected.' }, 409)
+          if (body.paymentStatus === 'cod_paid' && (existingOrder.payment_method !== 'cod' || (body.status !== 'delivered' && existingOrder.status !== 'delivered'))) return response(request, { error: 'COD can be recorded only after delivery.' }, 409)
+          if (body.paymentStatus === 'refunded' && !['paid','cod_paid'].includes(existingOrder.payment_status)) return response(request, { error: 'Only a completed payment can be marked refunded.' }, 409)
           patch.payment_status = body.paymentStatus
         }
         if (typeof body.carrier === 'string') patch.carrier = body.carrier.trim().slice(0, 120)
         if (typeof body.trackingNumber === 'string') patch.tracking_number = body.trackingNumber.trim().slice(0, 160)
         const { data: order, error } = await admin.from('marketplace_orders').update(patch).eq('id', orderId)
+          .eq('payment_status', existingOrder.payment_status)
           .select('id,order_ref,status,payment_status').single()
-        if (error || !order) throw new Error('ORDER_UPDATE_FAILED')
+        if (error || !order) return response(request, { error: 'Order changed while it was being reviewed. Refresh and try again.' }, 409)
         await recordOrderEvent(admin, order.id, actor.id, 'owner_order_update', JSON.stringify(patch))
         await ownerAudit(admin, actor.id, 'marketplace_order_updated', 'marketplace_order', orderId, patch)
         return response(request, { order })
