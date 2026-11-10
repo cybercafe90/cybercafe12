@@ -607,6 +607,9 @@ begin
   if exists (select 1 from cron.job where jobname = 'marketplace-membership-reminders') then
     perform cron.unschedule(jobid) from cron.job where jobname = 'marketplace-membership-reminders';
   end if;
+  if exists (select 1 from cron.job where jobname = 'marketplace-expire-unpaid-orders') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'marketplace-expire-unpaid-orders';
+  end if;
   perform cron.schedule(
     'marketplace-expire-unpaid-orders',
     '*/15 * * * *',
