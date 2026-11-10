@@ -736,3 +736,102 @@ body { color: #171713; }
 @media(prefers-reduced-motion:reduce) {
   .site-shell:not(:has(.cyber-home)) *, .site-shell:not(:has(.cyber-home)) *::before, .site-shell:not(:has(.cyber-home)) *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+
+/* Remaining specialist workspaces and nested states use the same homepage surfaces. */
+.site-shell:not(:has(.cyber-home)) .incident-card,
+.site-shell:not(:has(.cyber-home)) .investigator-management,
+.site-shell:not(:has(.cyber-home)) .investigator-row,
+.site-shell:not(:has(.cyber-home)) .grievance-track-result,
+.site-shell:not(:has(.cyber-home)) .grievance-success,
+.site-shell:not(:has(.cyber-home)) .grievance-update,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-toolbar,
+.site-shell:not(:has(.cyber-home)) .admin-section,
+.site-shell:not(:has(.cyber-home)) .admin-head,
+.site-shell:not(:has(.cyber-home)) .admin-signin,
+.site-shell:not(:has(.cyber-home)) .signin-panel,
+.site-shell:not(:has(.cyber-home)) .profile-panel,
+.site-shell:not(:has(.cyber-home)) .dashboard-heading,
+.site-shell:not(:has(.cyber-home)) .admin-portal-shortcuts,
+.site-shell:not(:has(.cyber-home)) .admin-modal,
+.site-shell:not(:has(.cyber-home)) .modal-backdrop>div,
+.site-shell:not(:has(.cyber-home)) .service-admin,
+.site-shell:not(:has(.cyber-home)) .category-admin,
+.site-shell:not(:has(.cyber-home)) .category-admin-list,
+.site-shell:not(:has(.cyber-home)) .category-admin-row,
+.site-shell:not(:has(.cyber-home)) .service-admin-grid {
+  color:#e8f1ff; border-color:rgba(0,245,255,.22); background:rgba(19,26,46,.86);
+}
+.site-shell:not(:has(.cyber-home)) .incident-card h3,
+.site-shell:not(:has(.cyber-home)) .grievance-success h2,
+.site-shell:not(:has(.cyber-home)) .grievance-track-heading h2,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-head h2,
+.site-shell:not(:has(.cyber-home)) .admin-head h1,
+.site-shell:not(:has(.cyber-home)) .admin-section h2,
+.site-shell:not(:has(.cyber-home)) .dashboard-heading h1 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .incident-meta,
+.site-shell:not(:has(.cyber-home)) .incident-meta b,
+.site-shell:not(:has(.cyber-home)) .incident-topline time,
+.site-shell:not(:has(.cyber-home)) .investigator-management>p,
+.site-shell:not(:has(.cyber-home)) .investigator-row small,
+.site-shell:not(:has(.cyber-home)) .grievance-description,
+.site-shell:not(:has(.cyber-home)) .grievance-success>p,
+.site-shell:not(:has(.cyber-home)) .grievance-success small,
+.site-shell:not(:has(.cyber-home)) .grievance-track-date,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-head small,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field span,
+.site-shell:not(:has(.cyber-home)) .admin-head p,
+.site-shell:not(:has(.cyber-home)) .admin-section p { color:#94a3b8; }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs { border-color:rgba(0,245,255,.2); }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs button { color:#a9b7ca; }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs button.active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .grievance-success>strong { color:#00f5ff; border-color:rgba(0,245,255,.45); background:rgba(0,245,255,.07); }
+.site-shell:not(:has(.cyber-home)) .grievance-dot { background:#00f5ff; box-shadow:0 0 12px rgba(0,245,255,.5); }
+.site-shell:not(:has(.cyber-home)) .incident-severity,
+.site-shell:not(:has(.cyber-home)) .incident-status { color:#00f5ff; border-color:rgba(0,245,255,.3); background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .severity-critical,
+.site-shell:not(:has(.cyber-home)) .severity-high { color:#ff9ca5; border-color:rgba(255,115,125,.35); background:rgba(127,29,29,.18); }
+.site-shell:not(:has(.cyber-home)) .severity-medium { color:#f5e5a7; border-color:rgba(255,209,102,.3); background:rgba(120,80,10,.15); }
+.site-shell:not(:has(.cyber-home)) .investigation-access { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .incident-controls input,
+.site-shell:not(:has(.cyber-home)) .incident-controls select,
+.site-shell:not(:has(.cyber-home)) .investigator-grant-form input,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field textarea,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field select,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-toolbar input,
+.site-shell:not(:has(.cyber-home)) .admin-search input,
+.site-shell:not(:has(.cyber-home)) .admin-filters input,
+.site-shell:not(:has(.cyber-home)) .admin-filters select {
+  color:#f8fbff; border-color:rgba(0,245,255,.25); background:#0a1020;
+}
+.site-shell:not(:has(.cyber-home)) .feedback-modal-backdrop,
+.site-shell:not(:has(.cyber-home)) .modal-backdrop { background:rgba(3,7,16,.88); }
+.site-shell:not(:has(.cyber-home)) .feedback-modal blockquote { color:#dce8f7; border-left-color:#00f5ff; background:rgba(0,245,255,.07); }
+.site-shell:not(:has(.cyber-home)) .feedback-type-grid button { color:#dce8f7; border-color:rgba(0,245,255,.2); background:rgba(10,16,32,.75); }
+.site-shell:not(:has(.cyber-home)) .feedback-stars button { color:#617087; }
+.site-shell:not(:has(.cyber-home)) .feedback-stars button.active { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .feedback-stats strong,
+.site-shell:not(:has(.cyber-home)) .payment-amount strong,
+.site-shell:not(:has(.cyber-home)) .payment-success>strong,
+.site-shell:not(:has(.cyber-home)) .insurance-premium { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .insurance-reference,
+.site-shell:not(:has(.cyber-home)) .payment-success-icon { color:#00ff88; border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.08); }
+.site-shell:not(:has(.cyber-home)) .insurance-quote-card,
+.site-shell:not(:has(.cyber-home)) .payment-awaiting,
+.site-shell:not(:has(.cyber-home)) .payment-alert-card>p { color:#dce8f7; border-color:rgba(0,245,255,.18); background:rgba(10,16,32,.9); }
+.site-shell:not(:has(.cyber-home)) .insurance-status-note,
+.site-shell:not(:has(.cyber-home)) .payment-warning { color:#f5e5a7 !important; border-color:rgba(255,209,102,.28); background:rgba(120,80,10,.14); }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row { border-top-color:rgba(0,245,255,.16); }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row b,
+.site-shell:not(:has(.cyber-home)) .insurance-quote-card h3,
+.site-shell:not(:has(.cyber-home)) .payment-instructions h2 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row.is-selected { background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs { border-bottom-color:rgba(0,245,255,.2); }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs button { color:#94a3b8; }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs button.is-active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .payment-qr-card { border-color:rgba(0,245,255,.25); background:#fff; }
+.site-shell:not(:has(.cyber-home)) .payment-qr-card small { color:#64748b; }
+.site-shell:not(:has(.cyber-home)) .feedback-table { color:#dce8f7; }
+.site-shell:not(:has(.cyber-home)) .feedback-table th { color:#00f5ff; background:rgba(0,245,255,.06); }
+.site-shell:not(:has(.cyber-home)) .feedback-status.resolved,
+.site-shell:not(:has(.cyber-home)) .feedback-status.closed { color:#00ff88; }
