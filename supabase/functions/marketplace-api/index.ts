@@ -353,7 +353,6 @@ Deno.serve(async (request) => {
           p_order_id: orderId, p_actor_id: user.id, p_bank_statement_verified: true,
         })
         if (verifyError || !verified) return response(request, { error: 'This UPI payment is no longer awaiting verification.' }, 409)
-        await recordOrderEvent(admin, orderId, user.id, 'seller_confirmed_upi_receipt', 'Seller confirmed the amount was received in their UPI account.')
         return response(request, { order: verified })
       }
 
@@ -365,7 +364,7 @@ Deno.serve(async (request) => {
         if (!isUuid(orderId) || !['confirmed','processing','shipped','delivered','cancelled'].includes(nextStatus)) return response(request, { error: 'Invalid order update.' }, 400)
         if (nextStatus === 'shipped' && (!carrier || !trackingNumber)) return response(request, { error: 'Enter the courier and tracking number before marking an order shipped.' }, 400)
         const { data: existingOrder, error: existingError } = await admin.from('marketplace_orders')
-          .select('id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
+          .select('id,seller_id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
         if (existingError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
         const allowedNext: Record<string, string[]> = { placed: ['confirmed','cancelled'], confirmed: ['processing','cancelled'], processing: ['shipped','cancelled'], shipped: ['delivered'], delivered: [], cancelled: [], returned: [] }
         if (!(allowedNext[existingOrder.status] ?? []).includes(nextStatus)) return response(request, { error: 'This order cannot move to that status.' }, 409)
