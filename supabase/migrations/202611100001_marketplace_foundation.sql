@@ -445,7 +445,7 @@ begin
 
   if v_full then
     v_new_status := 'active';
-    if v_membership.status = 'paused' then
+    if v_membership.status in ('pending','paused') then
       update public.marketplace_memberships
       set paid_amount = v_new_paid, status = 'active', renewal_grace = false,
           period_start = now(), expires_at = now() + interval '1 year',
