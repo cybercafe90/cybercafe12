@@ -65,7 +65,7 @@ Deno.serve(async (request) => {
       const key = membership.id + ':' + job.reminderType
       if (alreadySent.has(key)) continue
       const seller = sellerMap.get(membership.seller_id)
-      if (!seller?.contact_email) continue
+      if (!seller?.contact_email || seller.status !== 'approved') continue
       const remaining = Math.max(0, Number(membership.fee_amount) - Number(membership.paid_amount))
       const isRenewal = job.reminderType === 'annual_renewal'
       const { data: reminder, error: insertError } = await admin.from('marketplace_membership_reminders').insert({
