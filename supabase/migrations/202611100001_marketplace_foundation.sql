@@ -469,6 +469,43 @@ $verify_order_payment$;
 revoke all on function public.marketplace_verify_order_payment(uuid,uuid,boolean) from public, anon, authenticated;
 grant execute on function public.marketplace_verify_order_payment(uuid,uuid,boolean) to service_role;
 
+create or replace function public.marketplace_confirm_cod_received(
+  p_order_id uuid,
+  p_actor_id uuid
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $confirm_cod_received$
+declare
+  v_order public.marketplace_orders%rowtype;
+begin
+  select * into v_order
+  from public.marketplace_orders
+  where id = p_order_id
+  for update;
+
+  if not found or v_order.seller_id is null then
+    raise exception 'This is not an external seller order.';
+  end if;
+  if v_order.payment_method <> 'cod' or v_order.payment_status <> 'cod_due' or v_order.status <> 'delivered' then
+    raise exception 'COD can be confirmed only after the seller marks the order delivered.';
+  end if;
+
+  update public.marketplace_orders
+  set payment_status = 'cod_paid', updated_at = now()
+  where id = v_order.id;
+
+  insert into public.marketplace_order_events (order_id, actor_id, action, note)
+  values (v_order.id, p_actor_id, 'seller_confirmed_cod_receipt', 'Seller confirmed collection of cash on delivery.');
+
+  return jsonb_build_object('orderId', v_order.id, 'orderRef', v_order.order_ref, 'paymentStatus', 'cod_paid');
+end;
+$confirm_cod_received$;
+
+revoke all on function public.marketplace_confirm_cod_received(uuid,uuid) from public, anon, authenticated;
+grant execute on function public.marketplace_confirm_cod_received(uuid,uuid) to service_role;
+
 create or replace function public.marketplace_expire_unpaid_orders()
 returns integer
 language plpgsql
