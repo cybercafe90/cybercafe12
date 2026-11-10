@@ -5,5 +5,4 @@ Disallow: /dashboard
 Disallow: /apply
 Disallow: /track
 Sitemap: https://babacybercafe.in/sitemap.xml
-Disallow: /investigation
 Disallow: /grievance/admin
