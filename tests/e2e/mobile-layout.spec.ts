@@ -14,7 +14,6 @@ const publicRoutes = [
   "/terms",
   "/pay",
   "/admin/login",
-  "/investigation",
   "/grievance",
   "/insurance/admin",
 ];

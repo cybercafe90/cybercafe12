@@ -56,15 +56,6 @@ verify_jwt = true
 [functions.notify-customer]
 verify_jwt = true
 
-[functions.investigation-overview]
-verify_jwt = true
-
-[functions.investigation-update-event]
-verify_jwt = true
-
-[functions.investigation-manage-investigator]
-verify_jwt = true
-
 [functions.create-grievance]
 verify_jwt = false
 
@@ -104,9 +95,6 @@ content_path = "./supabase/templates/recovery.html"
 
 [functions.security-telemetry]
 verify_jwt = false
-
-[functions.investigation-ip-control]
-verify_jwt = true
 
 [functions.feedback-submit]
 verify_jwt = false

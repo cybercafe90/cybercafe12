@@ -168,20 +168,10 @@ test("customer portal guides visitors to secure reference-based tracking", async
   ).toBeVisible();
 });
 
-test("investigation portal denies unauthenticated visitors", async ({ page }) => {
+test("retired investigation route no longer exposes a portal", async ({ page }) => {
   await page.goto("/investigation");
-  await expect(
-    page.getByRole("heading", { name: "Investigation portal" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Restricted access" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Go to secure sign-in" }),
-  ).toHaveAttribute("href", "/admin/login");
-  await expect(
-    page.getByRole("heading", { name: "Security events" }),
-  ).toHaveCount(0);
+  await expect(page.getByText("404 · NOT FOUND")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "This page isn't here." })).toBeVisible();
 });
 
 
