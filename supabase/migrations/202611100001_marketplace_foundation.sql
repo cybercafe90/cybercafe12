@@ -151,6 +151,8 @@ create index if not exists marketplace_sellers_status_idx on public.marketplace_
 create index if not exists marketplace_memberships_seller_period_idx on public.marketplace_memberships(seller_id, period_start desc);
 create index if not exists marketplace_memberships_due_idx on public.marketplace_memberships(status, expires_at, grace_until);
 create index if not exists marketplace_membership_payments_membership_idx on public.marketplace_membership_payments(membership_id, created_at desc);
+create unique index if not exists marketplace_one_open_membership_payment_idx
+  on public.marketplace_membership_payments(membership_id) where status in ('pending','claimed');
 create index if not exists marketplace_products_public_idx on public.marketplace_products(status, category_slug, created_at desc);
 create index if not exists marketplace_products_seller_idx on public.marketplace_products(seller_id, status, created_at desc);
 create index if not exists marketplace_orders_seller_idx on public.marketplace_orders(seller_id, status, created_at desc);
@@ -379,6 +381,96 @@ $$;
 
 revoke all on function public.marketplace_rollover_memberships() from public, anon, authenticated;
 grant execute on function public.marketplace_rollover_memberships() to service_role;
+
+create or replace function public.marketplace_review_membership_payment(
+  p_payment_id uuid,
+  p_decision text,
+  p_actor_id uuid,
+  p_bank_statement_verified boolean
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $
+declare
+  v_payment public.marketplace_membership_payments%rowtype;
+  v_membership public.marketplace_memberships%rowtype;
+  v_new_paid numeric(10,2);
+  v_full boolean;
+  v_new_status text;
+begin
+  if p_decision not in ('verified','rejected') then
+    raise exception 'Invalid membership payment decision.';
+  end if;
+
+  select * into v_payment
+  from public.marketplace_membership_payments
+  where id = p_payment_id
+  for update;
+
+  if not found or v_payment.status <> 'claimed' then
+    raise exception 'Membership payment is not awaiting verification.';
+  end if;
+
+  if p_decision = 'verified' and (p_bank_statement_verified is distinct from true or v_payment.claimed_utr is null) then
+    raise exception 'A submitted UTR and bank statement verification are required.';
+  end if;
+
+  if p_decision = 'rejected' then
+    update public.marketplace_membership_payments
+    set status = 'rejected', verified_by = p_actor_id, verified_at = now(),
+        rejection_note = 'Payment could not be verified by the owner.', updated_at = now()
+    where id = p_payment_id;
+    return jsonb_build_object('paymentId', p_payment_id, 'paymentStatus', 'rejected');
+  end if;
+
+  select * into v_membership
+  from public.marketplace_memberships
+  where id = v_payment.membership_id
+  for update;
+
+  if not found then raise exception 'Membership record not found.'; end if;
+
+  v_new_paid := least(v_membership.fee_amount, v_membership.paid_amount + v_payment.amount);
+  v_full := v_new_paid >= v_membership.fee_amount;
+  v_new_status := v_membership.status;
+
+  update public.marketplace_membership_payments
+  set status = 'verified', verified_utr = claimed_utr, verified_by = p_actor_id,
+      verified_at = now(), rejection_note = '', updated_at = now()
+  where id = p_payment_id;
+
+  if v_full then
+    v_new_status := 'active';
+    if v_membership.status = 'paused' then
+      update public.marketplace_memberships
+      set paid_amount = v_new_paid, status = 'active', renewal_grace = false,
+          period_start = now(), expires_at = now() + interval '1 year',
+          grace_until = now() + interval '1 year 15 days', updated_at = now()
+      where id = v_membership.id;
+    else
+      update public.marketplace_memberships
+      set paid_amount = v_new_paid, status = 'active', renewal_grace = false, updated_at = now()
+      where id = v_membership.id;
+    end if;
+  else
+    update public.marketplace_memberships
+    set paid_amount = v_new_paid, updated_at = now()
+    where id = v_membership.id;
+  end if;
+
+  return jsonb_build_object(
+    'paymentId', p_payment_id,
+    'paymentStatus', 'verified',
+    'paidAmount', v_new_paid,
+    'membershipStatus', v_new_status,
+    'fullyPaid', v_full
+  );
+end;
+$;
+
+revoke all on function public.marketplace_review_membership_payment(uuid,text,uuid,boolean) from public, anon, authenticated;
+grant execute on function public.marketplace_review_membership_payment(uuid,text,uuid,boolean) to service_role;
 
 create or replace function public.marketplace_validate_cron_token(p_token text)
 returns boolean
