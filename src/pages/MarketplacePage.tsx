@@ -291,6 +291,7 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
     {tracked && <section className="market-panel market-order-result">
       <div className="market-row"><div><span className="market-eyebrow">ORDER REFERENCE</span><h3>{String(tracked.order.order_ref)}</h3></div><Status value={String(tracked.order.status)}/></div>
       <p>Total: <strong>{rupees(String(tracked.order.total_amount))}</strong> · Payment: <Status value={String(tracked.order.payment_status)}/></p>
+      {tracked.order.payment_method === 'upi' && tracked.order.payment_status === 'pending' && typeof tracked.order.upiUri === 'string' && <a className="market-button" href={tracked.order.upiUri}>Pay by UPI {typeof tracked.order.upiPayee === 'string' ? 'to ' + tracked.order.upiPayee : ''}</a>}
       <p>Delivery: {String(tracked.order.carrier || 'Seller arranging delivery')} {String(tracked.order.tracking_number || '')}</p>
       <ul>{tracked.items.map((item, i) => <li key={i}>{String(item.product_name)} × {String(item.quantity)} — {rupees(String(item.unit_price))}</li>)}</ul>
       {tracked.order.payment_method === 'upi' && tracked.order.payment_status === 'pending' && <form onSubmit={claimOrderPayment} className="market-inline-form">
