@@ -17,8 +17,8 @@ function money(value: unknown) {
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 }
-function upiUri(amount: number, reference: string) {
-  const params = new URLSearchParams({ pa: UPI_VPA, pn: UPI_PAYEE, am: amount.toFixed(2), cu: 'INR', tn: reference })
+function upiUri(amount: number, reference: string, vpa = UPI_VPA, payee = UPI_PAYEE) {
+  const params = new URLSearchParams({ pa: vpa, pn: payee, am: amount.toFixed(2), cu: 'INR', tn: reference })
   return 'upi://pay?' + params.toString()
 }
 async function userFromRequest(request: Request) {
@@ -160,7 +160,19 @@ Deno.serve(async (request) => {
         console.error('marketplace order creation failed:', error?.message?.slice(0, 180) ?? 'No orders returned')
         return response(request, { error: 'We could not place this order. Please refresh your cart and try again.' }, 409)
       }
-      const orders = data.orders as Array<{id:string;orderRef:string;sellerId:string|null;totalAmount:number}>
+      const rawOrders = data.orders as Array<{id:string;orderRef:string;sellerId:string|null;totalAmount:number}>
+      const sellerIds = [...new Set(rawOrders.map((o) => o.sellerId).filter((id): id is string => Boolean(id)))]
+      const { data: sellersForPayment, error: sellersForPaymentError } = sellerIds.length
+        ? await admin.from('marketplace_sellers').select('id,store_name,upi_id').in('id', sellerIds)
+        : { data: [], error: null }
+      if (sellersForPaymentError) throw new Error('SELLER_PAYMENT_DETAILS_FAILED')
+      const sellerPaymentMap = new Map((sellersForPayment ?? []).map((s) => [s.id, s]))
+      const orders = rawOrders.map((o) => {
+        const sellerPayee = o.sellerId ? sellerPaymentMap.get(o.sellerId) : null
+        const vpa = sellerPayee?.upi_id ?? UPI_VPA
+        const payee = sellerPayee?.store_name ?? UPI_PAYEE
+        return { ...o, upiUri: paymentMethod === 'upi' ? upiUri(Number(o.totalAmount), o.orderRef, vpa, payee) : null, upiPayee: paymentMethod === 'upi' ? payee : null }
+      })
       if (email) {
         const lines = orders.map((o) => o.orderRef + ': ₹' + Number(o.totalAmount).toFixed(2)).join('\n')
         try {
@@ -199,7 +211,7 @@ Deno.serve(async (request) => {
 
     if (action === 'register_seller' || action === 'seller_dashboard' || action === 'create_membership_payment' ||
       action === 'claim_membership_payment' || action === 'create_product' || action === 'update_product' ||
-      action === 'seller_update_order') {
+      action === 'seller_update_order' || action === 'seller_verify_order_payment') {
       const user = await userFromRequest(request)
       const seller = await sellerForUser(admin, user.id)
 
@@ -212,14 +224,15 @@ Deno.serve(async (request) => {
         const city = textValue(body.city, 2, 100)
         const postalCode = typeof body.postalCode === 'string' ? body.postalCode.trim() : ''
         const businessType = ['individual','proprietorship','partnership','company','cooperative','other'].includes(String(body.businessType)) ? String(body.businessType) : 'individual'
-        if (!storeName || !legalName || !mobile || !address || !city || !/^[0-9]{6}$/.test(postalCode) || !user.email) {
+        const upiId = textValue(body.upiId, 5, 100)
+        if (!storeName || !legalName || !mobile || !address || !city || !/^[0-9]{6}$/.test(postalCode) || !upiId || !/^[a-z0-9._-]{2,64}@[a-z0-9.-]{2,64}$/i.test(upiId) || !user.email) {
           return response(request, { error: 'Complete all required seller application fields.' }, 400)
         }
         if (!(await checkRateLimit(admin, request, 'marketplace-seller-application', user.id, 3, 60))) {
           return response(request, { error: 'Too many applications. Please try again later.' }, 429)
         }
         const { data: newSeller, error: sellerError } = await admin.from('marketplace_sellers').insert({
-          user_id: user.id, store_name: storeName, legal_name: legalName, contact_email: user.email,
+          user_id: user.id, store_name: storeName, legal_name: legalName, contact_email: user.email, upi_id: upiId,
           mobile, business_type: businessType, address, city, postal_code: postalCode, status: 'pending',
         }).select('id,status').single()
         if (sellerError || !newSeller) throw new Error('SELLER_APPLICATION_FAILED')
@@ -245,7 +258,7 @@ Deno.serve(async (request) => {
         const [payments, products, orders, reminders] = await Promise.all([
           membership ? admin.from('marketplace_membership_payments').select('id,amount,status,claimed_utr,created_at,verified_at').eq('membership_id', membership.id).order('created_at', { ascending: false }) : Promise.resolve({ data: [], error: null }),
           admin.from('marketplace_products').select('id,name,description,category_slug,price,stock,image_url,status,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
-          admin.from('marketplace_orders').select('id,order_ref,customer_name,customer_email,customer_mobile,shipping_address,total_amount,payment_method,payment_status,status,carrier,tracking_number,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
+          admin.from('marketplace_orders').select('id,order_ref,customer_name,customer_email,customer_mobile,shipping_address,total_amount,payment_method,payment_status,claimed_utr,status,carrier,tracking_number,created_at').eq('seller_id', seller.id).order('created_at', { ascending: false }).limit(100),
           membership ? admin.from('marketplace_membership_reminders').select('id,membership_id,reminder_month,reminder_type,status,sent_at').eq('membership_id', membership.id).order('created_at', { ascending: false }).limit(24) : Promise.resolve({ data: [], error: null }),
         ])
         if (payments.error || products.error || orders.error || reminders.error) throw new Error('SELLER_DASHBOARD_FAILED')
@@ -323,6 +336,20 @@ Deno.serve(async (request) => {
         return response(request, { product, message: 'Product changes submitted for owner review.' })
       }
 
+      if (action === 'seller_verify_order_payment') {
+        const orderId = body.orderId
+        if (!isUuid(orderId) || body.bankStatementVerified !== true) return response(request, { error: 'Confirm that the UPI payment is visible in your seller UPI account.' }, 400)
+        const { data: ownOrder, error: ownOrderError } = await admin.from('marketplace_orders')
+          .select('id,order_ref').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
+        if (ownOrderError || !ownOrder) return response(request, { error: 'Order could not be found in your seller account.' }, 404)
+        const { data: verified, error: verifyError } = await admin.rpc('marketplace_verify_order_payment', {
+          p_order_id: orderId, p_actor_id: user.id, p_bank_statement_verified: true,
+        })
+        if (verifyError || !verified) return response(request, { error: 'This UPI payment is no longer awaiting verification.' }, 409)
+        await recordOrderEvent(admin, orderId, user.id, 'seller_confirmed_upi_receipt', 'Seller confirmed the amount was received in their UPI account.')
+        return response(request, { order: verified })
+      }
+
       if (action === 'seller_update_order') {
         const orderId = body.orderId
         const nextStatus = String(body.status ?? '')
@@ -359,7 +386,7 @@ Deno.serve(async (request) => {
       const actor = await verifyOwner(request, admin)
       if (action === 'owner_dashboard') {
         const [sellers, memberships, payments, products, orders, reminders] = await Promise.all([
-          admin.from('marketplace_sellers').select('id,user_id,store_name,legal_name,contact_email,mobile,city,status,applied_at').order('applied_at', { ascending: false }).limit(200),
+          admin.from('marketplace_sellers').select('id,user_id,store_name,legal_name,contact_email,upi_id,mobile,city,status,applied_at').order('applied_at', { ascending: false }).limit(200),
           admin.from('marketplace_memberships').select('id,seller_id,period_start,expires_at,grace_until,fee_amount,paid_amount,status,renewal_grace').order('period_start', { ascending: false }).limit(300),
           admin.from('marketplace_membership_payments').select('id,seller_id,membership_id,amount,status,claimed_utr,created_at').order('created_at', { ascending: false }).limit(200),
           admin.from('marketplace_products').select('id,seller_id,name,category_slug,price,stock,status,created_at').order('created_at', { ascending: false }).limit(200),
@@ -452,7 +479,7 @@ Deno.serve(async (request) => {
         const orderId = body.orderId
         if (!isUuid(orderId)) return response(request, { error: 'Invalid order.' }, 400)
         const { data: existingOrder, error: existingOrderError } = await admin.from('marketplace_orders')
-          .select('id,payment_method,payment_status,status').eq('id', orderId).maybeSingle()
+          .select('id,seller_id,payment_method,payment_status,status').eq('id', orderId).maybeSingle()
         if (existingOrderError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
         if (body.status === 'cancelled' || body.paymentStatus === 'rejected') {
           const rejectPayment = existingOrder.payment_method === 'upi' && ['pending','claimed'].includes(existingOrder.payment_status)
@@ -470,6 +497,7 @@ Deno.serve(async (request) => {
         if (typeof body.status === 'string' && ['confirmed','processing','shipped','delivered','cancelled','returned'].includes(body.status)) patch.status = body.status
         if (typeof body.paymentStatus === 'string' && ['paid','rejected','cod_paid','refunded'].includes(body.paymentStatus)) {
           if (body.paymentStatus === 'paid' && (body.bankStatementVerified !== true || existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be marked paid after bank statement verification.' }, 409)
+          if (body.paymentStatus === 'paid' && existingOrder.seller_id !== null) return response(request, { error: 'The seller must verify receipt in their own UPI account. The owner cannot verify a seller-direct payment.' }, 403)
           if (body.paymentStatus === 'rejected' && (existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be rejected.' }, 409)
           if (body.paymentStatus === 'cod_paid' && (existingOrder.payment_method !== 'cod' || (body.status !== 'delivered' && existingOrder.status !== 'delivered'))) return response(request, { error: 'COD can be recorded only after delivery.' }, 409)
           if (body.paymentStatus === 'refunded' && !['paid','cod_paid'].includes(existingOrder.payment_status)) return response(request, { error: 'Only a completed payment can be marked refunded.' }, 409)
