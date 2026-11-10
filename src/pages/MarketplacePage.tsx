@@ -12,7 +12,7 @@ type Seller = { id: string; store_name: string; legal_name: string; status: stri
 type Membership = { id: string; fee_amount: number; paid_amount: number; status: string; expires_at: string; grace_until: string; renewal_grace: boolean }
 type MembershipPayment = { id: string; amount: number; status: string; claimed_utr?: string; created_at: string }
 type SellerOrder = { id: string; order_ref: string; customer_name: string; customer_mobile: string; total_amount: number; payment_method: string; payment_status: string; status: string; carrier?: string; tracking_number?: string }
-type Dashboard = { seller: Seller; membership: Membership | null; payments: MembershipPayment[]; products: Product[]; orders: SellerOrder[] }
+type Dashboard = { seller: Seller | null; membership: Membership | null; payments: MembershipPayment[]; products: Product[]; orders: SellerOrder[] }
 type OwnerData = { sellers: Seller[]; memberships: Array<Membership & { sellerName: string; seller_id: string }>; payments: Array<MembershipPayment & { sellerName: string; seller_id: string; membership_id: string }>; products: Product[]; orders: SellerOrder[]; reminders: Array<{ id: string; reminder_month: string; status: string; sent_at: string | null; error_message: string }>; commissionRate: number; annualSellerFee: number }
 type CartItem = { product: Product; quantity: number }
 type OrderResult = { id: string; orderRef: string; totalAmount: number; paymentMethod: string }
@@ -94,6 +94,14 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
     setOwnerData(result)
     setOwnerVerified(true)
   }, [])
+
+  useEffect(() => {
+    let alive = true
+    void callFunction<{ categories: Category[] }>('marketplace-api', { action: 'categories' })
+      .then((result) => { if (alive) setCategories(result.categories ?? []) })
+      .catch((reason) => { if (alive && mode !== 'orders') setError(reason instanceof Error ? reason.message : 'Marketplace categories could not be loaded.') })
+    return () => { alive = false }
+  }, [mode])
 
   useEffect(() => {
     if (mode !== 'store') return
@@ -315,7 +323,16 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
       <section className="market-panel"><h3>Your product listings</h3>{sellerDashboard.products.length ? <div className="market-list">{sellerDashboard.products.map((p) => <div key={p.id}><strong>{p.name}</strong><span>{rupees(p.price)} · Stock {p.stock}</span><Status value={p.status ?? 'pending_review'}/></div>)}</div> : <p>No products have been submitted yet.</p>}</section>
       <section className="market-panel"><h3><Truck size={18}/> Your orders</h3>{sellerDashboard.orders.length ? <div className="market-list">{sellerDashboard.orders.map((o) => <div key={o.id} className="market-order-row"><div><strong>{o.order_ref}</strong><span>{o.customer_name} · {rupees(o.total_amount)}</span><Status value={o.status}/></div><div className="market-order-controls">{['confirmed','processing','shipped','delivered'].filter((s) => ['placed','confirmed','processing','shipped'].includes(o.status) && (s !== o.status)).map((s) => <button key={s} className="market-small-button" onClick={() => setOrderShipping({orderId:o.id,status:s,carrier:o.carrier ?? '',trackingNumber:o.tracking_number ?? ''})}>{s}</button>)}</div>{orderShipping?.orderId===o.id && <div className="market-shipping-edit"><input placeholder="Courier" value={orderShipping.carrier} onChange={(e) => setOrderShipping({...orderShipping,carrier:e.target.value})}/><input placeholder="Tracking number" value={orderShipping.trackingNumber} onChange={(e) => setOrderShipping({...orderShipping,trackingNumber:e.target.value})}/><button className="market-small-button" onClick={() => void updateSellerOrder(o,orderShipping.status)}>Save {orderShipping.status}</button></div>}</div>)}</div> : <p>No customer orders yet.</p>}</section>
       <button className="market-text-button" onClick={async () => { await supabase?.auth.signOut(); setSellerAuth(false); setSellerDashboard(null) }}>Sign out</button>
-    </> : <section className="market-panel"><p>Loading seller workspace…</p><button className="market-button" onClick={() => void refreshSeller()}>Refresh</button></section>}
+    </> : <section className="market-panel"><h3><Store size={18}/> Seller application</h3><p>Complete your details to apply. Your account must be approved before products can be listed. Annual membership is ₹200 with flexible instalments and no sales commission.</p><form className="market-form-grid" onSubmit={submitSellerApplication}>
+      <label>Store name<input required minLength={2} maxLength={120} value={sellerForm.storeName} onChange={(e) => setSellerForm({...sellerForm,storeName:e.target.value})}/></label>
+      <label>Legal name<input required minLength={2} maxLength={160} value={sellerForm.legalName} onChange={(e) => setSellerForm({...sellerForm,legalName:e.target.value})}/></label>
+      <label>Mobile number<input required type="tel" value={sellerForm.mobile} onChange={(e) => setSellerForm({...sellerForm,mobile:e.target.value})}/></label>
+      <label>Business type<select value={sellerForm.businessType} onChange={(e) => setSellerForm({...sellerForm,businessType:e.target.value})}><option value="individual">Individual</option><option value="proprietorship">Proprietorship</option><option value="partnership">Partnership</option><option value="company">Company</option><option value="cooperative">Cooperative</option><option value="other">Other</option></select></label>
+      <label className="market-full">Business address<input required minLength={5} value={sellerForm.address} onChange={(e) => setSellerForm({...sellerForm,address:e.target.value})}/></label>
+      <label>City<input required value={sellerForm.city} onChange={(e) => setSellerForm({...sellerForm,city:e.target.value})}/></label>
+      <label>PIN code<input required inputMode="numeric" maxLength={6} value={sellerForm.postalCode} onChange={(e) => setSellerForm({...sellerForm,postalCode:e.target.value.replace(/\\D/g,'').slice(0,6)})}/></label>
+      <button className="market-button market-full" disabled={busy}>Submit seller application</button>
+    </form></section>}
     <ErrorText value={error}/><p className="market-notice">{message}</p>
   </div></main>
 
