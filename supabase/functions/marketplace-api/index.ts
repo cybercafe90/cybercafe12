@@ -319,6 +319,9 @@ Deno.serve(async (request) => {
         const { data: existingOrder, error: existingError } = await admin.from('marketplace_orders')
           .select('id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
         if (existingError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
+        if (existingOrder.payment_method === 'upi' && existingOrder.payment_status !== 'paid' && ['confirmed','processing','shipped','delivered'].includes(nextStatus)) {
+          return response(request, { error: 'Wait until the owner verifies the UPI payment before processing this order.' }, 409)
+        }
         if (nextStatus === 'cancelled') {
           const rejectPayment = existingOrder.payment_method === 'upi' && existingOrder.payment_status === 'pending'
           const { data: cancelled, error: cancelError } = await admin.rpc('marketplace_cancel_order', {
