@@ -46,9 +46,9 @@ async function currentMembership(admin: ReturnType<typeof serviceClient>, seller
   return data
 }
 function canSell(membership: Json | null) {
-  return Boolean(membership && (membership.status === 'active' ||
-    (membership.status === 'grace' && membership.renewal_grace === true &&
-      typeof membership.grace_until === 'string' && new Date(membership.grace_until).getTime() > Date.now())))
+  const graceUntil = membership && typeof membership.grace_until === 'string' ? new Date(membership.grace_until).getTime() : 0
+  return Boolean(membership && graceUntil > Date.now() &&
+    (membership.status === 'active' || (membership.status === 'grace' && membership.renewal_grace === true)))
 }
 async function sendEmail(to: string, subject: string, text: string, html: string) {
   const apiKey = Deno.env.get('RESEND_API_KEY')
