@@ -56,7 +56,6 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
-const InvestigationPage = lazy(() => import("./pages/InvestigationPage"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
@@ -298,7 +297,6 @@ function Footer() {
           <Link to="/pay">Make a payment</Link>
           <Link to="/dashboard">Customer dashboard</Link>
           <Link to="/admin/login">Admin sign-in</Link>
-          <Link to="/investigation">Investigation portal</Link>
           <Link to="/grievance">Grievance redressal</Link>
         </div>
         <div>
@@ -2108,9 +2106,9 @@ function AdminPage() {
           setReady(true);
           return;
         }
-        const { data: sessionData } = await supabase!.auth.getSession();
-        await callFunction("investigation-overview", {}, sessionData.session?.access_token);
-        if (current) window.location.replace("/investigation");
+        setIsOwner(false);
+        setError("Owner access required.");
+        setReady(true);
       } catch (reason) {
         if (!current) return;
         setIsOwner(false);
@@ -2692,7 +2690,6 @@ function AdminPage() {
           {isOwner && (
             <div className="admin-portal-shortcuts">
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
-              <Link className="button button-outline" to="/investigation">Security investigation <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/feedback">Customer feedback centre <ArrowUpRight size={14} /></Link>
             </div>
@@ -4026,7 +4023,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/investigation", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -4045,7 +4042,6 @@ function RoutedApp() {
       "/terms": "Terms & Conditions | BABA'S CYBER CAFE",
       "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
       "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
-      "/investigation": "Investigation Portal | BABA'S CYBER CAFE",
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
@@ -4105,7 +4101,6 @@ function RoutedApp() {
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/investigation" element={<InvestigationPage />} />
         <Route path="/grievance" element={<GrievancePage />} />
         <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="/feedback" element={<FeedbackCentre />} />
