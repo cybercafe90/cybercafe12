@@ -686,12 +686,14 @@ begin
     perform vault.create_secret('https://dyzyfugxzsdvboxerbxv.supabase.co', 'marketplace_project_url');
   end if;
   if not exists (select 1 from vault.decrypted_secrets where name = 'marketplace_cron_token') then
-    perform vault.create_secret(encode(gen_random_bytes(32), 'hex'), 'marketplace_cron_token');
+    perform vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'marketplace_cron_token');
   end if;
 end;
 $$;
 
-create extension if not exists pg_cron;
+create extension if not exists pg_cron with schema pg_catalog;
+grant usage on schema cron to postgres;
+grant all privileges on all tables in schema cron to postgres;
 create extension if not exists pg_net;
 
 do $$
