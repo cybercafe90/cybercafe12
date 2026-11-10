@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, CheckCircle2, ExternalLink, ShieldCheck } fro
 import { callFunction, isSupabaseConfigured } from "../lib/supabase";
 import "../challan.css";
 
-const OFFICIAL_CHALLAN_URL = "https://echallan.parivahan.gov.in/";
+const OFFICIAL_CHALLAN_URL = "https://echallan.parivahan.nic.in/";
 
 type Submission = { trackingId: string; emailSent: boolean; emailWarning?: string };
 
@@ -76,7 +76,7 @@ export default function ChallanPortal() {
           <span className="eyebrow">GOVERNMENT OF INDIA</span>
           <h2>NextGen eChallan</h2>
           <p>Digital Traffic / Transport Enforcement Solution · Ministry of Road Transport &amp; Highways</p>
-          <a href={OFFICIAL_CHALLAN_URL} target="_blank" rel="noopener noreferrer">echallan.parivahan.gov.in <ArrowUpRight size={14}/></a>
+          <a href={OFFICIAL_CHALLAN_URL} target="_blank" rel="noopener noreferrer">echallan.parivahan.nic.in <ArrowUpRight size={14}/></a>
         </aside>
       </section>
 
