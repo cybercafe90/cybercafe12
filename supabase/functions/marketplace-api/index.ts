@@ -154,7 +154,7 @@ Deno.serve(async (request) => {
       if (cartProductsError || (cartProducts ?? []).length !== productIds.length) return response(request, { error: 'One or more products are no longer available.' }, 409)
       const sellerIds = [...new Set((cartProducts ?? []).map((p) => p.seller_id).filter((id): id is string => Boolean(id)))]
       const { data: sellersForPayment, error: sellersForPaymentError } = sellerIds.length
-        ? await admin.from('marketplace_sellers').select('id,store_name,upi_id').in('id', sellerIds)
+        ? await admin.from('marketplace_sellers').select('id,store_name,upi_id,contact_email').in('id', sellerIds)
         : { data: [], error: null }
       if (sellersForPaymentError || (sellersForPayment ?? []).length !== sellerIds.length) return response(request, { error: 'Seller payment details are unavailable. Please contact support.' }, 409)
       const sellerPaymentMap = new Map((sellersForPayment ?? []).map((s) => [s.id, s]))
@@ -180,6 +180,16 @@ Deno.serve(async (request) => {
         const payee = sellerPayee?.store_name ?? UPI_PAYEE
         return { ...o, upiUri: paymentMethod === 'upi' ? upiUri(Number(o.totalAmount), o.orderRef, vpa, payee) : null, upiPayee: paymentMethod === 'upi' ? payee : null }
       })
+      for (const order of orders) {
+        const sellerPayee = order.sellerId ? sellerPaymentMap.get(order.sellerId) : null
+        if (sellerPayee?.contact_email) {
+          try {
+            await sendEmail(sellerPayee.contact_email, 'New marketplace order · ' + order.orderRef,
+              'A new order has been placed for your BABA\'S CYBER CAFE store.\nOrder reference: ' + order.orderRef + '\nOrder amount: ₹' + Number(order.totalAmount).toFixed(2) + '\nSign in to your seller portal to review the order and delivery address.',
+              '<p>A new order has been placed for your BABA\'S CYBER CAFE store.</p><p>Order reference: <strong>' + escapeHtml(order.orderRef) + '</strong><br/>Order amount: ₹' + Number(order.totalAmount).toFixed(2) + '</p><p>Sign in to your <a href="https://babacybercafe.in/marketplace/seller">seller portal</a> to review the order and delivery address.</p>')
+          } catch (e) { console.error('marketplace seller order email failed:', e instanceof Error ? e.message.slice(0, 100) : 'unknown') }
+        }
+      }
       if (email) {
         const lines = orders.map((o) => o.orderRef + ': ₹' + Number(o.totalAmount).toFixed(2)).join('\n')
         try {
