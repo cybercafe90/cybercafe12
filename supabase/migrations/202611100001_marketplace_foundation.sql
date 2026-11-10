@@ -209,7 +209,7 @@ create policy "Approved marketplace sellers upload product images" on storage.ob
       select 1 from public.marketplace_sellers s
       join public.marketplace_memberships m on m.seller_id = s.id
       where s.user_id = (select auth.uid()) and s.status = 'approved'
-        and (m.status = 'active' or (m.status = 'grace' and m.renewal_grace and m.grace_until > now()))
+        and ((m.status = 'active' and m.grace_until > now()) or (m.status = 'grace' and m.renewal_grace and m.grace_until > now()))
         and m.period_start = (select max(m2.period_start) from public.marketplace_memberships m2 where m2.seller_id = s.id)
     )
   );
@@ -295,7 +295,7 @@ begin
         order by m.period_start desc limit 1
       ) m on true
       where s.id = v_seller_id and s.status = 'approved'
-        and (m.status = 'active' or (m.status = 'grace' and m.renewal_grace and m.grace_until > now()))
+        and ((m.status = 'active' and m.grace_until > now()) or (m.status = 'grace' and m.renewal_grace and m.grace_until > now()))
     ) then
       raise exception 'A seller is not currently eligible to accept orders.';
     end if;
