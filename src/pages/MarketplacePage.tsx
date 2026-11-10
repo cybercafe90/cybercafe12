@@ -330,7 +330,7 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
       <label>Business type<select value={sellerForm.businessType} onChange={(e) => setSellerForm({...sellerForm,businessType:e.target.value})}><option value="individual">Individual</option><option value="proprietorship">Proprietorship</option><option value="partnership">Partnership</option><option value="company">Company</option><option value="cooperative">Cooperative</option><option value="other">Other</option></select></label>
       <label className="market-full">Business address<input required minLength={5} value={sellerForm.address} onChange={(e) => setSellerForm({...sellerForm,address:e.target.value})}/></label>
       <label>City<input required value={sellerForm.city} onChange={(e) => setSellerForm({...sellerForm,city:e.target.value})}/></label>
-      <label>PIN code<input required inputMode="numeric" maxLength={6} value={sellerForm.postalCode} onChange={(e) => setSellerForm({...sellerForm,postalCode:e.target.value.replace(/\\D/g,'').slice(0,6)})}/></label>
+      <label>PIN code<input required inputMode="numeric" maxLength={6} value={sellerForm.postalCode} onChange={(e) => setSellerForm({...sellerForm,postalCode:e.target.value.replace(/\D/g,'').slice(0,6)})}/></label>
       <button className="market-button market-full" disabled={busy}>Submit seller application</button>
     </form></section>}
     <ErrorText value={error}/><p className="market-notice">{message}</p>
