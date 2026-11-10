@@ -197,6 +197,14 @@ create policy "Seller can read own marketplace membership payments" on public.ma
     select 1 from public.marketplace_sellers s where s.id = seller_id and s.user_id = (select auth.uid())
   ));
 
+-- These tables are intentionally service-role only; client access is denied explicitly.
+create policy marketplace_categories_deny_clients on public.marketplace_categories for all to anon, authenticated using (false) with check (false);
+create policy marketplace_reminders_deny_clients on public.marketplace_membership_reminders for all to anon, authenticated using (false) with check (false);
+create policy marketplace_products_deny_clients on public.marketplace_products for all to anon, authenticated using (false) with check (false);
+create policy marketplace_orders_deny_clients on public.marketplace_orders for all to anon, authenticated using (false) with check (false);
+create policy marketplace_order_items_deny_clients on public.marketplace_order_items for all to anon, authenticated using (false) with check (false);
+create policy marketplace_order_events_deny_clients on public.marketplace_order_events for all to anon, authenticated using (false) with check (false);
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('marketplace-product-images', 'marketplace-product-images', true, 5242880, array['image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public = true, file_size_limit = 5242880, allowed_mime_types = array['image/jpeg','image/png','image/webp'];
