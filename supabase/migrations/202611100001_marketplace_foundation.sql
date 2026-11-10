@@ -119,6 +119,8 @@ create table if not exists public.marketplace_orders (
   total_amount numeric(12,2) not null check (total_amount > 0),
   payment_method text not null check (payment_method in ('upi','cod')),
   payment_status text not null check (payment_status in ('pending','claimed','paid','rejected','cod_due','cod_paid','refunded')),
+  payment_expires_at timestamptz,
+  stock_released_at timestamptz,
   claimed_utr text unique check (claimed_utr is null or claimed_utr ~ '^[0-9]{12}$'),
   verified_utr text,
   status text not null default 'placed' check (status in ('placed','confirmed','processing','shipped','delivered','cancelled','returned')),
@@ -313,11 +315,12 @@ begin
     v_order_ref := 'BCM-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12));
     insert into public.marketplace_orders (
       id, checkout_group_id, order_ref, seller_id, customer_name, customer_email, customer_mobile,
-      shipping_address, subtotal, delivery_charge, total_amount, payment_method, payment_status, status
+      shipping_address, subtotal, delivery_charge, total_amount, payment_method, payment_status, payment_expires_at, status
     ) values (
       v_order_id, v_checkout_group_id, v_order_ref, v_seller_id, v_name, v_email, v_mobile,
       p_customer->'address', v_subtotal, 0, v_subtotal, p_payment_method,
-      case when p_payment_method = 'upi' then 'pending' else 'cod_due' end, 'placed'
+      case when p_payment_method = 'upi' then 'pending' else 'cod_due' end,
+      case when p_payment_method = 'upi' then now() + interval '30 minutes' else null end, 'placed'
     );
 
     for v_item in
@@ -349,6 +352,96 @@ $$;
 
 revoke all on function public.marketplace_create_orders(jsonb,jsonb,text) from public, anon, authenticated;
 grant execute on function public.marketplace_create_orders(jsonb,jsonb,text) to service_role;
+
+create or replace function public.marketplace_cancel_order(
+  p_order_id uuid,
+  p_actor_id uuid,
+  p_reason text,
+  p_reject_payment boolean default false
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $
+declare
+  v_order public.marketplace_orders%rowtype;
+begin
+  select * into v_order
+  from public.marketplace_orders
+  where id = p_order_id
+  for update;
+
+  if not found then raise exception 'Order not found.'; end if;
+  if v_order.status = 'cancelled' then
+    return jsonb_build_object('orderId', v_order.id, 'status', v_order.status, 'alreadyCancelled', true);
+  end if;
+  if v_order.status in ('delivered','returned') or v_order.payment_status in ('paid','cod_paid','refunded') then
+    raise exception 'A delivered or paid order cannot be cancelled automatically.';
+  end if;
+  if v_order.payment_method = 'upi' and v_order.payment_status = 'claimed' and p_reject_payment is distinct from true then
+    raise exception 'A claimed UPI payment must be reviewed by the owner before cancellation.';
+  end if;
+  if p_reject_payment and (v_order.payment_method <> 'upi' or v_order.payment_status not in ('pending','claimed')) then
+    raise exception 'Only an unpaid or claimed UPI order can be rejected and cancelled.';
+  end if;
+
+  if v_order.stock_released_at is null then
+    update public.marketplace_products p
+    set stock = p.stock + item_totals.quantity, updated_at = now()
+    from (
+      select product_id, sum(quantity)::integer as quantity
+      from public.marketplace_order_items
+      where order_id = v_order.id and product_id is not null
+      group by product_id
+    ) item_totals
+    where p.id = item_totals.product_id;
+  end if;
+
+  update public.marketplace_orders
+  set status = 'cancelled',
+      payment_status = case when p_reject_payment then 'rejected' else payment_status end,
+      stock_released_at = coalesce(stock_released_at, now()),
+      updated_at = now()
+  where id = v_order.id;
+
+  insert into public.marketplace_order_events (order_id, actor_id, action, note)
+  values (v_order.id, p_actor_id, 'order_cancelled', left(coalesce(p_reason, 'Order cancelled.'), 1000));
+
+  return jsonb_build_object('orderId', v_order.id, 'status', 'cancelled', 'stockReleased', true);
+end;
+$;
+
+revoke all on function public.marketplace_cancel_order(uuid,uuid,text,boolean) from public, anon, authenticated;
+grant execute on function public.marketplace_cancel_order(uuid,uuid,text,boolean) to service_role;
+
+create or replace function public.marketplace_expire_unpaid_orders()
+returns integer
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $
+declare
+  v_order record;
+  v_count integer := 0;
+begin
+  for v_order in
+    select id from public.marketplace_orders
+    where payment_method = 'upi' and payment_status = 'pending'
+      and status = 'placed' and payment_expires_at <= now()
+      and stock_released_at is null
+    order by payment_expires_at
+    for update skip locked
+    limit 200
+  loop
+    perform public.marketplace_cancel_order(v_order.id, null, 'Unpaid UPI order expired after 30 minutes.', true);
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$;
+
+revoke all on function public.marketplace_expire_unpaid_orders() from public, anon, authenticated;
+grant execute on function public.marketplace_expire_unpaid_orders() to service_role;
 
 create or replace function public.marketplace_rollover_memberships()
 returns integer
@@ -514,6 +607,11 @@ begin
   if exists (select 1 from cron.job where jobname = 'marketplace-membership-reminders') then
     perform cron.unschedule(jobid) from cron.job where jobname = 'marketplace-membership-reminders';
   end if;
+  perform cron.schedule(
+    'marketplace-expire-unpaid-orders',
+    '*/15 * * * *',
+    $job$ select public.marketplace_expire_unpaid_orders(); $job$
+  );
   perform cron.schedule(
     'marketplace-membership-reminders',
     '30 4 * * *',
