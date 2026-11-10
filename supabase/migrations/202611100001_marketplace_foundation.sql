@@ -375,7 +375,7 @@ begin
   if v_order.status = 'cancelled' then
     return jsonb_build_object('orderId', v_order.id, 'status', v_order.status, 'alreadyCancelled', true);
   end if;
-  if v_order.status in ('delivered','returned') or v_order.payment_status in ('paid','cod_paid','refunded') then
+  if v_order.status in ('shipped','delivered','returned') or v_order.payment_status in ('paid','cod_paid','refunded') then
     raise exception 'A delivered or paid order cannot be cancelled automatically.';
   end if;
   if v_order.payment_method = 'upi' and v_order.payment_status = 'claimed' and p_reject_payment is distinct from true then
