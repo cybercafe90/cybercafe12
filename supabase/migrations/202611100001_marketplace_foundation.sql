@@ -245,7 +245,10 @@ declare
   v_name text := coalesce(p_customer->>'name','');
   v_email text := coalesce(p_customer->>'email','');
 begin
-  if jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then
+  if jsonb_typeof(p_items) is distinct from 'array' then
+    raise exception 'Cart must be an array of products.';
+  end if;
+  if jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then
     raise exception 'Cart must contain between 1 and 30 products.';
   end if;
   if char_length(v_name) < 2 or char_length(v_name) > 120 or char_length(v_mobile) < 8 or char_length(v_mobile) > 20 then
