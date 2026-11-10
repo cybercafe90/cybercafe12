@@ -430,8 +430,8 @@ begin
       and status = 'placed' and payment_expires_at <= now()
       and stock_released_at is null
     order by payment_expires_at
-    for update skip locked
     limit 200
+    for update skip locked
   loop
     perform public.marketplace_cancel_order(v_order.id, null, 'Unpaid UPI order expired after 30 minutes.', true);
     v_count := v_count + 1;
