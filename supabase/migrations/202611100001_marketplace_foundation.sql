@@ -154,6 +154,8 @@ create index if not exists marketplace_memberships_due_idx on public.marketplace
 create index if not exists marketplace_membership_payments_membership_idx on public.marketplace_membership_payments(membership_id, created_at desc);
 create unique index if not exists marketplace_one_open_membership_payment_idx
   on public.marketplace_membership_payments(membership_id) where status in ('pending','claimed');
+create unique index if not exists marketplace_one_annual_renewal_reminder_idx
+  on public.marketplace_membership_reminders(membership_id) where reminder_type = 'annual_renewal';
 create index if not exists marketplace_products_public_idx on public.marketplace_products(status, category_slug, created_at desc);
 create index if not exists marketplace_products_seller_idx on public.marketplace_products(seller_id, status, created_at desc);
 create index if not exists marketplace_orders_seller_idx on public.marketplace_orders(seller_id, status, created_at desc);
