@@ -162,6 +162,8 @@ create index if not exists marketplace_products_public_idx on public.marketplace
 create index if not exists marketplace_products_seller_idx on public.marketplace_products(seller_id, status, created_at desc);
 create index if not exists marketplace_orders_seller_idx on public.marketplace_orders(seller_id, status, created_at desc);
 create index if not exists marketplace_orders_mobile_idx on public.marketplace_orders(order_ref, customer_mobile);
+create index if not exists marketplace_orders_upi_expiry_idx on public.marketplace_orders(payment_expires_at)
+  where payment_method = 'upi' and payment_status = 'pending' and stock_released_at is null;
 create index if not exists marketplace_order_items_order_idx on public.marketplace_order_items(order_id);
 
 alter table public.marketplace_categories enable row level security;
@@ -243,16 +245,16 @@ declare
   v_name text := coalesce(p_customer->>'name','');
   v_email text := coalesce(p_customer->>'email','');
 begin
-  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then
+  if jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 30 then
     raise exception 'Cart must contain between 1 and 30 products.';
   end if;
   if char_length(v_name) < 2 or char_length(v_name) > 120 or char_length(v_mobile) < 8 or char_length(v_mobile) > 20 then
     raise exception 'Valid customer name and mobile number are required.';
   end if;
-  if char_length(v_email) > 254 or p_payment_method not in ('upi','cod') then
+  if char_length(v_email) > 254 or p_payment_method is null or p_payment_method not in ('upi','cod') then
     raise exception 'Invalid customer email or payment method.';
   end if;
-  if jsonb_typeof(p_customer->'address') <> 'object'
+  if jsonb_typeof(p_customer->'address') is distinct from 'object'
      or char_length(coalesce(p_customer->'address'->>'line1','')) < 5
      or char_length(coalesce(p_customer->'address'->>'city','')) < 2
      or char_length(coalesce(p_customer->'address'->>'postalCode','')) <> 6
