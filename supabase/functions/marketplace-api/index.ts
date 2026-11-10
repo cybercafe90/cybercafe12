@@ -158,7 +158,7 @@ Deno.serve(async (request) => {
         : { data: [], error: null }
       if (sellersForPaymentError || (sellersForPayment ?? []).length !== sellerIds.length) return response(request, { error: 'Seller payment details are unavailable. Please contact support.' }, 409)
       const sellerPaymentMap = new Map((sellersForPayment ?? []).map((s) => [s.id, s]))
-      if (paymentMethod === 'upi' && (sellersForPayment ?? []).some((s) => !/^[a-z0-9._-]{2,64}@[a-z0-9.-]{2,64}$/i.test(s.upi_id))) {
+      if (paymentMethod === 'upi' && (sellersForPayment ?? []).some((s) => !/^[a-z0-9._+-]{2,64}@[a-z0-9.-]{2,64}$/i.test(s.upi_id))) {
         return response(request, { error: 'A seller has not completed UPI payment setup. Choose COD or contact support.' }, 409)
       }
       const { data, error } = await admin.rpc('marketplace_create_orders', {
@@ -257,7 +257,7 @@ Deno.serve(async (request) => {
         const postalCode = typeof body.postalCode === 'string' ? body.postalCode.trim() : ''
         const businessType = ['individual','proprietorship','partnership','company','cooperative','other'].includes(String(body.businessType)) ? String(body.businessType) : 'individual'
         const upiId = textValue(body.upiId, 5, 100)
-        if (!storeName || !legalName || !mobile || !address || !city || !/^[0-9]{6}$/.test(postalCode) || !upiId || !/^[a-z0-9._-]{2,64}@[a-z0-9.-]{2,64}$/i.test(upiId) || !user.email) {
+        if (!storeName || !legalName || !mobile || !address || !city || !/^[0-9]{6}$/.test(postalCode) || !upiId || !/^[a-z0-9._+-]{2,64}@[a-z0-9.-]{2,64}$/i.test(upiId) || !user.email) {
           return response(request, { error: 'Complete all required seller application fields.' }, 400)
         }
         if (!(await checkRateLimit(admin, request, 'marketplace-seller-application', user.id, 3, 60))) {
