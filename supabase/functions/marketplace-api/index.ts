@@ -243,7 +243,7 @@ Deno.serve(async (request) => {
 
     if (action === 'register_seller' || action === 'seller_dashboard' || action === 'create_membership_payment' ||
       action === 'claim_membership_payment' || action === 'create_product' || action === 'update_product' ||
-      action === 'seller_update_order' || action === 'seller_verify_order_payment') {
+      action === 'seller_update_order' || action === 'seller_verify_order_payment' || action === 'seller_confirm_cod_received') {
       const user = await userFromRequest(request)
       const seller = await sellerForUser(admin, user.id)
 
@@ -366,6 +366,19 @@ Deno.serve(async (request) => {
         }).eq('id', productId).eq('seller_id', seller.id).select('id,name,status').maybeSingle()
         if (error || !product) return response(request, { error: 'Product could not be updated.' }, 404)
         return response(request, { product, message: 'Product changes submitted for owner review.' })
+      }
+
+      if (action === 'seller_confirm_cod_received') {
+        const orderId = body.orderId
+        if (!isUuid(orderId)) return response(request, { error: 'Invalid order.' }, 400)
+        const { data: ownOrder, error: ownOrderError } = await admin.from('marketplace_orders')
+          .select('id').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
+        if (ownOrderError || !ownOrder) return response(request, { error: 'Order could not be found in your seller account.' }, 404)
+        const { data: confirmed, error: confirmError } = await admin.rpc('marketplace_confirm_cod_received', {
+          p_order_id: orderId, p_actor_id: user.id,
+        })
+        if (confirmError || !confirmed) return response(request, { error: 'COD can be confirmed only after delivery.' }, 409)
+        return response(request, { order: confirmed })
       }
 
       if (action === 'seller_verify_order_payment') {
@@ -532,6 +545,7 @@ Deno.serve(async (request) => {
           if (body.paymentStatus === 'paid' && existingOrder.seller_id !== null) return response(request, { error: 'The seller must verify receipt in their own UPI account. The owner cannot verify a seller-direct payment.' }, 403)
           if (body.paymentStatus === 'rejected' && (existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be rejected.' }, 409)
           if (body.paymentStatus === 'cod_paid' && (existingOrder.payment_method !== 'cod' || (body.status !== 'delivered' && existingOrder.status !== 'delivered'))) return response(request, { error: 'COD can be recorded only after delivery.' }, 409)
+          if (body.paymentStatus === 'cod_paid' && existingOrder.seller_id !== null) return response(request, { error: 'The seller must confirm COD collection in their seller portal.' }, 403)
           if (body.paymentStatus === 'refunded' && !['paid','cod_paid'].includes(existingOrder.payment_status)) return response(request, { error: 'Only a completed payment can be marked refunded.' }, 409)
           patch.payment_status = body.paymentStatus
           if (body.paymentStatus === 'paid') patch.verified_utr = existingOrder.claimed_utr
