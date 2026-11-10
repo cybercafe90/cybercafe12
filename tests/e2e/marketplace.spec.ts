@@ -15,7 +15,7 @@ test('seller portal keeps account registration separate from owner approval', as
   await expect(page.getByRole('heading', { name: 'Open your marketplace store' })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Seller sign in/i })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Create seller account/i })).toBeVisible()
-  await expect(page.getByText(/reviewed and approved by BABA'S CYBER CAFE/i)).toBeVisible()
+  await expect(page.getByText(/manually reviewed by BABA'S CYBER CAFE/i)).toBeVisible()
 })
 
 test('marketplace owner workspace requires existing owner authentication', async ({ page }) => {
