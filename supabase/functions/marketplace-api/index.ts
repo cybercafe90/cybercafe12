@@ -236,6 +236,7 @@ Deno.serve(async (request) => {
         return response(request, { submitted: true, seller: newSeller, annualFee: MARKETPLACE_FEE, message: 'Your seller application has been submitted for owner approval. The annual membership fee is ₹200 with flexible instalments and zero sales commission.' }, 201)
       }
 
+      if (action === 'seller_dashboard' && !seller) return response(request, { seller: null, membership: null, payments: [], products: [], orders: [] }, 200, { 'Cache-Control': 'no-store' })
       if (!seller) return response(request, { error: 'Submit a seller application first.' }, 404)
       const membership = await currentMembership(admin, seller.id)
 
@@ -406,7 +407,7 @@ Deno.serve(async (request) => {
         if (!isUuid(paymentId) || !['verified','rejected'].includes(String(decision))) return response(request, { error: 'Invalid membership payment review.' }, 400)
         if (decision === 'verified' && body.bankStatementVerified !== true) return response(request, { error: 'Confirm that the payment is visible in the bank statement before verification.' }, 400)
         const { data: payment, error: lookupError } = await admin.from('marketplace_membership_payments').select('*').eq('id', paymentId).maybeSingle()
-        if (lookupError || !payment || !['claimed','pending'].includes(payment.status)) return response(request, { error: 'This membership payment is not awaiting review.' }, 409)
+        if (lookupError || !payment || (decision === 'verified' ? payment.status !== 'claimed' || !payment.claimed_utr : !['claimed','pending'].includes(payment.status))) return response(request, { error: 'This membership payment is not awaiting review or has no submitted UTR.' }, 409)
         const { data: updated, error } = await admin.from('marketplace_membership_payments').update({
           status: decision, verified_utr: decision === 'verified' ? payment.claimed_utr : null,
           verified_by: actor.id, verified_at: new Date().toISOString(),
