@@ -264,6 +264,7 @@ Deno.serve(async (request) => {
       }
 
       if (action === 'create_membership_payment') {
+        if (seller.status !== 'approved') return response(request, { error: 'Your seller application must be approved before making membership payments.' }, 403)
         if (!membership) return response(request, { error: 'Seller membership is unavailable.' }, 409)
         const amount = money(body.amount)
         const { data: openPayments, error: openError } = await admin.from('marketplace_membership_payments')
