@@ -327,9 +327,6 @@ Deno.serve(async (request) => {
           if (cancelError || !cancelled) return response(request, { error: 'This order cannot be cancelled automatically. Ask the owner to review it.' }, 409)
           return response(request, { order: cancelled })
         }
-        if (existingOrder.payment_method === 'upi' && existingOrder.payment_status === 'claimed' && nextStatus === 'cancelled') {
-          return response(request, { error: 'A claimed UPI payment must be reviewed by the owner before cancellation.' }, 409)
-        }
         const { data: order, error } = await admin.from('marketplace_orders').update({
           status: nextStatus, carrier, tracking_number: trackingNumber, updated_at: new Date().toISOString(),
         }).eq('id', orderId).eq('seller_id', seller.id).select('id,order_ref,status').maybeSingle()
