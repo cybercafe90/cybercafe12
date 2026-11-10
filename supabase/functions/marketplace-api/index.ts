@@ -446,6 +446,7 @@ Deno.serve(async (request) => {
         const decision = body.decision
         const reason = typeof body.reason === 'string' ? body.reason.trim().slice(0, 1000) : ''
         if (!isUuid(sellerId) || !['approved','rejected','suspended'].includes(String(decision))) return response(request, { error: 'Invalid seller decision.' }, 400)
+        if (decision === 'approved' && body.sellerDetailsVerified !== true) return response(request, { error: 'Confirm that the seller identity and UPI ID have been checked before approval.' }, 400)
         const { data: seller, error } = await admin.from('marketplace_sellers').update({
           status: decision, approved_at: decision === 'approved' ? new Date().toISOString() : null,
           approved_by: decision === 'approved' ? actor.id : null, rejection_reason: reason, updated_at: new Date().toISOString(),
