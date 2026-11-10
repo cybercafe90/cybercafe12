@@ -179,13 +179,14 @@ Deno.serve(async (request) => {
         return response(request, { error: 'Too many attempts. Please wait and try again.' }, 429)
       }
       const { data: order, error } = await admin.from('marketplace_orders')
-        .select('id,order_ref,customer_name,customer_mobile,shipping_address,subtotal,delivery_charge,total_amount,payment_method,payment_status,claimed_utr,status,carrier,tracking_number,created_at,updated_at')
+        .select('id,order_ref,customer_name,customer_mobile,shipping_address,subtotal,delivery_charge,total_amount,payment_method,payment_status,payment_expires_at,claimed_utr,status,carrier,tracking_number,created_at,updated_at')
         .eq('order_ref', orderRef).eq('customer_mobile', mobile).maybeSingle()
       if (error || !order) return response(request, { error: 'We could not verify those order details.' }, 404, { 'Cache-Control': 'no-store' })
       if (action === 'claim_order_payment') {
         const utr = typeof body.utr === 'string' ? body.utr.trim() : ''
         if (!/^[0-9]{12}$/.test(utr)) return response(request, { error: 'Enter a valid 12-digit UPI reference number.' }, 400)
         if (order.payment_method !== 'upi' || order.payment_status !== 'pending') return response(request, { error: 'This order is not awaiting UPI confirmation.' }, 409)
+        if (order.payment_expires_at && new Date(order.payment_expires_at).getTime() <= Date.now()) return response(request, { error: 'The UPI payment window has expired. Please contact the seller or place a new order.' }, 409)
         const { data: updated, error: updateError } = await admin.from('marketplace_orders').update({ payment_status: 'claimed', claimed_utr: utr, updated_at: new Date().toISOString() })
           .eq('id', order.id).eq('payment_status', 'pending').select('id').maybeSingle()
         if (updateError || !updated) return response(request, { error: 'Payment confirmation has already been submitted.' }, 409)
@@ -315,6 +316,20 @@ Deno.serve(async (request) => {
         const trackingNumber = typeof body.trackingNumber === 'string' ? body.trackingNumber.trim().slice(0, 160) : ''
         if (!isUuid(orderId) || !['confirmed','processing','shipped','delivered','cancelled'].includes(nextStatus)) return response(request, { error: 'Invalid order update.' }, 400)
         if (nextStatus === 'shipped' && (!carrier || !trackingNumber)) return response(request, { error: 'Enter the courier and tracking number before marking an order shipped.' }, 400)
+        const { data: existingOrder, error: existingError } = await admin.from('marketplace_orders')
+          .select('id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
+        if (existingError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
+        if (nextStatus === 'cancelled') {
+          const rejectPayment = existingOrder.payment_method === 'upi' && existingOrder.payment_status === 'pending'
+          const { data: cancelled, error: cancelError } = await admin.rpc('marketplace_cancel_order', {
+            p_order_id: orderId, p_actor_id: user.id, p_reason: 'Seller cancelled the order.', p_reject_payment: rejectPayment,
+          })
+          if (cancelError || !cancelled) return response(request, { error: 'This order cannot be cancelled automatically. Ask the owner to review it.' }, 409)
+          return response(request, { order: cancelled })
+        }
+        if (existingOrder.payment_method === 'upi' && existingOrder.payment_status === 'claimed' && nextStatus === 'cancelled') {
+          return response(request, { error: 'A claimed UPI payment must be reviewed by the owner before cancellation.' }, 409)
+        }
         const { data: order, error } = await admin.from('marketplace_orders').update({
           status: nextStatus, carrier, tracking_number: trackingNumber, updated_at: new Date().toISOString(),
         }).eq('id', orderId).eq('seller_id', seller.id).select('id,order_ref,status').maybeSingle()
@@ -423,6 +438,18 @@ Deno.serve(async (request) => {
         const { data: existingOrder, error: existingOrderError } = await admin.from('marketplace_orders')
           .select('id,payment_method,payment_status,status').eq('id', orderId).maybeSingle()
         if (existingOrderError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
+        if (body.status === 'cancelled' || body.paymentStatus === 'rejected') {
+          const rejectPayment = existingOrder.payment_method === 'upi' && ['pending','claimed'].includes(existingOrder.payment_status)
+          if (body.paymentStatus === 'rejected' && (existingOrder.payment_method !== 'upi' || existingOrder.payment_status !== 'claimed')) return response(request, { error: 'Only a claimed UPI payment can be rejected.' }, 409)
+          const { data: cancelled, error: cancelError } = await admin.rpc('marketplace_cancel_order', {
+            p_order_id: orderId, p_actor_id: actor.id,
+            p_reason: body.paymentStatus === 'rejected' ? 'Owner rejected the UPI payment after review.' : 'Owner cancelled the order.',
+            p_reject_payment: rejectPayment,
+          })
+          if (cancelError || !cancelled) return response(request, { error: 'This order cannot be cancelled automatically. Review its payment and delivery status.' }, 409)
+          await ownerAudit(admin, actor.id, 'marketplace_order_cancelled', 'marketplace_order', orderId, { cancelled })
+          return response(request, { order: cancelled })
+        }
         const patch: Json = { updated_at: new Date().toISOString() }
         if (typeof body.status === 'string' && ['confirmed','processing','shipped','delivered','cancelled','returned'].includes(body.status)) patch.status = body.status
         if (typeof body.paymentStatus === 'string' && ['paid','rejected','cod_paid','refunded'].includes(body.paymentStatus)) {
