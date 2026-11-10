@@ -81,12 +81,13 @@ create table if not exists public.marketplace_membership_reminders (
   id uuid primary key default gen_random_uuid(),
   membership_id uuid not null references public.marketplace_memberships(id) on delete cascade,
   reminder_month date not null,
+  reminder_type text not null default 'monthly_payment' check (reminder_type in ('monthly_payment','annual_renewal')),
   status text not null default 'queued' check (status in ('queued','sent','failed')),
   provider_id text,
   error_message text not null default '' check (char_length(error_message) <= 500),
   sent_at timestamptz,
   created_at timestamptz not null default now(),
-  unique (membership_id, reminder_month)
+  unique (membership_id, reminder_month, reminder_type)
 );
 
 create table if not exists public.marketplace_products (
