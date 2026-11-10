@@ -571,8 +571,10 @@ begin
   insert into public.marketplace_memberships (
     seller_id, period_start, expires_at, grace_until, fee_amount, paid_amount, status, renewal_grace
   )
-  select seller_id, expires_at, expires_at + interval '1 year',
-         expires_at + interval '1 year 15 days', 200.00, 0, 'grace', true
+  -- Renewal grace starts immediately when the paid annual period ends.
+  -- Keep the grace window to 15 days; do not grant an unpaid extra year.
+  select seller_id, expires_at, expires_at + interval '15 days',
+         expires_at + interval '15 days', 200.00, 0, 'grace', true
   from expired
   on conflict (seller_id, period_start) do nothing;
   get diagnostics v_created = row_count;
