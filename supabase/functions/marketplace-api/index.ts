@@ -208,7 +208,7 @@ Deno.serve(async (request) => {
         return response(request, { error: 'Too many attempts. Please wait and try again.' }, 429)
       }
       const { data: order, error } = await admin.from('marketplace_orders')
-        .select('id,order_ref,customer_name,customer_mobile,shipping_address,subtotal,delivery_charge,total_amount,payment_method,payment_status,payment_expires_at,claimed_utr,status,carrier,tracking_number,created_at,updated_at')
+        .select('id,order_ref,seller_id,customer_name,customer_mobile,shipping_address,subtotal,delivery_charge,total_amount,payment_method,payment_status,payment_expires_at,claimed_utr,status,carrier,tracking_number,created_at,updated_at')
         .eq('order_ref', orderRef).eq('customer_mobile', mobile).maybeSingle()
       if (error || !order) return response(request, { error: 'We could not verify those order details.' }, 404, { 'Cache-Control': 'no-store' })
       if (action === 'claim_order_payment') {
@@ -223,7 +223,22 @@ Deno.serve(async (request) => {
         return response(request, { submitted: true, message: 'Your UPI reference has been received. Payment will be confirmed after verification.' }, 200, { 'Cache-Control': 'no-store' })
       }
       const { data: items } = await admin.from('marketplace_order_items').select('product_name,quantity,unit_price').eq('order_id', order.id)
-      return response(request, { order, items: items ?? [] }, 200, { 'Cache-Control': 'no-store, private', Pragma: 'no-cache' })
+      let orderPayment = { ...order, upiUri: null as string | null, upiPayee: null as string | null }
+      const paymentStillOpen = order.payment_method === 'upi' && order.payment_status === 'pending' &&
+        (!order.payment_expires_at || new Date(order.payment_expires_at).getTime() > Date.now())
+      if (paymentStillOpen) {
+        let vpa = UPI_VPA
+        let payee = UPI_PAYEE
+        if (order.seller_id) {
+          const { data: sellerPayee, error: sellerPayeeError } = await admin.from('marketplace_sellers')
+            .select('upi_id,store_name').eq('id', order.seller_id).maybeSingle()
+          if (sellerPayeeError || !sellerPayee) return response(request, { error: 'Seller payment details are unavailable.' }, 503)
+          vpa = sellerPayee.upi_id
+          payee = sellerPayee.store_name
+        }
+        orderPayment = { ...orderPayment, upiUri: upiUri(Number(order.total_amount), order.order_ref, vpa, payee), upiPayee: payee }
+      }
+      return response(request, { order: orderPayment, items: items ?? [] }, 200, { 'Cache-Control': 'no-store, private', Pragma: 'no-cache' })
     }
 
     if (action === 'register_seller' || action === 'seller_dashboard' || action === 'create_membership_payment' ||
