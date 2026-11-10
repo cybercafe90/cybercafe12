@@ -364,7 +364,7 @@ Deno.serve(async (request) => {
         if (!isUuid(orderId) || !['confirmed','processing','shipped','delivered','cancelled'].includes(nextStatus)) return response(request, { error: 'Invalid order update.' }, 400)
         if (nextStatus === 'shipped' && (!carrier || !trackingNumber)) return response(request, { error: 'Enter the courier and tracking number before marking an order shipped.' }, 400)
         const { data: existingOrder, error: existingError } = await admin.from('marketplace_orders')
-          .select('id,seller_id,payment_method,payment_status,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
+          .select('id,seller_id,payment_method,payment_status,claimed_utr,status').eq('id', orderId).eq('seller_id', seller.id).maybeSingle()
         if (existingError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
         const allowedNext: Record<string, string[]> = { placed: ['confirmed','cancelled'], confirmed: ['processing','cancelled'], processing: ['shipped','cancelled'], shipped: ['delivered'], delivered: [], cancelled: [], returned: [] }
         if (!(allowedNext[existingOrder.status] ?? []).includes(nextStatus)) return response(request, { error: 'This order cannot move to that status.' }, 409)
@@ -485,7 +485,7 @@ Deno.serve(async (request) => {
         const orderId = body.orderId
         if (!isUuid(orderId)) return response(request, { error: 'Invalid order.' }, 400)
         const { data: existingOrder, error: existingOrderError } = await admin.from('marketplace_orders')
-          .select('id,seller_id,payment_method,payment_status,status').eq('id', orderId).maybeSingle()
+          .select('id,seller_id,payment_method,payment_status,claimed_utr,status').eq('id', orderId).maybeSingle()
         if (existingOrderError || !existingOrder) return response(request, { error: 'Order could not be found.' }, 404)
         if (body.status === 'cancelled' || body.paymentStatus === 'rejected') {
           const rejectPayment = existingOrder.payment_method === 'upi' && ['pending','claimed'].includes(existingOrder.payment_status)
@@ -508,6 +508,7 @@ Deno.serve(async (request) => {
           if (body.paymentStatus === 'cod_paid' && (existingOrder.payment_method !== 'cod' || (body.status !== 'delivered' && existingOrder.status !== 'delivered'))) return response(request, { error: 'COD can be recorded only after delivery.' }, 409)
           if (body.paymentStatus === 'refunded' && !['paid','cod_paid'].includes(existingOrder.payment_status)) return response(request, { error: 'Only a completed payment can be marked refunded.' }, 409)
           patch.payment_status = body.paymentStatus
+          if (body.paymentStatus === 'paid') patch.verified_utr = existingOrder.claimed_utr
         }
         if (typeof body.carrier === 'string') patch.carrier = body.carrier.trim().slice(0, 120)
         if (typeof body.trackingNumber === 'string') patch.tracking_number = body.trackingNumber.trim().slice(0, 160)
