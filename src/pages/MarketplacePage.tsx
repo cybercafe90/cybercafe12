@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, BadgeCheck, Box, CheckCircle2, Clock3, CreditCard, PackageCheck, Search, ShieldCheck, ShoppingBag, Store, Truck, Upload, UserRound, Wallet } from 'lucide-react'
+import { ArrowRight, BadgeCheck, Box, CheckCircle2, PackageCheck, Search, ShieldCheck, ShoppingBag, Store, Truck, UserRound, Wallet } from 'lucide-react'
 import { callFunction, supabase } from '../lib/supabase'
 import './MarketplacePage.css'
 
@@ -106,13 +106,15 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
   useEffect(() => {
     if (mode !== 'store') return
     let alive = true
-    void refreshProducts().catch((reason) => { if (alive) setError(reason instanceof Error ? reason.message : 'Marketplace could not be loaded.') })
+    queueMicrotask(() => { void refreshProducts().catch((reason) => { if (alive) setError(reason instanceof Error ? reason.message : 'Marketplace could not be loaded.') }) })
     return () => { alive = false }
   }, [mode, refreshProducts])
 
   useEffect(() => {
-    if (mode === 'seller') void refreshSeller().catch((reason) => setError(reason instanceof Error ? reason.message : 'Seller dashboard could not be loaded.'))
-    if (mode === 'admin') void refreshOwner().catch(() => { setOwnerVerified(false); setOwnerData(null) })
+    queueMicrotask(() => {
+      if (mode === 'seller') void refreshSeller().catch((reason) => setError(reason instanceof Error ? reason.message : 'Seller dashboard could not be loaded.'))
+      if (mode === 'admin') void refreshOwner().catch(() => { setOwnerVerified(false); setOwnerData(null) })
+    })
   }, [mode, refreshSeller, refreshOwner])
 
   function addToCart(product: Product) {
@@ -177,7 +179,7 @@ export default function MarketplacePage({ mode = 'store' }: Props) {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Sign-in failed.') }
     finally { setBusy(false) }
   }
-  async function sellerSignUp(event: FormEvent) {
+  async function sellerSignUp() {
     if (!supabase) { setError('Secure seller registration is not configured.'); return }
     if (sellerPassword.length < 10) { setError('Use a password with at least 10 characters.'); return }
     setBusy(true); setError(''); setMessage('')
