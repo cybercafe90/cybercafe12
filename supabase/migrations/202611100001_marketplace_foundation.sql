@@ -362,7 +362,7 @@ create or replace function public.marketplace_cancel_order(
 language plpgsql
 security invoker
 set search_path = public, pg_temp
-as $
+as $cancel_order$
 declare
   v_order public.marketplace_orders%rowtype;
 begin
@@ -409,7 +409,7 @@ begin
 
   return jsonb_build_object('orderId', v_order.id, 'status', 'cancelled', 'stockReleased', true);
 end;
-$;
+$cancel_order$;
 
 revoke all on function public.marketplace_cancel_order(uuid,uuid,text,boolean) from public, anon, authenticated;
 grant execute on function public.marketplace_cancel_order(uuid,uuid,text,boolean) to service_role;
@@ -419,7 +419,7 @@ returns integer
 language plpgsql
 security invoker
 set search_path = public, pg_temp
-as $
+as $expire_orders$
 declare
   v_order record;
   v_count integer := 0;
@@ -438,7 +438,7 @@ begin
   end loop;
   return v_count;
 end;
-$;
+$expire_orders$;
 
 revoke all on function public.marketplace_expire_unpaid_orders() from public, anon, authenticated;
 grant execute on function public.marketplace_expire_unpaid_orders() to service_role;
@@ -487,7 +487,7 @@ create or replace function public.marketplace_review_membership_payment(
 language plpgsql
 security invoker
 set search_path = public, pg_temp
-as $
+as $review_membership_payment$
 declare
   v_payment public.marketplace_membership_payments%rowtype;
   v_membership public.marketplace_memberships%rowtype;
@@ -563,7 +563,7 @@ begin
     'fullyPaid', v_full
   );
 end;
-$;
+$review_membership_payment$;
 
 revoke all on function public.marketplace_review_membership_payment(uuid,text,uuid,boolean) from public, anon, authenticated;
 grant execute on function public.marketplace_review_membership_payment(uuid,text,uuid,boolean) to service_role;
