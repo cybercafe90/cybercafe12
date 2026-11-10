@@ -1,0 +1,40 @@
+.challan-page { color: var(--ink); }
+.challan-hero { display:grid; grid-template-columns:1.2fr .8fr; gap:48px; align-items:center; padding:78px 10%; color:#fffefa; background:linear-gradient(120deg,#171713,#29271f); }
+.challan-hero-copy h1 { margin:22px 0 16px; max-width:680px; font:500 clamp(42px,5.2vw,68px)/1.06 var(--serif); }
+.challan-hero-copy h1 em { color:var(--gold-light); font-weight:500; }
+.challan-hero-copy>p { max-width:610px; color:#d2d0c6; font-size:14px; line-height:1.85; }
+.challan-hero-actions,.challan-success-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:27px; }
+.challan-outline-light { color:#fffefa; border-color:#77766c; }
+.challan-trust { display:flex; align-items:center; gap:9px; margin-top:28px; color:#d6c69f; font-size:11px; }
+.challan-official-card { padding:32px; border:1px solid rgba(211,182,116,.45); background:rgba(255,255,255,.045); }
+.challan-card-icon { display:grid; width:52px; height:52px; place-items:center; margin-bottom:25px; color:var(--gold-light); border:1px solid var(--gold); }
+.challan-official-card h2 { margin:12px 0; font:500 30px/1.2 var(--serif); }
+.challan-official-card p { color:#c9c6ba; font-size:12px; line-height:1.8; }
+.challan-official-card>a { display:inline-flex; align-items:center; gap:8px; margin-top:14px; color:var(--gold-light); font-size:12px; }
+.challan-guidance { display:grid; grid-template-columns:repeat(3,1fr); gap:26px; padding:35px 10%; border-bottom:1px solid var(--line); background:#fffefa; }
+.challan-guidance>div { padding-left:17px; border-left:2px solid var(--gold); }
+.challan-guidance strong { font-size:13px; }
+.challan-guidance p { margin:8px 0 0; color:var(--muted); font-size:11px; line-height:1.7; }
+.challan-form-section { display:grid; grid-template-columns:.8fr 1.2fr; gap:52px; padding:75px 10%; }
+.challan-form-intro h2,.challan-success h2 { margin:17px 0 14px; font:500 clamp(30px,3vw,42px)/1.15 var(--serif); }
+.challan-form-intro>p,.challan-success>p { color:var(--muted); font-size:13px; line-height:1.8; }
+.challan-privacy { display:flex; gap:10px; align-items:flex-start; margin-top:25px; padding:15px; color:#625b4c; background:var(--gold-wash); font-size:11px; line-height:1.7; }
+.challan-privacy svg { flex:0 0 auto; color:var(--gold); }
+.challan-form,.challan-success { padding:30px; border:1px solid var(--line); background:#fffefa; }
+.challan-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.challan-field-full { grid-column:1/-1; }
+.challan-field-grid .field { display:flex; flex-direction:column; gap:8px; color:#55554d; font-size:11px; font-weight:600; }
+.challan-field-grid .field input,.challan-field-grid .field select,.challan-field-grid .field textarea { width:100%; min-height:44px; padding:11px 12px; border:1px solid var(--line); border-radius:2px; color:var(--ink); background:#fff; font:400 13px var(--sans); }
+.challan-field-grid .field textarea { resize:vertical; }
+.challan-consent { display:flex; align-items:flex-start; gap:10px; margin:22px 0; color:var(--muted); font-size:10px; line-height:1.7; }
+.challan-consent input { margin-top:2px; accent-color:var(--gold); }
+.challan-error,.challan-warning { color:#9b342f; font-size:11px; line-height:1.6; }
+.challan-success>svg { color:var(--green); }
+.challan-reference { display:flex; flex-direction:column; gap:7px; margin:22px 0; padding:18px; background:var(--gold-wash); }
+.challan-reference small { color:#766748; font-size:9px; letter-spacing:.08em; }
+.challan-reference strong { font-size:22px; letter-spacing:.06em; }
+.challan-disclaimer { margin:0 10% 65px; padding:20px 22px; border-left:3px solid var(--gold); background:#eeece4; }
+.challan-disclaimer strong { font-size:12px; }
+.challan-disclaimer p { margin:8px 0 0; color:#68675e; font-size:10px; line-height:1.8; }
+@media(max-width:800px) { .challan-hero,.challan-form-section { grid-template-columns:1fr; gap:30px; padding:52px 6%; } .challan-guidance { grid-template-columns:1fr; gap:20px; padding:30px 6%; } .challan-disclaimer { margin:0 6% 45px; } }
+@media(max-width:520px) { .challan-field-grid { grid-template-columns:1fr; } .challan-field-full { grid-column:auto; } .challan-form,.challan-success { padding:20px; } .challan-hero-actions .button { width:100%; } }
