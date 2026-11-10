@@ -183,3 +183,19 @@ test("investigation portal denies unauthenticated visitors", async ({ page }) =>
     page.getByRole("heading", { name: "Security events" }),
   ).toHaveCount(0);
 });
+
+
+test("challan portal links to the official Parivahan service and offers tracked assistance", async ({ page }) => {
+  await page.goto("/challan");
+  await expect(page.getByRole("heading", { name: "Check your traffic challan." })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open official eChallan/ })).toHaveAttribute(
+    "href",
+    "https://echallan.parivahan.nic.in/",
+  );
+  await expect(page.getByRole("heading", { name: "Let us help with your challan enquiry." })).toBeVisible();
+  await expect(page.getByLabel("Vehicle registration number *")).toBeVisible();
+  await expect(page.getByText(/independent assistance business, not a government office/i)).toBeVisible();
+  const submitButton = page.getByRole("button", { name: /Submit assistance request/ });
+  if (backendConfigured) await expect(submitButton).toBeEnabled();
+  else await expect(submitButton).toBeDisabled();
+});
