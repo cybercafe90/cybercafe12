@@ -148,6 +148,19 @@ Deno.serve(async (request) => {
       if (!(await checkRateLimit(admin, request, 'marketplace-create-order', mobile, 8, 15))) {
         return response(request, { error: 'Too many order attempts. Please wait and try again.' }, 429)
       }
+      const productIds = [...new Set(allowedItems.map((item) => item.productId))]
+      const { data: cartProducts, error: cartProductsError } = await admin.from('marketplace_products')
+        .select('id,seller_id').in('id', productIds).eq('status', 'published')
+      if (cartProductsError || (cartProducts ?? []).length !== productIds.length) return response(request, { error: 'One or more products are no longer available.' }, 409)
+      const sellerIds = [...new Set((cartProducts ?? []).map((p) => p.seller_id).filter((id): id is string => Boolean(id)))]
+      const { data: sellersForPayment, error: sellersForPaymentError } = sellerIds.length
+        ? await admin.from('marketplace_sellers').select('id,store_name,upi_id').in('id', sellerIds)
+        : { data: [], error: null }
+      if (sellersForPaymentError || (sellersForPayment ?? []).length !== sellerIds.length) return response(request, { error: 'Seller payment details are unavailable. Please contact support.' }, 409)
+      const sellerPaymentMap = new Map((sellersForPayment ?? []).map((s) => [s.id, s]))
+      if (paymentMethod === 'upi' && (sellersForPayment ?? []).some((s) => !/^[a-z0-9._-]{2,64}@[a-z0-9.-]{2,64}$/i.test(s.upi_id))) {
+        return response(request, { error: 'A seller has not completed UPI payment setup. Choose COD or contact support.' }, 409)
+      }
       const { data, error } = await admin.rpc('marketplace_create_orders', {
         p_customer: { name, email, mobile, address: {
           line1: textValue(address.line1, 5, 300), line2: typeof address.line2 === 'string' ? address.line2.slice(0, 200) : '',
@@ -161,12 +174,6 @@ Deno.serve(async (request) => {
         return response(request, { error: 'We could not place this order. Please refresh your cart and try again.' }, 409)
       }
       const rawOrders = data.orders as Array<{id:string;orderRef:string;sellerId:string|null;totalAmount:number}>
-      const sellerIds = [...new Set(rawOrders.map((o) => o.sellerId).filter((id): id is string => Boolean(id)))]
-      const { data: sellersForPayment, error: sellersForPaymentError } = sellerIds.length
-        ? await admin.from('marketplace_sellers').select('id,store_name,upi_id').in('id', sellerIds)
-        : { data: [], error: null }
-      if (sellersForPaymentError) throw new Error('SELLER_PAYMENT_DETAILS_FAILED')
-      const sellerPaymentMap = new Map((sellersForPayment ?? []).map((s) => [s.id, s]))
       const orders = rawOrders.map((o) => {
         const sellerPayee = o.sellerId ? sellerPaymentMap.get(o.sellerId) : null
         const vpa = sellerPayee?.upi_id ?? UPI_VPA
@@ -180,7 +187,7 @@ Deno.serve(async (request) => {
             '<p>Hello ' + escapeHtml(name) + ',</p><p>Your marketplace order has been received.</p><ul>' + orders.map((o) => '<li><strong>' + escapeHtml(o.orderRef) + '</strong> — ₹' + Number(o.totalAmount).toFixed(2) + '</li>').join('') + '</ul><p>Track your order at <a href="https://babacybercafe.in/marketplace/orders">BABA\'S CYBER CAFE Marketplace</a>.</p>')
         } catch (e) { console.error('marketplace customer email failed:', e instanceof Error ? e.message.slice(0, 100) : 'unknown') }
       }
-      return response(request, { created: true, orders, paymentInstructions: paymentMethod === 'upi' ? 'Pay using UPI and submit the 12-digit UTR from the order tracking page. Payment is confirmed only after owner verification.' : 'Pay the delivery partner in cash when your order arrives.' }, 201, { 'Cache-Control': 'no-store' })
+      return response(request, { created: true, orders, paymentInstructions: paymentMethod === 'upi' ? 'Pay using UPI and submit the 12-digit UTR from the order tracking page. Payment is confirmed after the seller or owner verifies receipt.' : 'Pay the delivery partner in cash when your order arrives.' }, 201, { 'Cache-Control': 'no-store' })
     }
 
     if (action === 'track_order' || action === 'claim_order_payment') {
