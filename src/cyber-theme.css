@@ -440,3 +440,398 @@ body { color: #171713; }
   .portal-theme .csv-ready { font-size: 8px; }
   .portal-theme .csv-preview-row { align-items: flex-start; }
 }
+
+
+/* Site-wide homepage visual system: every non-home route inherits the same midnight neon palette. */
+.site-shell:not(:has(.cyber-home)) {
+  --ink: #f4f8ff;
+  --ink-soft: #dce8f7;
+  --paper: #080b14;
+  --white: #131a2e;
+  --muted: #94a3b8;
+  --line: rgba(0,245,255,.20);
+  --gold: #00f5ff;
+  --gold-light: #65f7ff;
+  --gold-wash: rgba(0,245,255,.09);
+  --green: #00ff88;
+  --red: #ff737d;
+  min-height: 100vh;
+  color: #e8f1ff;
+  background:
+    radial-gradient(ellipse at 88% 8%,rgba(124,58,237,.12),transparent 32%),
+    radial-gradient(ellipse at 4% 35%,rgba(0,245,255,.055),transparent 30%),
+    #080b14;
+  font-family: 'Inter','DM Sans',sans-serif;
+}
+.site-shell:not(:has(.cyber-home)) .topline {
+  color:#9eacc0; background:#05070d; border-bottom:1px solid rgba(0,245,255,.12);
+  font:10px 'Inter',sans-serif; letter-spacing:.08em;
+}
+.site-shell:not(:has(.cyber-home)) .topline a { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .site-header {
+  color:#e8f1ff; border-bottom:1px solid rgba(0,245,255,.18);
+  background:rgba(8,11,20,.96); backdrop-filter:blur(16px);
+}
+.site-shell:not(:has(.cyber-home)) .brand-mark {
+  border:0; color:#00f5ff;
+  background:linear-gradient(145deg,rgba(0,245,255,.12),rgba(124,58,237,.18));
+  filter:drop-shadow(0 0 9px rgba(0,245,255,.25));
+}
+.site-shell:not(:has(.cyber-home)) .brand-keyhole { color:#00ff88; }
+.site-shell:not(:has(.cyber-home)) .brand-name { color:#fff; font-family:'Orbitron','Inter',sans-serif; letter-spacing:.06em; }
+.site-shell:not(:has(.cyber-home)) .brand-name small { color:#00f5ff; font-family:'Inter',sans-serif; letter-spacing:.16em; }
+.site-shell:not(:has(.cyber-home)) .main-nav > a:not(.nav-button) { color:#c1cada; }
+.site-shell:not(:has(.cyber-home)) .main-nav > a:not(.nav-button):hover,
+.site-shell:not(:has(.cyber-home)) .main-nav > a.active { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .main-nav > a.active::after { height:2px; background:#00f5ff; box-shadow:0 0 10px #00f5ff; }
+.site-shell:not(:has(.cyber-home)) .nav-button,
+.site-shell:not(:has(.cyber-home)) .button,
+.site-shell:not(:has(.cyber-home)) .button-dark,
+.site-shell:not(:has(.cyber-home)) .button-gold {
+  border:1px solid #00f5ff; border-radius:999px; color:#061016;
+  background:#00f5ff; font-weight:800; box-shadow:0 0 18px rgba(0,245,255,.16);
+}
+.site-shell:not(:has(.cyber-home)) .nav-button:hover,
+.site-shell:not(:has(.cyber-home)) .button:hover:not(:disabled) {
+  color:#061016; border-color:#8afaff; background:#8afaff; box-shadow:0 0 24px rgba(0,245,255,.32);
+}
+.site-shell:not(:has(.cyber-home)) .button-outline,
+.site-shell:not(:has(.cyber-home)) .button-light-outline {
+  color:#00f5ff; border:1px solid rgba(0,245,255,.48); background:rgba(0,245,255,.05);
+}
+.site-shell:not(:has(.cyber-home)) .button-outline:hover:not(:disabled),
+.site-shell:not(:has(.cyber-home)) .button-light-outline:hover:not(:disabled) {
+  color:#fff; border-color:#00f5ff; background:rgba(0,245,255,.12);
+}
+.site-shell:not(:has(.cyber-home)) .menu-toggle,
+.site-shell:not(:has(.cyber-home)) .icon-button { color:#00f5ff; border-color:rgba(0,245,255,.32); background:rgba(19,26,46,.7); }
+
+.site-shell:not(:has(.cyber-home)) .content-page,
+.site-shell:not(:has(.cyber-home)) .payment-page,
+.site-shell:not(:has(.cyber-home)) .category-section,
+.site-shell:not(:has(.cyber-home)) .insurance-portal-page,
+.site-shell:not(:has(.cyber-home)) .feedback-page,
+.site-shell:not(:has(.cyber-home)) .grievance-page,
+.site-shell:not(:has(.cyber-home)) .investigation-page {
+  color:#e8f1ff; background:transparent;
+}
+.site-shell:not(:has(.cyber-home)) .page-intro h1,
+.site-shell:not(:has(.cyber-home)) .page-intro h2,
+.site-shell:not(:has(.cyber-home)) .insurance-page-heading h1,
+.site-shell:not(:has(.cyber-home)) .payment-heading h1,
+.site-shell:not(:has(.cyber-home)) .feedback-hero h1,
+.site-shell:not(:has(.cyber-home)) .feedback-form h2,
+.site-shell:not(:has(.cyber-home)) .grievance-page h1,
+.site-shell:not(:has(.cyber-home)) .investigation-page h1,
+.site-shell:not(:has(.cyber-home)) .investigation-page h2,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-page h1,
+.site-shell:not(:has(.cyber-home)) .challan-page h1,
+.site-shell:not(:has(.cyber-home)) .challan-page h2 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .eyebrow,
+.site-shell:not(:has(.cyber-home)) .page-intro .eyebrow,
+.site-shell:not(:has(.cyber-home)) .feedback-brand,
+.site-shell:not(:has(.cyber-home)) .feedback-form-heading,
+.site-shell:not(:has(.cyber-home)) .feedback-privacy svg { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .page-intro p,
+.site-shell:not(:has(.cyber-home)) .insurance-page-heading p,
+.site-shell:not(:has(.cyber-home)) .payment-heading p,
+.site-shell:not(:has(.cyber-home)) .feedback-hero p,
+.site-shell:not(:has(.cyber-home)) .feedback-form-heading p,
+.site-shell:not(:has(.cyber-home)) .feedback-form small,
+.site-shell:not(:has(.cyber-home)) .feedback-privacy,
+.site-shell:not(:has(.cyber-home)) .challan-form-intro>p,
+.site-shell:not(:has(.cyber-home)) .challan-official-card p,
+.site-shell:not(:has(.cyber-home)) .grievance-intro { color:#a9b7ca; }
+
+.site-shell:not(:has(.cyber-home)) .catalog-toolbar,
+.site-shell:not(:has(.cyber-home)) .category-card,
+.site-shell:not(:has(.cyber-home)) .service-card,
+.site-shell:not(:has(.cyber-home)) .form-panel,
+.site-shell:not(:has(.cyber-home)) .track-form,
+.site-shell:not(:has(.cyber-home)) .tracking-result,
+.site-shell:not(:has(.cyber-home)) .dashboard-panel,
+.site-shell:not(:has(.cyber-home)) .success-panel,
+.site-shell:not(:has(.cyber-home)) .about-principles,
+.site-shell:not(:has(.cyber-home)) .contact-panel,
+.site-shell:not(:has(.cyber-home)) .contact-card,
+.site-shell:not(:has(.cyber-home)) .legal-panel,
+.site-shell:not(:has(.cyber-home)) .empty-state,
+.site-shell:not(:has(.cyber-home)) .disclaimer-box,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form,
+.site-shell:not(:has(.cyber-home)) .insurance-lookup-card,
+.site-shell:not(:has(.cyber-home)) .insurance-admin-form,
+.site-shell:not(:has(.cyber-home)) .insurance-request-detail,
+.site-shell:not(:has(.cyber-home)) .insurance-request-list,
+.site-shell:not(:has(.cyber-home)) .payment-panel,
+.site-shell:not(:has(.cyber-home)) .payment-customer-card,
+.site-shell:not(:has(.cyber-home)) .payment-method,
+.site-shell:not(:has(.cyber-home)) .payment-success,
+.site-shell:not(:has(.cyber-home)) .payment-empty,
+.site-shell:not(:has(.cyber-home)) .payment-create-form,
+.site-shell:not(:has(.cyber-home)) .payment-admin-card,
+.site-shell:not(:has(.cyber-home)) .payment-alert-card,
+.site-shell:not(:has(.cyber-home)) .feedback-form,
+.site-shell:not(:has(.cyber-home)) .feedback-success,
+.site-shell:not(:has(.cyber-home)) .feedback-owner,
+.site-shell:not(:has(.cyber-home)) .feedback-modal,
+.site-shell:not(:has(.cyber-home)) .grievance-panel,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-card,
+.site-shell:not(:has(.cyber-home)) .investigation-summary > div,
+.site-shell:not(:has(.cyber-home)) .investigation-event,
+.site-shell:not(:has(.cyber-home)) .investigation-empty,
+.site-shell:not(:has(.cyber-home)) .challan-official-card,
+.site-shell:not(:has(.cyber-home)) .challan-form,
+.site-shell:not(:has(.cyber-home)) .challan-success {
+  color:#e8f1ff; border-color:rgba(0,245,255,.22);
+  background:rgba(19,26,46,.84); box-shadow:0 10px 30px rgba(0,0,0,.18),inset 0 0 22px rgba(124,58,237,.035);
+  backdrop-filter:blur(14px);
+}
+.site-shell:not(:has(.cyber-home)) .category-grid,
+.site-shell:not(:has(.cyber-home)) .service-grid,
+.site-shell:not(:has(.cyber-home)) .feedback-hero,
+.site-shell:not(:has(.cyber-home)) .feedback-table th,
+.site-shell:not(:has(.cyber-home)) .feedback-table td { border-color:rgba(0,245,255,.18); }
+.site-shell:not(:has(.cyber-home)) .category-card:hover,
+.site-shell:not(:has(.cyber-home)) .service-card:hover,
+.site-shell:not(:has(.cyber-home)) .feedback-type-grid button:hover,
+.site-shell:not(:has(.cyber-home)) .feedback-type-grid button.selected { color:#fff; border-color:#00f5ff; background:rgba(0,245,255,.09); }
+.site-shell:not(:has(.cyber-home)) .category-card h3,
+.site-shell:not(:has(.cyber-home)) .service-card h2,
+.site-shell:not(:has(.cyber-home)) .payment-customer-card h2,
+.site-shell:not(:has(.cyber-home)) .payment-success h2,
+.site-shell:not(:has(.cyber-home)) .payment-empty h2,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form h2,
+.site-shell:not(:has(.cyber-home)) .insurance-lookup-card h2,
+.site-shell:not(:has(.cyber-home)) .insurance-request-list h2,
+.site-shell:not(:has(.cyber-home)) .insurance-request-detail h2 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .category-icon,
+.site-shell:not(:has(.cyber-home)) .feedback-stats article,
+.site-shell:not(:has(.cyber-home)) .challan-reference,
+.site-shell:not(:has(.cyber-home)) .challan-privacy { color:#00f5ff; border-color:rgba(0,245,255,.3); background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .category-number,
+.site-shell:not(:has(.cyber-home)) .featured-label,
+.site-shell:not(:has(.cyber-home)) .service-department,
+.site-shell:not(:has(.cyber-home)) .official-service-link,
+.site-shell:not(:has(.cyber-home)) .service-card-bottom a,
+.site-shell:not(:has(.cyber-home)) .text-link,
+.site-shell:not(:has(.cyber-home)) .insurance-page-heading>a { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .catalog-meta,
+.site-shell:not(:has(.cyber-home)) .category-card p,
+.site-shell:not(:has(.cyber-home)) .service-card>p,
+.site-shell:not(:has(.cyber-home)) .service-documents,
+.site-shell:not(:has(.cyber-home)) .insurance-disclaimer,
+.site-shell:not(:has(.cyber-home)) .insurance-lookup-card>p,
+.site-shell:not(:has(.cyber-home)) .payment-detail-grid small,
+.site-shell:not(:has(.cyber-home)) .payment-amount small,
+.site-shell:not(:has(.cyber-home)) .payment-amount span,
+.site-shell:not(:has(.cyber-home)) .payment-empty p,
+.site-shell:not(:has(.cyber-home)) .payment-success p,
+.site-shell:not(:has(.cyber-home)) .feedback-stats span,
+.site-shell:not(:has(.cyber-home)) .feedback-table small,
+.site-shell:not(:has(.cyber-home)) .feedback-customer,
+.site-shell:not(:has(.cyber-home)) .challan-guidance p { color:#94a3b8; }
+
+.site-shell:not(:has(.cyber-home)) input:not([type=checkbox]):not([type=radio]),
+.site-shell:not(:has(.cyber-home)) select,
+.site-shell:not(:has(.cyber-home)) textarea,
+.site-shell:not(:has(.cyber-home)) .feedback-field input,
+.site-shell:not(:has(.cyber-home)) .feedback-field select,
+.site-shell:not(:has(.cyber-home)) .feedback-field textarea,
+.site-shell:not(:has(.cyber-home)) .feedback-filters input,
+.site-shell:not(:has(.cyber-home)) .feedback-filters select,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form input,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form select,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form textarea,
+.site-shell:not(:has(.cyber-home)) .insurance-lookup-card input,
+.site-shell:not(:has(.cyber-home)) .insurance-admin-form input,
+.site-shell:not(:has(.cyber-home)) .insurance-admin-form select,
+.site-shell:not(:has(.cyber-home)) .insurance-admin-form textarea,
+.site-shell:not(:has(.cyber-home)) .payment-lookup input,
+.site-shell:not(:has(.cyber-home)) .payment-utr-form input,
+.site-shell:not(:has(.cyber-home)) .payment-admin-fields input,
+.site-shell:not(:has(.cyber-home)) .payment-admin-fields select,
+.site-shell:not(:has(.cyber-home)) .payment-admin-controls input {
+  color:#f8fbff; border-color:rgba(0,245,255,.25); background:#0a1020;
+}
+.site-shell:not(:has(.cyber-home)) input::placeholder,
+.site-shell:not(:has(.cyber-home)) textarea::placeholder { color:#718198; opacity:1; }
+.site-shell:not(:has(.cyber-home)) input:focus,
+.site-shell:not(:has(.cyber-home)) select:focus,
+.site-shell:not(:has(.cyber-home)) textarea:focus {
+  border-color:#00f5ff; outline:none; box-shadow:0 0 0 3px rgba(0,245,255,.12),0 0 16px rgba(0,245,255,.12);
+}
+.site-shell:not(:has(.cyber-home)) label,
+.site-shell:not(:has(.cyber-home)) .field,
+.site-shell:not(:has(.cyber-home)) .field>span,
+.site-shell:not(:has(.cyber-home)) .insurance-customer-form label,
+.site-shell:not(:has(.cyber-home)) .insurance-lookup-card label,
+.site-shell:not(:has(.cyber-home)) .insurance-admin-form label,
+.site-shell:not(:has(.cyber-home)) .payment-lookup label,
+.site-shell:not(:has(.cyber-home)) .payment-utr-form label,
+.site-shell:not(:has(.cyber-home)) .payment-admin-fields label,
+.site-shell:not(:has(.cyber-home)) .payment-admin-controls label,
+.site-shell:not(:has(.cyber-home)) .feedback-field,
+.site-shell:not(:has(.cyber-home)) .feedback-form legend { color:#c5d2e3; }
+.site-shell:not(:has(.cyber-home)) .notice,
+.site-shell:not(:has(.cyber-home)) .notice-success,
+.site-shell:not(:has(.cyber-home)) .notice-error,
+.site-shell:not(:has(.cyber-home)) .notice-warn,
+.site-shell:not(:has(.cyber-home)) .payment-alert,
+.site-shell:not(:has(.cyber-home)) .feedback-error {
+  color:#dbeafe; border-color:rgba(0,245,255,.24); background:rgba(13,20,36,.92);
+}
+.site-shell:not(:has(.cyber-home)) .notice-success,
+.site-shell:not(:has(.cyber-home)) .feedback-notice { color:#8dffca; border-color:rgba(0,255,136,.32); background:rgba(0,255,136,.07); }
+.site-shell:not(:has(.cyber-home)) .notice-error,
+.site-shell:not(:has(.cyber-home)) .feedback-error { color:#ffc1c5; border-color:rgba(255,115,125,.35); background:rgba(127,29,29,.18); }
+.site-shell:not(:has(.cyber-home)) .notice-warn { color:#f5e5a7; border-color:rgba(255,209,102,.3); background:rgba(120,80,10,.15); }
+.site-shell:not(:has(.cyber-home)) .status-tag,
+.site-shell:not(:has(.cyber-home)) .payment-status,
+.site-shell:not(:has(.cyber-home)) .feedback-status,
+.site-shell:not(:has(.cyber-home)) .grievance-status { color:#00f5ff; border:1px solid rgba(0,245,255,.28); background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .status-completed,
+.site-shell:not(:has(.cyber-home)) .status-paid,
+.site-shell:not(:has(.cyber-home)) .payment-status-paid,
+.site-shell:not(:has(.cyber-home)) .feedback-status.resolved,
+.site-shell:not(:has(.cyber-home)) .feedback-status.closed { color:#00ff88; border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.08); }
+
+.site-shell:not(:has(.cyber-home)) .challan-hero {
+  color:#f7fbff; background:radial-gradient(ellipse at 78% 42%,rgba(124,58,237,.22),transparent 42%),radial-gradient(ellipse at 12% 72%,rgba(0,245,255,.1),transparent 42%),#080b14;
+}
+.site-shell:not(:has(.cyber-home)) .challan-hero-copy h1 em,
+.site-shell:not(:has(.cyber-home)) .challan-trust,
+.site-shell:not(:has(.cyber-home)) .challan-card-icon,
+.site-shell:not(:has(.cyber-home)) .challan-official-card>a { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .challan-guidance,
+.site-shell:not(:has(.cyber-home)) .challan-form,
+.site-shell:not(:has(.cyber-home)) .challan-success,
+.site-shell:not(:has(.cyber-home)) .challan-disclaimer { color:#e8f1ff; border-color:rgba(0,245,255,.2); background:rgba(19,26,46,.84); }
+.site-shell:not(:has(.cyber-home)) .challan-guidance strong,
+.site-shell:not(:has(.cyber-home)) .challan-disclaimer strong { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .challan-guidance>div { border-left-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .challan-disclaimer { border-left-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .challan-field-grid .field { color:#c5d2e3; }
+.site-shell:not(:has(.cyber-home)) .challan-field-grid .field input,
+.site-shell:not(:has(.cyber-home)) .challan-field-grid .field select,
+.site-shell:not(:has(.cyber-home)) .challan-field-grid .field textarea { color:#f8fbff; border-color:rgba(0,245,255,.25); background:#0a1020; }
+.site-shell:not(:has(.cyber-home)) .challan-privacy { color:#bfefff; }
+.site-shell:not(:has(.cyber-home)) .challan-reference { color:#e8f1ff; }
+.site-shell:not(:has(.cyber-home)) .challan-reference small { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .challan-error { color:#ff9ca5; }
+.site-shell:not(:has(.cyber-home)) .challan-success>svg { color:#00ff88; }
+
+.site-shell:not(:has(.cyber-home)) .site-footer {
+  color:#cbd5e1; border-top:1px solid rgba(0,245,255,.2); background:#05070d;
+}
+.site-shell:not(:has(.cyber-home)) .site-footer h3 { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .site-footer a:hover,
+.site-shell:not(:has(.cyber-home)) .footer-bottom a:hover { color:#00ff88; }
+.site-shell:not(:has(.cyber-home)) .footer-bottom { border-color:rgba(0,245,255,.15); color:#8290a5; }
+.site-shell:not(:has(.cyber-home)) .independence-note { color:#738198; }
+.site-shell:not(:has(.cyber-home)) a:focus-visible,
+.site-shell:not(:has(.cyber-home)) button:focus-visible,
+.site-shell:not(:has(.cyber-home)) input:focus-visible,
+.site-shell:not(:has(.cyber-home)) select:focus-visible,
+.site-shell:not(:has(.cyber-home)) textarea:focus-visible { outline:2px solid #00f5ff; outline-offset:3px; }
+@media(prefers-reduced-motion:reduce) {
+  .site-shell:not(:has(.cyber-home)) *, .site-shell:not(:has(.cyber-home)) *::before, .site-shell:not(:has(.cyber-home)) *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+
+
+/* Remaining specialist workspaces and nested states use the same homepage surfaces. */
+.site-shell:not(:has(.cyber-home)) .incident-card,
+.site-shell:not(:has(.cyber-home)) .investigator-management,
+.site-shell:not(:has(.cyber-home)) .investigator-row,
+.site-shell:not(:has(.cyber-home)) .grievance-track-result,
+.site-shell:not(:has(.cyber-home)) .grievance-success,
+.site-shell:not(:has(.cyber-home)) .grievance-update,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-toolbar,
+.site-shell:not(:has(.cyber-home)) .admin-section,
+.site-shell:not(:has(.cyber-home)) .admin-head,
+.site-shell:not(:has(.cyber-home)) .admin-signin,
+.site-shell:not(:has(.cyber-home)) .signin-panel,
+.site-shell:not(:has(.cyber-home)) .profile-panel,
+.site-shell:not(:has(.cyber-home)) .dashboard-heading,
+.site-shell:not(:has(.cyber-home)) .admin-portal-shortcuts,
+.site-shell:not(:has(.cyber-home)) .admin-modal,
+.site-shell:not(:has(.cyber-home)) .modal-backdrop>div,
+.site-shell:not(:has(.cyber-home)) .service-admin,
+.site-shell:not(:has(.cyber-home)) .category-admin,
+.site-shell:not(:has(.cyber-home)) .category-admin-list,
+.site-shell:not(:has(.cyber-home)) .category-admin-row,
+.site-shell:not(:has(.cyber-home)) .service-admin-grid {
+  color:#e8f1ff; border-color:rgba(0,245,255,.22); background:rgba(19,26,46,.86);
+}
+.site-shell:not(:has(.cyber-home)) .incident-card h3,
+.site-shell:not(:has(.cyber-home)) .grievance-success h2,
+.site-shell:not(:has(.cyber-home)) .grievance-track-heading h2,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-head h2,
+.site-shell:not(:has(.cyber-home)) .admin-head h1,
+.site-shell:not(:has(.cyber-home)) .admin-section h2,
+.site-shell:not(:has(.cyber-home)) .dashboard-heading h1 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .incident-meta,
+.site-shell:not(:has(.cyber-home)) .incident-meta b,
+.site-shell:not(:has(.cyber-home)) .incident-topline time,
+.site-shell:not(:has(.cyber-home)) .investigator-management>p,
+.site-shell:not(:has(.cyber-home)) .investigator-row small,
+.site-shell:not(:has(.cyber-home)) .grievance-description,
+.site-shell:not(:has(.cyber-home)) .grievance-success>p,
+.site-shell:not(:has(.cyber-home)) .grievance-success small,
+.site-shell:not(:has(.cyber-home)) .grievance-track-date,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-head small,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field span,
+.site-shell:not(:has(.cyber-home)) .admin-head p,
+.site-shell:not(:has(.cyber-home)) .admin-section p { color:#94a3b8; }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs { border-color:rgba(0,245,255,.2); }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs button { color:#a9b7ca; }
+.site-shell:not(:has(.cyber-home)) .grievance-tabs button.active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .grievance-success>strong { color:#00f5ff; border-color:rgba(0,245,255,.45); background:rgba(0,245,255,.07); }
+.site-shell:not(:has(.cyber-home)) .grievance-dot { background:#00f5ff; box-shadow:0 0 12px rgba(0,245,255,.5); }
+.site-shell:not(:has(.cyber-home)) .incident-severity,
+.site-shell:not(:has(.cyber-home)) .incident-status { color:#00f5ff; border-color:rgba(0,245,255,.3); background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .severity-critical,
+.site-shell:not(:has(.cyber-home)) .severity-high { color:#ff9ca5; border-color:rgba(255,115,125,.35); background:rgba(127,29,29,.18); }
+.site-shell:not(:has(.cyber-home)) .severity-medium { color:#f5e5a7; border-color:rgba(255,209,102,.3); background:rgba(120,80,10,.15); }
+.site-shell:not(:has(.cyber-home)) .investigation-access { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .incident-controls input,
+.site-shell:not(:has(.cyber-home)) .incident-controls select,
+.site-shell:not(:has(.cyber-home)) .investigator-grant-form input,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field textarea,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-grid .field select,
+.site-shell:not(:has(.cyber-home)) .grievance-admin-toolbar input,
+.site-shell:not(:has(.cyber-home)) .admin-search input,
+.site-shell:not(:has(.cyber-home)) .admin-filters input,
+.site-shell:not(:has(.cyber-home)) .admin-filters select {
+  color:#f8fbff; border-color:rgba(0,245,255,.25); background:#0a1020;
+}
+.site-shell:not(:has(.cyber-home)) .feedback-modal-backdrop,
+.site-shell:not(:has(.cyber-home)) .modal-backdrop { background:rgba(3,7,16,.88); }
+.site-shell:not(:has(.cyber-home)) .feedback-modal blockquote { color:#dce8f7; border-left-color:#00f5ff; background:rgba(0,245,255,.07); }
+.site-shell:not(:has(.cyber-home)) .feedback-type-grid button { color:#dce8f7; border-color:rgba(0,245,255,.2); background:rgba(10,16,32,.75); }
+.site-shell:not(:has(.cyber-home)) .feedback-stars button { color:#617087; }
+.site-shell:not(:has(.cyber-home)) .feedback-stars button.active { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .feedback-stats strong,
+.site-shell:not(:has(.cyber-home)) .payment-amount strong,
+.site-shell:not(:has(.cyber-home)) .payment-success>strong,
+.site-shell:not(:has(.cyber-home)) .insurance-premium { color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .insurance-reference,
+.site-shell:not(:has(.cyber-home)) .payment-success-icon { color:#00ff88; border-color:rgba(0,255,136,.3); background:rgba(0,255,136,.08); }
+.site-shell:not(:has(.cyber-home)) .insurance-quote-card,
+.site-shell:not(:has(.cyber-home)) .payment-awaiting,
+.site-shell:not(:has(.cyber-home)) .payment-alert-card>p { color:#dce8f7; border-color:rgba(0,245,255,.18); background:rgba(10,16,32,.9); }
+.site-shell:not(:has(.cyber-home)) .insurance-status-note,
+.site-shell:not(:has(.cyber-home)) .payment-warning { color:#f5e5a7 !important; border-color:rgba(255,209,102,.28); background:rgba(120,80,10,.14); }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row { border-top-color:rgba(0,245,255,.16); }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row b,
+.site-shell:not(:has(.cyber-home)) .insurance-quote-card h3,
+.site-shell:not(:has(.cyber-home)) .payment-instructions h2 { color:#f7fbff; }
+.site-shell:not(:has(.cyber-home)) .insurance-request-row.is-selected { background:rgba(0,245,255,.08); }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs { border-bottom-color:rgba(0,245,255,.2); }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs button { color:#94a3b8; }
+.site-shell:not(:has(.cyber-home)) .payment-admin-tabs button.is-active { color:#00f5ff; border-bottom-color:#00f5ff; }
+.site-shell:not(:has(.cyber-home)) .payment-qr-card { border-color:rgba(0,245,255,.25); background:#fff; }
+.site-shell:not(:has(.cyber-home)) .payment-qr-card small { color:#64748b; }
+.site-shell:not(:has(.cyber-home)) .feedback-table { color:#dce8f7; }
+.site-shell:not(:has(.cyber-home)) .feedback-table th { color:#00f5ff; background:rgba(0,245,255,.06); }
+.site-shell:not(:has(.cyber-home)) .feedback-status.resolved,
+.site-shell:not(:has(.cyber-home)) .feedback-status.closed { color:#00ff88; }
