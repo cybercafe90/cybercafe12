@@ -39,7 +39,6 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/apply") ||
     url.pathname.startsWith("/pay") ||
     url.pathname.startsWith("/admin") ||
-    url.pathname.startsWith("/investigation") ||
     url.pathname.startsWith("/grievance")
   ) return;
 
