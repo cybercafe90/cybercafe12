@@ -172,6 +172,10 @@ revoke all on public.marketplace_categories, public.marketplace_sellers, public.
   public.marketplace_products, public.marketplace_orders, public.marketplace_order_items,
   public.marketplace_order_events from anon, authenticated;
 grant select on public.marketplace_sellers, public.marketplace_memberships, public.marketplace_membership_payments to authenticated;
+grant all on public.marketplace_categories, public.marketplace_sellers, public.marketplace_memberships,
+  public.marketplace_membership_payments, public.marketplace_membership_reminders,
+  public.marketplace_products, public.marketplace_orders, public.marketplace_order_items,
+  public.marketplace_order_events to service_role;
 
 create policy "Seller can read own marketplace profile" on public.marketplace_sellers
   for select to authenticated using (user_id = (select auth.uid()));
