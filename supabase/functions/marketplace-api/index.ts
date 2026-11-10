@@ -430,7 +430,7 @@ Deno.serve(async (request) => {
       const actor = await verifyOwner(request, admin)
       if (action === 'owner_dashboard') {
         const [sellers, memberships, payments, products, orders, reminders] = await Promise.all([
-          admin.from('marketplace_sellers').select('id,user_id,store_name,legal_name,contact_email,upi_id,mobile,city,status,applied_at').order('applied_at', { ascending: false }).limit(200),
+          admin.from('marketplace_sellers').select('id,user_id,store_name,legal_name,contact_email,upi_id,mobile,business_type,address,city,postal_code,status,applied_at').order('applied_at', { ascending: false }).limit(200),
           admin.from('marketplace_memberships').select('id,seller_id,period_start,expires_at,grace_until,fee_amount,paid_amount,status,renewal_grace').order('period_start', { ascending: false }).limit(300),
           admin.from('marketplace_membership_payments').select('id,seller_id,membership_id,amount,status,claimed_utr,created_at').order('created_at', { ascending: false }).limit(200),
           admin.from('marketplace_products').select('id,seller_id,name,category_slug,price,stock,status,created_at').order('created_at', { ascending: false }).limit(200),
