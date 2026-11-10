@@ -31,7 +31,6 @@ The customer application form does not accept file uploads. The owner portal can
 - `/admin/payments` — payment amount assignment and manual bank-statement reconciliation
 - `/insurance/admin` — owner-only insurance enquiry review and quote creation
 - `/grievance/admin` — grievance review and status/remarks
-- `/investigation` — restricted security-event and investigator workspace
 
 Owner actions are checked server-side against the Supabase session and `user_roles`. There is no public registration or browser role assignment.
 
