@@ -3,7 +3,7 @@
 Premium black, white and gold customer service portal for BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir.
 
 **Production website:** https://babacybercafe.in  
-**Support:** support@babacybercafe.in · **WhatsApp:** +91 7006865909
+**Support:** support@babacybercafe.in · **Phone:** +91 7006865909
 
 ## Technology
 
@@ -21,7 +21,7 @@ Premium black, white and gold customer service portal for BABA'S CYBER CAFE, Sri
 - Public grievance submission and tracking
 - Motor insurance quotation request and quote lookup at `/insurance`
 - UPI payment lookup, QR/UPI intent and UTR claim submission
-- WhatsApp and direct contact links
+- Direct telephone and email contact
 
 The customer application form does not accept file uploads. The owner portal can upload approved customer documents to private Storage; customer-visible files are shared only through short-lived signed links when the application status permits it.
 

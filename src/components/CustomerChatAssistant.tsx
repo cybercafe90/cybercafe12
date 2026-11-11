@@ -61,7 +61,7 @@ function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" |
   }
 
   const outsideScope = /\b(weather|forecast|politics|election|news|cricket|football|movie|song|joke|general knowledge|capital of|stock market|crypto|coding|programming|write code|translate|homework)\b/i.test(q);
-  const websiteTopic = /\b(domicile|jamabandi|girdawari|land records?|mutation|income certificate|category certificate|revenue|birth|death|trade licen[cs]e|smc|municipal|driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto|insurance|third.party|comprehensive|motor policy|bike|car|pan|udyam|msme|abha|passport|health id|bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft|application|tracking|track|reference id|status|service|documents?|apply|enquir(?:y|e)|price|prices|cost|rate|rates|fee|fees|charges|contact|phone|call|whatsapp|email|location|srinagar|support|hello|hi|hey|salam|assalam|namaste)\b/i.test(q);
+  const websiteTopic = /\b(domicile|jamabandi|girdawari|land records?|mutation|income certificate|category certificate|revenue|birth|death|trade licen[cs]e|smc|municipal|driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto|insurance|third.party|comprehensive|motor policy|bike|car|pan|udyam|msme|abha|passport|health id|bocw|labour|labor|e.sh?ram|artisan|weaver|handloom|handicraft|application|tracking|track|reference id|status|service|documents?|apply|enquir(?:y|e)|price|prices|cost|rate|rates|fee|fees|charges|contact|phone|call|email|location|srinagar|support|hello|hi|hey|salam|assalam|namaste)\b/i.test(q);
 
   if (outsideScope || !websiteTopic) {
     return {
@@ -144,11 +144,11 @@ function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" |
     };
   }
 
-  if (/\b(contact|phone|call|whatsapp|email|location|address|srinagar|support)\b/i.test(q)) {
+  if (/\b(contact|phone|call|email|location|address|srinagar|support)\b/i.test(q)) {
     return {
       text: romanUrdu
-        ? "BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nAap website ke Contact page se bhi rabta kar sakte hain."
-        : "BABA'S CYBER CAFE · Srinagar, Jammu & Kashmir\nPhone / WhatsApp: +91 7006865909\nEmail: support@babacybercafe.in\nYou can also use the website Contact page.",
+        ? "BABA'S CYBER CAFE, Srinagar, Jammu & Kashmir\nPhone: +91 7006865909\nEmail: support@babacybercafe.in\nAap website ke Contact page se bhi rabta kar sakte hain."
+        : "BABA'S CYBER CAFE · Srinagar, Jammu & Kashmir\nPhone: +91 7006865909\nEmail: support@babacybercafe.in\nYou can also use the website Contact page.",
       links: [
         { label: "Contact Page", href: CONTACT_LINK },
         { label: "Call +91 7006865909", href: "tel:+917006865909" },
@@ -193,8 +193,8 @@ function buildAdvancedReply(input: string, romanUrdu: boolean): Omit<ChatMessage
   }
   if (/\b(talk to a human|human|agent|staff|representative|support team|call me)\b/i.test(q)) {
     return {
-      text: romanUrdu ? "Support team se WhatsApp ya phone par rabta karein. Sirf apni query batayein; OTP, password ya bank details share na karein." : "You can speak with our support team by WhatsApp or phone. Share only a brief description of your enquiry—never send an OTP, password or bank details.",
-      links: [{ label: "Chat on WhatsApp", href: "https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20assistance." }, { label: "Call support", href: "tel:+917006865909" }, { label: "Email support", href: "mailto:support@babacybercafe.in" }],
+      text: romanUrdu ? "Support team se phone ya email par rabta karein. Sirf apni query batayein; OTP, password ya bank details share na karein." : "You can speak with our support team by phone or email. Share only a brief description of your enquiry—never send an OTP, password or bank details.",
+      links: [{ label: "Call support", href: "tel:+917006865909" }, { label: "Email support", href: "mailto:support@babacybercafe.in" }],
     };
   }
   if (/\b(browse all services|all services|service list|services list|catalogue|catalog)\b/i.test(q)) {

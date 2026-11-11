@@ -18,7 +18,7 @@ Deno.serve(async (request) => {
     const { announcement, homepage, contact, social } = body
     if (!announcement || typeof announcement.enabled !== 'boolean' || typeof announcement.text !== 'string' || announcement.text.length > 240) return response(request, { error: 'Announcement text must be 240 characters or fewer.' }, 400)
     if (!homepage || typeof homepage.eyebrow !== 'string' || homepage.eyebrow.trim().length < 2 || homepage.eyebrow.length > 100 || typeof homepage.headline !== 'string' || homepage.headline.trim().length < 4 || homepage.headline.length > 120 || !homepage.headline.includes('|') || typeof homepage.description !== 'string' || homepage.description.trim().length < 10 || homepage.description.length > 400) return response(request, { error: 'Check the homepage copy, include a | in the headline to split lines, and stay within the length limits.' }, 400)
-    if (!contact || typeof contact.phone !== 'string' || !/^\+?[0-9 ()-]{8,22}$/.test(contact.phone) || typeof contact.whatsapp !== 'string' || !/^\d{8,15}$/.test(contact.whatsapp.replace(/\D/g, '')) || typeof contact.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) || contact.email.length > 254) return response(request, { error: 'Check the phone, WhatsApp and email details.' }, 400)
+    if (!contact || typeof contact.phone !== 'string' || !/^\+?[0-9 ()-]{8,22}$/.test(contact.phone) || typeof contact.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) || contact.email.length > 254) return response(request, { error: 'Check the phone and email details.' }, 400)
     if (!social || !isHttpsUrl(social.facebook) || !isHttpsUrl(social.business_profile) || (social.instagram !== undefined && social.instagram !== '' && !isHttpsUrl(social.instagram))) return response(request, { error: 'Social and business profile links must be valid HTTPS URLs.' }, 400)
 
     const socialLinks: Record<string, string> = {
@@ -32,7 +32,7 @@ Deno.serve(async (request) => {
     const values = [
       { key: 'homepage_announcement', value: { enabled: announcement.enabled, text: announcement.text.trim() } },
       { key: 'homepage_content', value: { eyebrow: homepage.eyebrow.trim(), headline: homepage.headline.trim(), description: homepage.description.trim() } },
-      { key: 'contact', value: { phone: contact.phone.trim(), whatsapp: contact.whatsapp.replace(/\D/g, ''), email: contact.email.trim().toLowerCase() } },
+      { key: 'contact', value: { phone: contact.phone.trim(), email: contact.email.trim().toLowerCase() } },
       { key: 'social_links', value: socialLinks },
     ].map((item) => ({ ...item, is_public: true, updated_by: owner.id }))
     const { error } = await admin.from('website_settings').upsert(values, { onConflict: 'key' })
