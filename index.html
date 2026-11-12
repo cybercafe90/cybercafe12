@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -10,16 +10,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="BABA'S CYBER CAFE" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <!-- Search and canonical metadata -->
-    <meta name="description" content="Friendly, independent help with digital applications, certificates, documents, and government service enquiries in Srinagar, J&amp;K." />
-    <meta name="robots" content="index,follow" />
+    <meta name="description" content="BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir provides independent assistance with digital applications, certificates, motor insurance enquiries, RTO services, PAN, ABHA, MSME, trademark and other public-service processes." />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://babacybercafe.in/" />
-
-    <!-- Open Graph: WhatsApp, Facebook, LinkedIn -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BABA'S CYBER CAFE" />
     <meta property="og:title" content="BABA'S CYBER CAFE | Digital Service Assistance in Srinagar" />
-    <meta property="og:description" content="Friendly, independent help with digital applications, certificates, documents, and government service enquiries in Srinagar, J&amp;K." />
+    <meta property="og:description" content="Independent help with digital applications, certificates, insurance enquiries and public-service documentation in Srinagar, Jammu & Kashmir." />
     <meta property="og:url" content="https://babacybercafe.in/" />
     <meta property="og:image" content="https://babacybercafe.in/og-image.png" />
     <meta property="og:image:secure_url" content="https://babacybercafe.in/og-image.png" />
@@ -28,22 +25,151 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="BABA'S CYBER CAFE — Digital Service Assistance in Srinagar" />
     <meta property="og:locale" content="en_IN" />
-
-    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="BABA'S CYBER CAFE | Digital Service Assistance in Srinagar" />
-    <meta name="twitter:description" content="Friendly, independent help with digital applications, certificates, documents, and government service enquiries in Srinagar, J&amp;K." />
+    <meta name="twitter:description" content="Independent help with digital applications, certificates, insurance enquiries and public-service documentation in Srinagar, Jammu & Kashmir." />
     <meta name="twitter:image" content="https://babacybercafe.in/og-image.png" />
-    <meta name="twitter:image:alt" content="BABA'S CYBER CAFE — Digital Service Assistance in Srinagar" />
-    <title>BABA'S CYBER CAFE | Digital Service Assistance in Srinagar</title>
+    <title>BABA'S CYBER CAFE | Digital Services & Application Assistance in Srinagar</title>
+    <style>
+      #site-loader {
+        position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center;
+        overflow: hidden; padding: 28px; color: #f7f3e9; text-align: center;
+        background: radial-gradient(ellipse at 50% 42%, #172333 0%, #0b111b 42%, #05080e 100%);
+        opacity: 1; visibility: visible; transition: opacity .48s ease, visibility .48s ease;
+      }
+      #site-loader.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+      #site-loader::before, #site-loader::after {
+        content: ""; position: absolute; width: min(78vw, 560px); aspect-ratio: 1;
+        border: 1px solid rgba(218,183,111,.12); border-radius: 50%;
+        box-shadow: 0 0 70px rgba(218,183,111,.06), inset 0 0 70px rgba(218,183,111,.035);
+        animation: cafe-pulse 3.8s ease-in-out infinite;
+      }
+      #site-loader::after { width: min(58vw, 410px); animation-delay: -1.9s; }
+      .loader-content { position: relative; z-index: 1; display: grid; justify-items: center; gap: 18px; }
+      .loader-emblem { position: relative; width: 112px; height: 112px; display: grid; place-items: center; }
+      .loader-orbit { position: absolute; inset: 2px; border: 1px solid rgba(225,192,126,.58); border-radius: 50%; border-left-color: transparent; border-bottom-color: transparent; animation: cafe-spin 2.8s linear infinite; }
+      .loader-orbit::after { content: ""; position: absolute; width: 7px; height: 7px; top: 11px; left: 14px; border-radius: 50%; background: #f0cf86; box-shadow: 0 0 14px #e7c477; }
+      .loader-orbit.orbit-inner { inset: 13px; border-color: rgba(103,177,205,.5); border-right-color: transparent; border-top-color: transparent; animation-duration: 3.8s; animation-direction: reverse; }
+      .loader-shield { width: 58px; height: 58px; color: #e7c77e; filter: drop-shadow(0 0 15px rgba(231,199,126,.25)); }
+      .loader-brand { margin: 0; font: 800 17px/1.2 system-ui,sans-serif; letter-spacing: .19em; color: #f8f4e9; }
+      .loader-tagline { margin: -9px 0 0; color: #d5b979; font: 600 10px/1.4 system-ui,sans-serif; letter-spacing: .24em; text-transform: uppercase; }
+      .loader-message { margin: 5px 0 0; color: #b8c2ce; font: 400 13px/1.5 system-ui,sans-serif; letter-spacing: .04em; }
+      .loader-track { width: 154px; height: 2px; margin-top: 1px; overflow: hidden; background: rgba(255,255,255,.12); border-radius: 99px; }
+      .loader-track span { display: block; width: 42%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #9e7b3e, #f4d99b, #9e7b3e); animation: cafe-progress 1.65s ease-in-out infinite; }
+      @keyframes cafe-spin { to { transform: rotate(360deg); } }
+      @keyframes cafe-pulse { 0%,100% { transform: scale(.96); opacity: .55; } 50% { transform: scale(1.04); opacity: 1; } }
+      @keyframes cafe-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+      @media (prefers-reduced-motion: reduce) {
+        #site-loader::before, #site-loader::after, .loader-orbit, .loader-track span { animation: none; }
+        .loader-track span { width: 65%; margin-left: 17%; }
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "name": "BABA'S CYBER CAFE",
+      "url": "https://babacybercafe.in/",
+      "description": "Independent digital application, document and public-service assistance in Srinagar, Jammu & Kashmir, India.",
+      "telephone": "+91-7006865909",
+      "email": "support@babacybercafe.in",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Srinagar",
+        "addressRegion": "Jammu and Kashmir",
+        "addressCountry": "IN"
+      },
+      "areaServed": {
+        "@type": "AdministrativeArea",
+        "name": "Srinagar, Jammu and Kashmir, India"
+      },
+      "sameAs": [
+        "https://www.facebook.com/babascybercafe",
+        "https://www.instagram.com/babascybercafe/"
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Digital and public-service assistance",
+        "itemListElement": [
+          {"@type":"OfferCatalog","name":"Insurance enquiries and documentation assistance"},
+          {"@type":"OfferCatalog","name":"Revenue certificates and land-record assistance"},
+          {"@type":"OfferCatalog","name":"Srinagar Municipal Corporation application assistance"},
+          {"@type":"OfferCatalog","name":"RTO and transport application assistance"},
+          {"@type":"OfferCatalog","name":"PAN, ABHA, MSME, trademark and food-licence application assistance"},
+          {"@type":"OfferCatalog","name":"Labour, handloom and handicraft registration assistance"}
+        ]
+      }
+    }
+    </script>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body>
+    <div id="site-loader" role="status" aria-live="polite" aria-label="Loading BABA'S CYBER CAFE digital services">
+      <div class="loader-content">
+        <div class="loader-emblem" aria-hidden="true">
+          <span class="loader-orbit"></span><span class="loader-orbit orbit-inner"></span>
+          <svg class="loader-shield" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 5 53 13v16c0 14-8.8 23.8-21 30C19.8 52.8 11 43 11 29V13L32 5Z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+            <path d="M23 31.5 29 37l13-14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M32 13v5M18 20l4 2M46 20l-4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
+          </svg>
+        </div>
+        <p class="loader-brand">BABA'S CYBER CAFE</p>
+        <p class="loader-tagline">YOUR TRUST · OUR SERVICE</p>
+        <p class="loader-message">Connecting your digital world…</p>
+        <div class="loader-track" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
     <div id="root" data-app-booting="true">
-      <main style="min-height:100vh;display:grid;place-content:center;gap:12px;padding:28px 20px;background:#f7f6f1;color:#171713;font-family:system-ui,sans-serif;text-align:center">
-        <p style="margin:0;color:#92713a;font-size:12px;font-weight:700;letter-spacing:.12em">BABA'S CYBER CAFE</p>
-        <h1 style="margin:0;font-size:clamp(24px,5vw,34px)">Loading your service portal…</h1>
-        <p style="margin:0;color:#5c5a52">Please wait a moment.</p>
+      <main id="public-content" style="min-height:100vh;background:#080b12;color:#f6f2e9;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <header style="padding:22px max(20px,calc((100% - 1120px)/2));border-bottom:1px solid #34302a;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px">
+          <a href="/" style="color:#e7c77e;text-decoration:none;font-weight:800;letter-spacing:.08em">BABA'S CYBER CAFE</a>
+          <nav aria-label="Main navigation" style="display:flex;flex-wrap:wrap;gap:16px">
+            <a href="/services" style="color:#f6f2e9">Services</a>
+            <a href="/about" style="color:#f6f2e9">About</a>
+            <a href="/contact" style="color:#f6f2e9">Contact</a>
+            <a href="/grievance" style="color:#f6f2e9">Grievance</a>
+          </nav>
+        </header>
+        <section style="max-width:1120px;margin:auto;padding:64px 22px 48px">
+          <p style="color:#d7b66c;font-size:12px;font-weight:700;letter-spacing:.18em">YOUR TRUST, OUR SERVICE · SRINAGAR, J&K</p>
+          <h1 style="max-width:850px;font-size:clamp(36px,7vw,68px);line-height:1.06;margin:12px 0 22px">Digital service assistance, made simpler.</h1>
+          <p style="max-width:760px;color:#d0ccc2;font-size:18px;line-height:1.75">BABA'S CYBER CAFE is an independent digital service assistance centre in Srinagar, Jammu & Kashmir. We help people understand online application steps, prepare documents and make enquiries about certificates, insurance, transport and other public services.</p>
+          <p style="display:flex;flex-wrap:wrap;gap:12px;margin-top:28px">
+            <a href="/services" style="background:#d7b66c;color:#17130b;padding:13px 20px;border-radius:4px;text-decoration:none;font-weight:700">Explore services</a>
+            <a href="/apply" style="border:1px solid #8e7b56;color:#f6f2e9;padding:13px 20px;border-radius:4px;text-decoration:none">Send an enquiry</a>
+            <a href="https://wa.me/917006865909" style="border:1px solid #8e7b56;color:#f6f2e9;padding:13px 20px;border-radius:4px;text-decoration:none">WhatsApp us</a>
+          </p>
+        </section>
+        <section aria-labelledby="service-heading" style="background:#111722;border-top:1px solid #34302a;border-bottom:1px solid #34302a">
+          <div style="max-width:1120px;margin:auto;padding:44px 22px">
+            <h2 id="service-heading" style="font-size:clamp(26px,4vw,38px);margin:0 0 12px">Explore our service categories</h2>
+            <p style="color:#c7c3ba;line-height:1.7;max-width:780px">Browse the main areas where our team can provide independent application and documentation assistance. Actual availability, eligibility, official requirements and decisions are controlled by the relevant department, insurer or service provider.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:26px">
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/insurance" style="color:#e7c77e">Insurance services</a></h3><p style="color:#d0ccc2;line-height:1.6">Motor, two-wheeler, four-wheeler, health, life and other insurance enquiries, renewal support and policy documentation assistance.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/revenue" style="color:#e7c77e">Revenue certificates</a></h3><p style="color:#d0ccc2;line-height:1.6">Domicile, income, category and residence certificate application assistance, plus land-record information support.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/smc" style="color:#e7c77e">Birth and death certificates</a></h3><p style="color:#d0ccc2;line-height:1.6">Birth and death registration enquiries, certificate-related documentation and municipal application assistance.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/rto" style="color:#e7c77e">RTO and transport</a></h3><p style="color:#d0ccc2;line-height:1.6">Driving licence, learner licence, vehicle registration, RC-related services, NOC, permits and challan information assistance.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/central" style="color:#e7c77e">Central digital services</a></h3><p style="color:#d0ccc2;line-height:1.6">PAN card, ABHA, MSME/Udyam, trademark application and food-licence/FSSAI assistance.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/labour" style="color:#e7c77e">Labour services</a></h3><p style="color:#d0ccc2;line-height:1.6">Labour registration, labour card and welfare-scheme application assistance, subject to current rules.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services/handloom" style="color:#e7c77e">Handloom and handicrafts</a></h3><p style="color:#d0ccc2;line-height:1.6">Weaver and artisan registration, card, scheme and supporting-document assistance.</p></article>
+              <article style="padding:20px;border:1px solid #48402f;border-radius:8px"><h3><a href="/services" style="color:#e7c77e">More public services</a></h3><p style="color:#d0ccc2;line-height:1.6">Education, social welfare, employment, health, agriculture, electricity, water, banking assistance and travel ticketing enquiries.</p></article>
+            </div>
+          </div>
+        </section>
+        <section style="max-width:1120px;margin:auto;padding:44px 22px">
+          <h2 style="font-size:clamp(26px,4vw,36px)">How our assistance works</h2>
+          <ol style="color:#d0ccc2;line-height:1.9;padding-left:22px">
+            <li>Choose a service category or contact us with your question.</li>
+            <li>We explain the information and documents that may be needed for your enquiry.</li>
+            <li>Where available, we assist with the relevant online application process.</li>
+            <li>Official eligibility checks, fees, approvals and final decisions remain with the responsible authority or provider.</li>
+          </ol>
+          <h2 style="font-size:clamp(26px,4vw,36px);margin-top:38px">Contact BABA'S CYBER CAFE</h2>
+          <p style="color:#d0ccc2;line-height:1.8">Srinagar, Jammu & Kashmir, India<br />Phone / WhatsApp: <a href="tel:+917006865909" style="color:#e7c77e">+91 7006865909</a><br />Email: <a href="mailto:support@babacybercafe.in" style="color:#e7c77e">support@babacybercafe.in</a><br />Website: <a href="https://babacybercafe.in/" style="color:#e7c77e">babacybercafe.in</a></p>
+          <p style="color:#aaa69c;font-size:14px;line-height:1.7">BABA'S CYBER CAFE is an independent assistance business and is not a government department or government-authorised issuer. Service availability and requirements may change. Confirm current rules and official fees with the relevant authority. No approval, processing time or outcome is guaranteed.</p>
+        </section>
+        <footer style="border-top:1px solid #34302a;padding:24px 22px;text-align:center;color:#aaa69c">© BABA'S CYBER CAFE · Srinagar, Jammu & Kashmir · Your Trust, Our Service</footer>
       </main>
     </div>
     <script src="/startup-guard.js" defer></script>

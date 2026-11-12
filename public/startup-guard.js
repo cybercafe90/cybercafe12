@@ -5,6 +5,11 @@
   const showStartupError = (reason) => {
     if (finished || root.dataset.appBooting !== "true") return;
     finished = true;
+    const loader = document.getElementById("site-loader");
+    if (loader) {
+      loader.classList.add("is-hidden");
+      window.setTimeout(() => loader.remove(), 550);
+    }
     const main = document.createElement("main");
     main.setAttribute("role", "alert");
     main.style.cssText = "min-height:100vh;display:grid;place-content:center;gap:14px;padding:28px 20px;background:#f7f6f1;color:#171713;font-family:system-ui,sans-serif;text-align:center";
