@@ -78,6 +78,11 @@ function StartupComplete({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.getElementById('root')
     if (root) root.dataset.appBooting = 'false'
+    const loader = document.getElementById('site-loader')
+    if (loader) {
+      loader.classList.add('is-hidden')
+      window.setTimeout(() => loader.remove(), 550)
+    }
   }, [])
   return children
 }
