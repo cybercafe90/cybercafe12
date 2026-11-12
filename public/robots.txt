@@ -4,5 +4,7 @@ Disallow: /admin
 Disallow: /dashboard
 Disallow: /apply
 Disallow: /track
-Sitemap: https://babacybercafe.in/sitemap.xml
+Disallow: /pay
+Disallow: /insurance/admin
 Disallow: /grievance/admin
+Sitemap: https://babacybercafe.in/sitemap.xml
