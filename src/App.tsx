@@ -61,6 +61,7 @@ const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
 const ChallanPortal = lazy(() => import("./pages/ChallanPortal"));
+const MarketplacePage = lazy(() => import("./pages/MarketplacePage"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
@@ -255,6 +256,7 @@ function Header() {
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/marketplace" onClick={close}>Marketplace</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
@@ -284,6 +286,8 @@ function Footer() {
         <div>
           <h3>Explore</h3>
           <Link to="/services">All services</Link>
+          <Link to="/marketplace">Marketplace</Link>
+          <Link to="/marketplace/seller">Become a seller</Link>
           <Link to="/challan">Check traffic challan</Link>
           <Link to="/services/insurance">Insurance services</Link>
           <Link to="/insurance">Request an insurance quotation</Link>
@@ -4092,6 +4096,10 @@ function RoutedApp() {
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path="/marketplace/seller" element={<MarketplacePage mode="seller" />} />
+        <Route path="/marketplace/admin" element={<MarketplacePage mode="admin" />} />
+        <Route path="/marketplace/orders" element={<MarketplacePage mode="orders" />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
         <Route path="/contact" element={<ContactPage />} />
