@@ -992,7 +992,14 @@ function ApplicationPage() {
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const requestedDepartment = params.get("department") ?? params.get("category") ?? "";
+  const rawDepartment = params.get("department") ?? params.get("category") ?? "";
+  const departmentAliases: Record<string, string> = {
+    "rto-transport": "rto",
+    "revenue-department": "revenue",
+    "srinagar-municipal-corporation": "smc",
+    "central-government-services": "central",
+  };
+  const requestedDepartment = departmentAliases[rawDepartment] ?? rawDepartment;
   const requestedService = params.get("service") ?? "";
   const [selectedCategory, setSelectedCategory] = useState(requestedDepartment);
   const [selectedService, setSelectedService] = useState(requestedService);
@@ -1036,6 +1043,7 @@ function ApplicationPage() {
     const match = options.find(
       (item) =>
         normalize(item.name) === normalize(requestedService) ||
+        normalize(item.name).includes(normalize(requestedService)) ||
         normalize(item.id) === normalize(requestedService),
     );
     if (match) setSelectedService(match.name);
