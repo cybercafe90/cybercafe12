@@ -510,8 +510,8 @@ function HomePage() {
 
 function FloatingContactActions() {
   const settings = useSiteSettings();
-  const phoneHref = `tel:${settings.contact.phone.replace(/[^+\\d]/g, "")}`;
-  const whatsappHref = `https://wa.me/${settings.contact.whatsapp.replace(/\\D/g, "")}`;
+  const phoneHref = `tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`;
+  const whatsappHref = `https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`;
   return (
     <div className="floating-contact-actions" aria-label="Contact BABA'S CYBER CAFE">
       <a className="floating-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">
