@@ -508,6 +508,22 @@ function HomePage() {
   );
 }
 
+function FloatingContactActions() {
+  const settings = useSiteSettings();
+  const phoneHref = `tel:${settings.contact.phone.replace(/[^+\\d]/g, "")}`;
+  const whatsappHref = `https://wa.me/${settings.contact.whatsapp.replace(/\\D/g, "")}`;
+  return (
+    <div className="floating-contact-actions" aria-label="Contact BABA'S CYBER CAFE">
+      <a className="floating-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">
+        <MessageCircle size={18} /> <span>WhatsApp</span>
+      </a>
+      <a className="floating-call" href={phoneHref}>
+        <PhoneCall size={18} /> <span>Call us</span>
+      </a>
+    </div>
+  );
+}
+
 function CustomerFeedbackSection({ profileUrl }: { profileUrl: string }) {
   const prompts = [
     { title: "Service experience", copy: "Tell others whether our application and document assistance was clear and helpful." },
@@ -4086,6 +4102,7 @@ function RoutedApp() {
       </Routes>
       </Suspense>
       <Footer />
+      <FloatingContactActions />
       <Suspense fallback={null}><CustomerChatAssistant /></Suspense>
     </div>
   );
