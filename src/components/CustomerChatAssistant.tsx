@@ -49,6 +49,49 @@ function isRomanUrdu(text: string) {
   return /\b(assalam|salam|mujhe|mujhay|kya|kaise|kaisay|kaisa|chahiye|chaiye|hai|hain|karna|krna|batao|bataye|madad|darkar|kahan|kidhar|mera|meri|mere|ke liye|kitna|kitne|documents|dastavez|apply|banwana|banwani|status|maloom)\b/i.test(text);
 }
 
+
+function isUrduScript(text: string) {
+  return /[\\u0600-\\u06FF]/.test(text);
+}
+
+function buildUrduReply(input: string): Omit<ChatMessage, "id" | "role"> {
+  const q = input.toLowerCase();
+  if (isSensitive(input)) {
+    return { text: "حفاظتی ہدایت: براہِ کرم اپنا OTP، پاس ورڈ، PIN، بینک اکاؤنٹ نمبر یا کارڈ کی تفصیلات یہاں شیئر نہ کریں۔ اگر آپ نے کوئی خفیہ معلومات بھیج دی ہیں تو انہیں دوبارہ نہ لکھیں اور متعلقہ اکاؤنٹ کی حفاظت چیک کریں۔" };
+  }
+  if (/\\b(payment|pay|paid|utr|transaction|refund)\\b|ادائیگی|رقم|یو ٹی آر|واپسی/.test(q)) {
+    return { text: "ادائیگی سے متعلق مدد کے لیے پہلے اپنے ریفرنس آئی ڈی کے ذریعے درخواست کا اسٹیٹس چیک کریں۔ صرف UTR بھیجنا ادائیگی کی تصدیق نہیں ہے؛ رقم بینک میں موصول ہونے کی تصدیق کے بعد ہی ادائیگی کنفرم ہوگی۔ OTP، PIN یا بینک کی تفصیلات ہرگز شیئر نہ کریں۔", links: [{ label: "درخواست کا اسٹیٹس", href: TRACK_LINK }, { label: "رابطہ کریں", href: CONTACT_LINK }] };
+  }
+  if (/\\b(track|tracking|status|reference id|application id)\\b|درخواست|اسٹیٹس|حیثیت|ریفرنس/.test(q)) {
+    return { text: "اپنی درخواست کا اسٹیٹس دیکھنے کے لیے Track Status صفحہ کھولیں اور وہاں اپنا ریفرنس آئی ڈی اور رجسٹرڈ موبائل نمبر درج کریں۔ چیٹ میں OTP یا پاس ورڈ نہ بھیجیں۔", links: [{ label: "Track Status", href: TRACK_LINK }] };
+  }
+  if (/\\b(insurance|third.party|comprehensive|motor policy|bike|car)\\b|انشورنس|گاڑی کی بیمہ|موٹر بیمہ/.test(q)) {
+    return { text: "BABA'S CYBER CAFE میں موٹر انشورنس کے لیے Third-Party اور Comprehensive پالیسی کی انکوائری کی سہولت ہے۔ گاڑی کی RC اور پچھلی انشورنس پالیسی، اگر موجود ہو، تیار رکھیں۔ پریمیم اور شرائط گاڑی اور منتخب کور کے مطابق طے ہوں گی؛ حتمی کوٹیشن کے لیے ہم سے رابطہ کریں۔", links: [{ label: "Insurance Desk", href: INSURANCE_LINK }, { label: "WhatsApp رابطہ", href: "https://wa.me/917006865909" }] };
+  }
+  if (/\\b(domicile|revenue|jamabandi|girdawari|income certificate|category certificate|land record)\\b|ڈومیسائل|آمدنی|ریونیو|زمین|جمعبندی|گرداوری|ذات کا سرٹیفکیٹ/.test(q)) {
+    return { text: "ریونیو سروسز میں ڈومیسائل، آمدنی، کیٹیگری سرٹیفکیٹ اور زمین کے ریکارڈ سے متعلق رہنمائی شامل ہے۔ ابتدائی طور پر آدھار، راشن کارڈ یا ووٹر آئی ڈی اور متعلقہ پرانے ریکارڈ تیار رکھیں۔ اصل دستاویزات کی فہرست آپ کے کیس کے مطابق مختلف ہو سکتی ہے۔", links: [{ label: "سروسز دیکھیں", href: SERVICE_LINK }, { label: "درخواست دیں", href: SITE + "/apply" }] };
+  }
+  if (/\\b(birth|death|trade licen[cs]e|smc|municipal)\\b|پیدائش|وفات|تجارتی لائسنس|ایس ایم سی/.test(q)) {
+    return { text: "پیدائش، وفات اور میونسپل/ٹریڈ لائسنس کی درخواستوں کے لیے شناختی ثبوت، رہائش کا ثبوت اور متعلقہ ہسپتال یا پرانے ریکارڈ تیار رکھیں، جہاں لاگو ہوں۔ پرانے ہاتھ سے لکھے برتھ سرٹیفکیٹ کو QR کوڈ والے ڈیجیٹل سرٹیفکیٹ میں تبدیل کرنے کی ضرورت ہو تو اپنی تفصیل کے ساتھ ہم سے رابطہ کریں۔ حتمی دستاویزات کیس کے مطابق بتائی جائیں گی۔", links: [{ label: "سروسز دیکھیں", href: SERVICE_LINK }, { label: "WhatsApp رابطہ", href: "https://wa.me/917006865909" }] };
+  }
+  if (/\\b(driving licen[cs]e|learner|permanent dl|vehicle|rc transfer|fitness|rto)\\b|ڈرائیونگ|لائسنس|گاڑی|آر سی|آر ٹی او/.test(q)) {
+    return { text: "RTO خدمات میں لرنر یا پرمننٹ ڈرائیونگ لائسنس، RC ٹرانسفر اور گاڑی کی فٹنس سے متعلق رہنمائی شامل ہے۔ آدھار، موجودہ DL یا RC اور حالیہ تصویر تیار رکھیں۔ حتمی تقاضے منتخب سروس اور اہلیت کے مطابق ہوں گے۔", links: [{ label: "RTO سروسز", href: SERVICE_LINK }, { label: "رابطہ کریں", href: CONTACT_LINK }] };
+  }
+  if (/\\b(pan|udyam|msme|abha|passport|gst|fssai|trademark)\\b|پین کارڈ|کاروبار|ایم ایس ایم ای|پاسپورٹ|جی ایس ٹی/.test(q)) {
+    return { text: "ہم PAN، MSME/Udyam، ABHA، پاسپورٹ اسسٹنس، GST، FSSAI اور ٹریڈ مارک سے متعلق آن لائن درخواستوں میں رہنمائی فراہم کرتے ہیں۔ مطلوبہ دستاویزات سروس کے مطابق مختلف ہوتی ہیں۔ OTP یا بینک کی تفصیلات چیٹ میں نہ بھیجیں۔", links: [{ label: "تمام سروسز", href: SERVICE_LINK }, { label: "انکوائری جمع کریں", href: SITE + "/apply" }] };
+  }
+  if (/\\b(grievance|complaint|complain|delay|problem|issue)\\b|شکایت|مسئلہ|تاخیر/.test(q)) {
+    return { text: "آپ ہماری Grievance page پر شکایت درج کر سکتے ہیں۔ درخواست کا ریفرنس آئی ڈی اور مسئلے کی مختصر تفصیل تیار رکھیں۔ OTP، پاس ورڈ، PIN یا بینک کی معلومات شامل نہ کریں۔", links: [{ label: "شکایت درج کریں", href: SITE + "/grievance" }, { label: "رابطہ کریں", href: CONTACT_LINK }] };
+  }
+  if (/\\b(human|agent|staff|representative|support|call)\\b|انسان|عملہ|بات کرنا|رابطہ|فون|واٹس ایپ/.test(q)) {
+    return { text: "ہماری سپورٹ ٹیم سے فون یا WhatsApp پر رابطہ کریں۔ اپنی درخواست یا سوال کی مختصر تفصیل بتائیں، مگر OTP، پاس ورڈ یا بینک کی تفصیلات ہرگز نہ بھیجیں۔", links: [{ label: "WhatsApp", href: "https://wa.me/917006865909" }, { label: "کال کریں", href: "tel:+917006865909" }, { label: "ای میل", href: "mailto:support@babacybercafe.in" }] };
+  }
+  if (/\\b(price|cost|rate|fee|charges)\\b|قیمت|فیس|ریٹ|کتنے پیسے/.test(q)) {
+    return { text: "سرکاری فیس اور ہماری سروس چارجز سروس اور کیس کے مطابق مختلف ہو سکتے ہیں۔ ہم چیٹ میں کوئی غیر مصدقہ قیمت نہیں بتاتے۔ درست رقم کے لیے انکوائری جمع کریں یا سپورٹ سے رابطہ کریں۔", links: [{ label: "انکوائری جمع کریں", href: SITE + "/apply" }, { label: "رابطہ کریں", href: CONTACT_LINK }] };
+  }
+  return { text: "السلام علیکم! میں BABA'S CYBER CAFE کی ڈیجیٹل سروسز، دستاویزات، درخواست کے اسٹیٹس اور ویب سائٹ کے استعمال میں رہنمائی کر سکتا ہوں۔ براہِ کرم سروس کا نام بتائیں، مثلاً ڈومیسائل، برتھ سرٹیفکیٹ، ڈرائیونگ لائسنس، انشورنس، PAN یا MSME۔", links: [{ label: "تمام سروسز دیکھیں", href: SERVICE_LINK }, { label: "سپورٹ سے رابطہ", href: CONTACT_LINK }] };
+}
+
 function buildReply(input: string, romanUrdu: boolean): Omit<ChatMessage, "id" | "role"> {
   const q = input.toLowerCase();
 
@@ -248,7 +291,7 @@ export default function CustomerChatAssistant() {
     const customerMessage: ChatMessage | null = sensitive
       ? null
       : { id: nextId, role: "customer", text: value };
-    const reply = buildAdvancedReply(value, language) ?? buildReply(value, language);
+    const reply = isUrduScript(value) ? buildUrduReply(value) : (buildAdvancedReply(value, language) ?? buildReply(value, language));
     setMessages((current) => [
       ...current,
       ...(customerMessage ? [customerMessage] : []),
