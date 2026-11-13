@@ -37,7 +37,7 @@
     if (!toolbar) return;
     const search = toolbar.querySelector(".search-box input");
     const selects = toolbar.querySelectorAll("select");
-    const department = selects[1];
+    const department = selects[0];
     if (search) {
       search.placeholder = "Search Fard, PAN Card, Birth Certificate, Driving Licence, Insurance…";
       search.setAttribute("aria-label", "Search services by name, department or keywords");
