@@ -54,4 +54,8 @@
   window.setTimeout(() => {
     showStartupError("The application did not finish starting within 15 seconds. Please reload. If this continues, contact support@babacybercafe.in.");
   }, 15000);
+  const enhancements = document.createElement("script");
+  enhancements.src = "/site-enhancements.js";
+  enhancements.defer = true;
+  document.head.appendChild(enhancements);
 })();

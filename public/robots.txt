@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /api/
 Disallow: /dashboard
 Disallow: /apply
 Disallow: /track
