@@ -25,7 +25,6 @@ export default function CyberNetworkCanvas() {
     let frame = 0;
     let lastTime = 0;
     let elapsed = 0;
-    let frameSamples = 0;
     let paused = document.hidden;
     let disposed = false;
 
