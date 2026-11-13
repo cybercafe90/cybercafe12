@@ -22,6 +22,7 @@ import {
   Building2,
   CarFront,
   Check,
+  Copy,
   ChevronDown,
   CircleHelp,
   Clock3,
@@ -46,6 +47,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { getServiceRequirement } from "./serviceRequirements";
 import {
   categories,
   categoryName,
@@ -991,12 +993,19 @@ function ApplicationPage() {
   const [fullName, setFullName] = useState("");
   const [mobile, setMobile] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(
-    params.get("category") ?? "",
-  );
-  const [selectedService, setSelectedService] = useState(
-    params.get("service") ?? "",
-  );
+  const rawDepartment = params.get("department") ?? params.get("category") ?? "";
+  const departmentAliases: Record<string, string> = {
+    "rto-transport": "rto",
+    "revenue-department": "revenue",
+    "srinagar-municipal-corporation": "smc",
+    "central-government-services": "central",
+  };
+  const requestedDepartment = departmentAliases[rawDepartment] ?? rawDepartment;
+  const requestedService = params.get("service") ?? "";
+  const [selectedCategory, setSelectedCategory] = useState(requestedDepartment);
+  const [selectedService, setSelectedService] = useState(requestedService);
+  const [vehicleReference, setVehicleReference] = useState("");
+  const [referenceCopied, setReferenceCopied] = useState(false);
   const [description, setDescription] = useState("");
   const [documents, setDocuments] = useState("");
   const [consent, setConsent] = useState(false);
@@ -1028,6 +1037,32 @@ function ApplicationPage() {
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
 
+  useEffect(() => {
+    if (!requestedService || options.length === 0) return;
+    const normalize = (value: string) =>
+      value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const match = options.find(
+      (item) =>
+        normalize(item.name) === normalize(requestedService) ||
+        normalize(item.name).includes(normalize(requestedService)) ||
+        normalize(item.id) === normalize(requestedService),
+    );
+    if (match) setSelectedService(match.name);
+  }, [requestedService, options]);
+
+  const serviceRequirement = getServiceRequirement(selectedService);
+  const documentChecklist = selectedService ? serviceRequirement.documents : [];
+  const isVehicleService = Boolean(serviceRequirement.showVehicleField);
+
+  async function copyTrackingReference() {
+    try {
+      await navigator.clipboard.writeText(result?.trackingId ?? "");
+      setReferenceCopied(true);
+    } catch {
+      setError("Copy was unavailable. Please select and copy the reference manually.");
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -1035,6 +1070,10 @@ function ApplicationPage() {
       setError(
         "Online applications are not configured yet. Please call or WhatsApp the cafe to send your enquiry.",
       );
+      return;
+    }
+    if (!/^\d{10}$/.test(mobile)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
       return;
     }
     if (!consent) {
@@ -1052,11 +1091,13 @@ function ApplicationPage() {
         "create-application",
         {
           fullName,
-          mobile,
+          mobile: `+91${mobile}`,
           email: customerEmail,
           category: selectedCategory,
           service: selectedService,
-          description,
+          description: vehicleReference.trim()
+            ? `${description}\nVehicle Registration No. / DL No.: ${vehicleReference.trim()}`
+            : description,
           requiredDocuments: documents,
           consent,
         },
@@ -1098,6 +1139,13 @@ function ApplicationPage() {
             <button
               type="button"
               className="button button-outline"
+              onClick={() => void copyTrackingReference()}
+            >
+              <Copy size={15} /> {referenceCopied ? "Reference copied" : "Copy Reference"}
+            </button>
+            <button
+              type="button"
+              className="button button-outline"
               onClick={() => printApplicationReceipt({
                 trackingId: result.trackingId,
                 fullName,
@@ -1120,7 +1168,7 @@ function ApplicationPage() {
               target="_blank"
               rel="noreferrer"
             >
-              Open WhatsApp <ArrowUpRight size={15} />
+              Send Documents on WhatsApp (+91 7006865909) <ArrowUpRight size={15} />
             </a>
           </div>
           {result.emailSent ? (
@@ -1172,28 +1220,41 @@ function ApplicationPage() {
               <span>
                 Mobile number <i>*</i>
               </span>
-              <input
-                type="tel"
-                value={mobile}
-                onChange={(event) => setMobile(event.target.value)}
-                required
-                pattern="[+0-9 ()-]{8,18}"
-                autoComplete="tel"
-                placeholder="+91"
-              />
+              <div className="phone-input">
+                <span className="phone-prefix" aria-hidden="true">+91</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={mobile}
+                  onChange={(event) => {
+                    let digits = event.target.value.replace(/\D/g, "");
+                    if (digits.startsWith("91") && digits.length > 10) digits = digits.slice(2);
+                    setMobile(digits.slice(0, 10));
+                  }}
+                  onPaste={(event) => {
+                    event.preventDefault();
+                    let digits = event.clipboardData.getData("text").replace(/\D/g, "");
+                    if (digits.startsWith("91") && digits.length > 10) digits = digits.slice(2);
+                    setMobile(digits.slice(0, 10));
+                  }}
+                  required
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  autoComplete="tel-national"
+                  placeholder="7006865909"
+                />
+              </div>
             </label>
             <label className="field field-wide">
-              <span>
-                Email address <i>*</i>
-              </span>
+              <span>Email address</span>
               <input
                 type="email"
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
-                required
                 maxLength={254}
                 autoComplete="email"
               />
+              <small className="field-helper">Optional — add if you want status updates by email.</small>
             </label>
           </div>
           <div className="form-section-title">
@@ -1244,6 +1305,30 @@ function ApplicationPage() {
                 <option value="Other enquiry">Other enquiry</option>
               </select>
             </label>
+            {selectedService && (
+              <div className="document-checklist field-wide" aria-live="polite">
+                <strong>Typically Required Documents</strong>
+                <ul>
+                  {documentChecklist.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                <small>{serviceRequirement.note}</small>
+                <small className="document-safety-reminder">
+                  Please do not enter passwords or OTPs in this form. Share document photos only through our verified WhatsApp number or your private tracking link when requested.
+                </small>
+              </div>
+            )}
+            {isVehicleService && (
+              <label className="field field-wide">
+                <span>Vehicle Registration No. / DL No. <small>(Optional)</small></span>
+                <input
+                  value={vehicleReference}
+                  onChange={(event) => setVehicleReference(event.target.value.slice(0, 30))}
+                  maxLength={30}
+                  autoComplete="off"
+                  placeholder="Enter only if relevant to your enquiry"
+                />
+              </label>
+            )}
             <label className="field field-wide">
               <span>
                 Tell us what you need <i>*</i>
@@ -1267,6 +1352,9 @@ function ApplicationPage() {
                 rows={2}
                 placeholder="List document names only. Do not send sensitive documents here."
               />
+              <small className="field-helper security-helper">
+                Do not type passwords, OTPs, or Aadhaar numbers here. Our team will request document photos securely via WhatsApp or your private tracking link after reviewing your request.
+              </small>
             </label>
           </div>
           <label className="consent-check">
