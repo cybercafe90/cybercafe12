@@ -1037,21 +1037,23 @@ function ApplicationPage() {
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
 
-  useEffect(() => {
-    if (!requestedService || options.length === 0) return;
-    const normalize = (value: string) =>
-      value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const match = options.find(
-      (item) =>
-        normalize(item.name) === normalize(requestedService) ||
-        normalize(item.name).includes(normalize(requestedService)) ||
-        normalize(item.id) === normalize(requestedService),
-    );
-    if (match) setSelectedService(match.name);
-  }, [requestedService, options]);
+  const normalizeService = (value: string) =>
+    value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const requestedServiceMatch = requestedService
+    ? options.find(
+        (item) =>
+          normalizeService(item.name) === normalizeService(requestedService) ||
+          normalizeService(item.name).includes(normalizeService(requestedService)) ||
+          normalizeService(item.id) === normalizeService(requestedService),
+      )
+    : undefined;
+  const effectiveSelectedService =
+    selectedService === requestedService && requestedServiceMatch
+      ? requestedServiceMatch.name
+      : selectedService;
 
-  const serviceRequirement = getServiceRequirement(selectedService);
-  const documentChecklist = selectedService ? serviceRequirement.documents : [];
+  const serviceRequirement = getServiceRequirement(effectiveSelectedService);
+  const documentChecklist = effectiveSelectedService ? serviceRequirement.documents : [];
   const isVehicleService = Boolean(serviceRequirement.showVehicleField);
 
   async function copyTrackingReference() {
@@ -1094,7 +1096,7 @@ function ApplicationPage() {
           mobile: `+91${mobile}`,
           email: customerEmail,
           category: selectedCategory,
-          service: selectedService,
+          service: effectiveSelectedService,
           description: vehicleReference.trim()
             ? `${description}\nVehicle Registration No. / DL No.: ${vehicleReference.trim()}`
             : description,
@@ -1152,7 +1154,7 @@ function ApplicationPage() {
                 mobile,
                 email: customerEmail,
                 department: categoryLabel(selectedCategory, categoryList),
-                service: selectedService,
+                service: effectiveSelectedService,
                 submittedAt: new Date().toISOString(),
                 status: "Application received",
               })}
@@ -1292,7 +1294,7 @@ function ApplicationPage() {
                 Service <i>*</i>
               </span>
               <select
-                value={selectedService}
+                value={effectiveSelectedService}
                 onChange={(event) => setSelectedService(event.target.value)}
                 required
               >
@@ -1305,7 +1307,7 @@ function ApplicationPage() {
                 <option value="Other enquiry">Other enquiry</option>
               </select>
             </label>
-            {selectedService && (
+            {effectiveSelectedService && (
               <div className="document-checklist field-wide" aria-live="polite">
                 <strong>Typically Required Documents</strong>
                 <ul>
