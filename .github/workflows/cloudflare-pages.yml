@@ -29,10 +29,15 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
           # PostHog project key is a public browser-ingestion key, not a secret.
-          VITE_POSTHOG_KEY: phc_AnW9LxtnbUJMRcjuUhMTga6HTiQPvsvv9Ywq57TvvFVC
+          VITE_POSTHOG_KEY: phc_AnW9LxtnbMRcuUhMTga6HTiQPvsvv9Ywq57TvvFVC
           VITE_POSTHOG_HOST: https://us.i.posthog.com
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          # Match the public Supabase build configuration so browser tests
+          # exercise enabled portal controls. Tests must mock all write APIs.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - run: npm run test:edge
       - run: npm run check:edge
       # Cloudflare Pages is connected directly to this GitHub repository and
