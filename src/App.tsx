@@ -47,6 +47,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { getServiceRequirement } from "./serviceRequirements";
 import {
   categories,
   categoryName,
@@ -1049,31 +1050,9 @@ function ApplicationPage() {
     if (match) setSelectedService(match.name);
   }, [requestedService, options]);
 
-  const selectedServiceKey = selectedService.toLowerCase();
-  const isVehicleService =
-    selectedCategory === "rto" ||
-    (selectedCategory === "insurance" &&
-      (selectedServiceKey.includes("motor") ||
-        selectedServiceKey.includes("vehicle") ||
-        selectedServiceKey.includes("two-wheeler") ||
-        selectedServiceKey.includes("four-wheeler")));
-  const documentChecklist =
-    selectedCategory === "revenue" &&
-    (selectedServiceKey.includes("fard") ||
-      selectedServiceKey.includes("jamabandi") ||
-      selectedServiceKey.includes("land record"))
-      ? ["Aadhaar card (show securely when requested)", "Proof of residence, if applicable", "Land details / previous Fard or Jamabandi copy"]
-      : selectedCategory === "smc" &&
-          (selectedServiceKey.includes("birth") || selectedServiceKey.includes("death"))
-        ? ["Applicant's identity proof", "Hospital / medical record or supporting certificate, as applicable", "Existing registration details, if available"]
-        : selectedCategory === "rto" &&
-            (selectedServiceKey.includes("driving") || selectedServiceKey.includes("licence") || selectedServiceKey.includes("license"))
-          ? ["Learner licence, if applicable", "Proof of age and address", "Recent photograph and required medical form, if applicable"]
-          : selectedCategory === "insurance" && isVehicleService
-            ? ["Vehicle RC details", "Previous policy, if renewing", "Owner identity/contact details"]
-            : selectedCategory === "central" && selectedServiceKey.includes("pan")
-              ? ["Proof of identity", "Proof of address", "Date-of-birth proof and photograph, as applicable"]
-              : [];
+  const serviceRequirement = getServiceRequirement(selectedService);
+  const documentChecklist = selectedService ? serviceRequirement.documents : [];
+  const isVehicleService = Boolean(serviceRequirement.showVehicleField);
 
   async function copyTrackingReference() {
     try {
@@ -1326,13 +1305,16 @@ function ApplicationPage() {
                 <option value="Other enquiry">Other enquiry</option>
               </select>
             </label>
-            {documentChecklist.length > 0 && (
+            {selectedService && (
               <div className="document-checklist field-wide" aria-live="polite">
                 <strong>Typically Required Documents</strong>
                 <ul>
                   {documentChecklist.map((item) => <li key={item}>{item}</li>)}
                 </ul>
-                <small>Requirements vary by case and the responsible authority. We will confirm the exact list before proceeding.</small>
+                <small>{serviceRequirement.note}</small>
+                <small className="document-safety-reminder">
+                  Please do not enter passwords or OTPs in this form. Share document photos only through our verified WhatsApp number or your private tracking link when requested.
+                </small>
               </div>
             )}
             {isVehicleService && (
