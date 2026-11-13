@@ -1,0 +1,326 @@
+/* Customer trust, contrast and mobile conversion polish */
+.site-shell .page-intro h1,
+.site-shell .not-found h1 {
+  color: #ffffff;
+}
+.site-shell .page-intro p {
+  color: #dbe5f2;
+}
+.site-shell .about-copy p {
+  color: #e2e8f0;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.site-shell .about-copy h2 {
+  color: #f8fbff;
+}
+.about-service-visual {
+  display: flex;
+  min-height: 430px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 15px;
+  padding: clamp(24px, 5vw, 48px);
+  overflow: hidden;
+  border: 1px solid rgba(0, 242, 255, .35);
+  color: #f8fbff;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(0, 242, 255, .22), transparent 32%),
+    linear-gradient(145deg, #101d38 0%, #0b1329 62%, #111a30 100%);
+}
+.about-visual-glow {
+  position: absolute;
+  top: -90px;
+  right: -75px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid rgba(0, 242, 255, .24);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(0, 242, 255, .035), 0 0 0 58px rgba(0, 242, 255, .025);
+}
+.about-visual-icon {
+  display: grid;
+  width: 82px;
+  height: 82px;
+  place-items: center;
+  border: 1px solid rgba(0, 242, 255, .42);
+  border-radius: 22px;
+  color: #00f2ff;
+  background: rgba(0, 242, 255, .08);
+  box-shadow: 0 0 35px rgba(0, 242, 255, .1);
+}
+.about-visual-kicker {
+  color: #00f2ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+.about-service-visual > strong {
+  max-width: 390px;
+  color: #ffffff;
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.2;
+}
+.about-service-visual > p {
+  max-width: 330px;
+  margin: 0;
+  color: #dbe5f2;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.about-visual-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 242, 255, .2);
+  color: #f8fbff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.about-visual-footer svg { color: #00f2ff; }
+.about-visual-footer small { margin-left: auto; color: #9fb0c8; font-size: 9px; }
+
+.contact-location-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .95fr);
+  gap: 22px;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid rgba(0, 242, 255, .24);
+  border-radius: 18px;
+  color: #0b1329;
+  background: #f6f2e9;
+}
+.contact-location-copy h2 {
+  margin: 10px 0;
+  color: #0b1329;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.2;
+}
+.contact-location-copy > p {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.contact-location-copy .eyebrow { color: #075d68; }
+.contact-location-copy .text-link { color: #0b5260; }
+.contact-map-wrap {
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid rgba(11, 19, 41, .16);
+  border-radius: 12px;
+  background: #e2e8f0;
+}
+.contact-map-wrap iframe {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  height: 100%;
+  border: 0;
+}
+.opening-hours {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(11, 19, 41, .16);
+}
+.opening-hours h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #0b1329;
+  font-size: 15px;
+}
+.opening-hours h3 svg { color: #087985; }
+.opening-hours-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(11, 19, 41, .09);
+  color: #334155;
+  font-size: 11px;
+}
+.opening-hours-row strong { color: #0b1329; text-align: right; }
+.opening-hours > small {
+  display: block;
+  margin-top: 12px;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* The application sidebar intentionally remains light; all text must be dark. */
+.site-shell .form-aside {
+  color: #0b1329;
+  border-color: #d8d5ca;
+  background: #f1efe7;
+}
+.site-shell .form-aside > .eyebrow { color: #475569; }
+.site-shell .aside-step > b { color: #0b5260; }
+.site-shell .aside-step strong { color: #0f172a; }
+.site-shell .aside-step small { color: #334155; }
+.site-shell .aside-caution { color: #334155; border-color: #d8d5ca; }
+.site-shell .aside-caution p { color: #334155; }
+.site-shell .aside-caution svg { color: #0b5260; }
+
+/* Tracking and dashboard pages use the dark navy customer-portal surface. */
+.site-shell .track-layout .page-intro h1,
+.site-shell .track-layout .page-intro h1 *,
+.site-shell .signin-panel h2,
+.site-shell .tracking-result-head h2 {
+  color: #ffffff;
+}
+.site-shell .track-layout .page-intro p,
+.site-shell .signin-panel p,
+.site-shell .tracking-result-head p,
+.site-shell .timeline small {
+  color: #cbd5e1;
+}
+.site-shell .track-form,
+.site-shell .tracking-result,
+.site-shell .signin-panel {
+  color: #e2e8f0;
+  border-color: rgba(0, 242, 255, .24);
+  background: #101b32;
+}
+.site-shell .track-form .eyebrow,
+.site-shell .tracking-result .eyebrow { color: #00f2ff; }
+.site-shell .track-form .field > span,
+.site-shell .tracking-result h3,
+.site-shell .timeline strong { color: #f8fbff; }
+.site-shell .track-form .form-footnote { color: #cbd5e1; }
+
+/* Clear, scannable service-card expectations and fee transparency. */
+.service-card-expectations {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(0, 242, 255, .18);
+  border-radius: 9px;
+  background: rgba(0, 242, 255, .045);
+}
+.site-shell .service-card .service-documents {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  color: #dbe5f2;
+  font-size: 10px;
+}
+.service-documents b { color: #00f2ff; }
+.service-documents small { color: #aebdd0; font-size: 9px; line-height: 1.5; }
+.service-fee-note {
+  margin: 9px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 242, 255, .15);
+  color: #f8fbff;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+.site-shell .service-card-bottom span { color: #cbd5e1; }
+
+/* Feedback invitation: never present invented ratings or quotations as reviews. */
+.customer-feedback-section {
+  padding: 64px max(6%, calc((100% - 1240px) / 2));
+  color: #e8f1ff;
+  background: #0b1329;
+}
+.customer-feedback-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.customer-feedback-heading h2 {
+  margin: 9px 0;
+  color: #ffffff;
+  font-size: clamp(27px, 4vw, 38px);
+}
+.customer-feedback-heading p {
+  max-width: 610px;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.customer-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.customer-feedback-card {
+  min-height: 170px;
+  padding: 22px;
+  border: 1px solid rgba(0, 242, 255, .2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+}
+.customer-feedback-card > span {
+  color: #00f2ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.customer-feedback-card h3 { margin: 18px 0 8px; color: #ffffff; font-size: 16px; }
+.customer-feedback-card p { color: #cbd5e1; font-size: 11px; line-height: 1.7; }
+.customer-feedback-card small { color: #00dbe8; font-size: 9px; font-weight: 700; }
+.customer-feedback-note {
+  margin: 17px 0 0;
+  color: #9fb0c8;
+  font-size: 10px;
+}
+
+/* Floating direct contact stays separate from the Ask assistant chat control. */
+.floating-contact-actions {
+  position: fixed;
+  z-index: 34;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  gap: 8px;
+}
+.floating-contact-actions a {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 15px;
+  border: 1px solid rgba(0, 242, 255, .38);
+  border-radius: 999px;
+  color: #071321;
+  background: #00f2ff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.floating-contact-actions .floating-call {
+  color: #eafcff;
+  background: #10213a;
+}
+.floating-contact-actions a:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+@media (max-width: 760px) {
+  .contact-location-panel { grid-template-columns: 1fr; padding: 17px; }
+  .contact-map-wrap, .contact-map-wrap iframe { min-height: 250px; }
+  .customer-feedback-heading { align-items: flex-start; flex-direction: column; }
+  .customer-feedback-grid { grid-template-columns: 1fr; }
+  .floating-contact-actions { left: 10px; bottom: 10px; gap: 6px; }
+  .floating-contact-actions a { min-height: 42px; padding: 0 12px; font-size: 10px; }
+  .about-service-visual { min-height: 330px; }
+}
+@media (max-width: 390px) {
+  .floating-contact-actions a span { display: none; }
+  .floating-contact-actions a { width: 44px; padding: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floating-contact-actions a { transition: none; }
+}

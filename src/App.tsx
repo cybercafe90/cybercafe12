@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
   NavLink,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -43,8 +44,6 @@ import {
   UsersRound,
   X,
   Zap,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import {
   categories,
@@ -66,6 +65,7 @@ const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssist
 const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
 import "./cyber-theme.css";
+import "./customer-ux-polish.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -81,6 +81,16 @@ const whatsapp = "917006865909";
 const facebook = "https://www.facebook.com/babascybercafe";
 const businessProfile = "https://share.google/0zqTy0GylWp6CnSYO";
 const instagramProfile = "https://www.instagram.com/babascybercafe/";
+const serviceAreaAddress = "Zaripora Zoonimar, Srinagar, Jammu & Kashmir";
+const mapsSearchUrl = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(serviceAreaAddress);
+const mapsEmbedUrl = "https://www.google.com/maps?q=" + encodeURIComponent(serviceAreaAddress) + "&output=embed";
+const openingHours = [
+  { day: "All days", hours: "Please call before visiting" },
+] as const;
+
+function serviceSlug(value: string) {
+  return value.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
 function useCategoryList(activeOnly = true) {
   const [items, setItems] = useState<Category[]>(categories);
@@ -256,8 +266,6 @@ function Header() {
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
-          <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
-          <NavLink to="/track" onClick={close}>Track Reference</NavLink>
           <NavLink to="/about" onClick={close}>About</NavLink>
           <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
           <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
@@ -296,7 +304,6 @@ function Footer() {
           <Link to="/track">Track an application</Link>
           <Link to="/pay">Make a payment</Link>
           <Link to="/dashboard">Customer dashboard</Link>
-          <Link to="/admin/login">Admin sign-in</Link>
           <Link to="/grievance">Grievance redressal</Link>
         </div>
         <div>
@@ -440,12 +447,12 @@ function HomePage() {
         <div className="cyber-hero-visual" aria-label="Animated cyber shield emblem">
           <div className="cyber-orbit cyber-orbit-a"/><div className="cyber-orbit cyber-orbit-b"/>
           <div className="cyber-shield-card">
-            <div className="cyber-card-top"><span><i/> SYSTEM ONLINE</span><span>BBC / SRN</span></div>
+            <div className="cyber-card-top"><span><i/> WALK-IN &amp; ONLINE SUPPORT</span><span>LOCAL HELP</span></div>
             <div className="cyber-shield-emblem"><span className="shield-aura"/><ShieldCheck size={112} strokeWidth={1.1}/><LockKeyhole className="shield-lock" size={30}/></div>
-            <div className="cyber-card-bottom"><span>SECURE SERVICE DESK</span><b>SRINAGAR · J&amp;K</b></div>
+            <div className="cyber-card-bottom"><span>SRINAGAR SERVICE DESK</span><b>YOUR TRUST, OUR SERVICE</b></div>
             <div className="cyber-circuit circuit-one"/><div className="cyber-circuit circuit-two"/>
           </div>
-          <span className="cyber-float-tag"><Activity size={13}/> DIGITAL SERVICE NETWORK</span>
+          <span className="cyber-float-tag"><Activity size={13}/> WALK-IN &amp; ONLINE SUPPORT</span>
           <span className="cyber-float-code">01 / 06 &nbsp; · &nbsp; VERIFIED WORKFLOW</span>
         </div>
         <div className="cyber-hero-bottom"><span>01 — LOCAL SERVICE DESK</span><span>ASSISTANCE · DOCUMENTATION · TRACKING</span></div>
@@ -468,7 +475,7 @@ function HomePage() {
       </section>
 
       <section className="cyber-vault-section" id="vault">
-        <div className="cyber-section-heading"><div><span className="cyber-eyebrow">LIVE DIGITAL VAULT</span><h2>Your application. <em>One secure reference.</em></h2><p>Check the latest customer-visible update using your tracking ID and registered mobile number.</p></div><span className="cyber-vault-mark"><ShieldCheck size={28}/><small>PRIVATE LOOKUP</small></span></div>
+        <div className="cyber-section-heading"><div><span className="cyber-eyebrow">APPLICATION TRACKING</span><h2>Track your application. <em>Know what happens next.</em></h2><p>Enter your tracking ID and registered mobile number to view the latest update.</p></div><span className="cyber-vault-mark"><ShieldCheck size={28}/><small>CUSTOMER TRACKING</small></span></div>
         <div className="cyber-vault-card">
           <form className="cyber-vault-form" onSubmit={lookupApplication}>
             <label>APPLICATION REFERENCE<input value={trackingId} onChange={(event)=>setTrackingId(event.target.value.toUpperCase())} placeholder="BABA-XXXXXXXXXX" required minLength={8} maxLength={30}/></label>
@@ -495,8 +502,50 @@ function HomePage() {
         <div className="cyber-location-card"><span className="cyber-location-icon"><MapPin size={23}/></span><span className="cyber-eyebrow">OUR SERVICE AREA</span><h3>Srinagar, Jammu &amp; Kashmir</h3><p>For the exact business pin, opening hours and directions, use our verified Google Business Profile.</p><a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open Google Business Profile <ArrowUpRight size={15}/></a></div>
       </section>
       <section className="cyber-social-wrap"><SocialPreviewSection/></section>
+      <CustomerFeedbackSection profileUrl={settings.social.business_profile} />
       <section className="cyber-contact-band"><div><span className="cyber-eyebrow">NEED A HAND?</span><h2>Start with a clear conversation.</h2></div><Link to="/contact" className="cyber-button cyber-button-primary">Contact BABA'S CYBER CAFE <ArrowRight size={16}/></Link></section>
     </main>
+  );
+}
+
+function FloatingContactActions() {
+  const settings = useSiteSettings();
+  const phoneHref = `tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`;
+  const whatsappHref = `https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}`;
+  return (
+    <div className="floating-contact-actions" aria-label="Contact BABA'S CYBER CAFE">
+      <a className="floating-whatsapp" href={whatsappHref} target="_blank" rel="noreferrer">
+        <MessageCircle size={18} /> <span>WhatsApp</span>
+      </a>
+      <a className="floating-call" href={phoneHref}>
+        <PhoneCall size={18} /> <span>Call us</span>
+      </a>
+    </div>
+  );
+}
+
+function CustomerFeedbackSection({ profileUrl }: { profileUrl: string }) {
+  const prompts = [
+    { title: "Service experience", copy: "Tell others whether our application and document assistance was clear and helpful." },
+    { title: "Communication", copy: "Share honest feedback about the guidance and updates you received." },
+    { title: "Your suggestions", copy: "Let us know what we can improve for customers in Srinagar." },
+  ];
+  return (
+    <section className="customer-feedback-section" aria-labelledby="customer-feedback-title">
+      <div className="customer-feedback-heading">
+        <div><span className="cyber-eyebrow">YOUR FEEDBACK MATTERS</span><h2 id="customer-feedback-title">Customer Reviews</h2><p>We welcome genuine feedback. Read existing feedback or share your own experience on our Google Business Profile.</p></div>
+        <a className="cyber-button cyber-button-primary" href={profileUrl} target="_blank" rel="noreferrer">View Google Business Profile <ArrowUpRight size={15}/></a>
+      </div>
+      <div className="customer-feedback-grid">
+        {prompts.map((item, index) => (
+          <article className="customer-feedback-card" key={item.title}>
+            <span>0{index + 1}</span><h3>{item.title}</h3><p>{item.copy}</p>
+            <small>Honest customer feedback</small>
+          </article>
+        ))}
+      </div>
+      <p className="customer-feedback-note">We do not publish invented ratings or testimonials. Customer reviews will be shown here once genuine review text is available.</p>
+    </section>
   );
 }
 
@@ -797,13 +846,18 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
               </span>
               <h2>{service.name}</h2>
               <p>{service.description}</p>
-              {service.required_documents.length > 0 && (
+              <div className="service-card-expectations">
                 <p className="service-documents">
-                  <b>Documents noted:</b>{" "}
-                  {service.required_documents.join(", ")} · confirm current
-                  requirements with the authority.
+                  <b>Commonly needed documents</b>
+                  <span>{service.required_documents.length > 0
+                    ? service.required_documents.slice(0, 3).join(" · ")
+                    : "Identity proof · Photograph · Supporting record"}</span>
+                  <small>Examples only — exact requirements vary by service.</small>
                 </p>
-              )}
+                <p className="service-fee-note">
+                  Official government fee + nominal service charge confirmed upfront before filing.
+                </p>
+              </div>
               {service.official_url && service.official_url_verified && (
                 <a
                   className="official-service-link"
@@ -816,7 +870,7 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
               )}
               <div className="service-card-bottom">
                 <Link
-                  to={`/apply?service=${encodeURIComponent(service.name)}&category=${service.category_slug}`}
+                  to={`/apply?service=${encodeURIComponent(serviceSlug(service.name))}&category=${service.category_slug}`}
                 >
                   Enquire <ArrowRight size={15} />
                 </Link>
@@ -877,12 +931,13 @@ function AboutPage() {
         copy="BABA'S CYBER CAFE is a Srinagar-based independent business offering support with digital tasks, application enquiries and document preparation."
       />
       <section className="about-grid">
-        <div className="about-portrait">
-          <img
-            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85"
-            alt="People collaborating at a bright workspace"
-          />
-          <span>SRINAGAR · JAMMU &amp; KASHMIR</span>
+        <div className="about-portrait about-service-visual" role="img" aria-label="BABA'S CYBER CAFE local service desk">
+          <div className="about-visual-glow" />
+          <div className="about-visual-icon"><Building2 size={46} /></div>
+          <div className="about-visual-kicker">YOUR LOCAL DIGITAL HELP DESK</div>
+          <strong>Applications. Documents. Guidance.</strong>
+          <p>Friendly walk-in and online assistance in Srinagar.</p>
+          <div className="about-visual-footer"><ShieldCheck size={17} /> BABA'S CYBER CAFE <small>ZARIPORA · SRINAGAR</small></div>
         </div>
         <div className="about-copy">
           <span className="eyebrow">A HUMAN-FIRST SERVICE DESK</span>
@@ -1027,6 +1082,21 @@ function ApplicationPage() {
   const options = serviceList.filter(
     (item) => !selectedCategory || item.category_slug === selectedCategory,
   );
+
+  useEffect(() => {
+    const requestedService = params.get("service");
+    if (!requestedService) return;
+    const normalized = requestedService.trim().toLowerCase();
+    const match = serviceList.find((item) =>
+      serviceSlug(item.name) === normalized ||
+      item.name.trim().toLowerCase() === normalized ||
+      item.id.toLowerCase() === normalized
+    );
+    if (match) {
+      setSelectedCategory(match.category_slug);
+      setSelectedService(match.name);
+    }
+  }, [params, serviceList]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -3782,25 +3852,34 @@ function ContactPage() {
           <ArrowUpRight size={16} />
         </a>
       </div>
-      <div className="location-note">
-        <Landmark size={20} />
-        <div>
-          <h2>Based in Srinagar, Jammu &amp; Kashmir</h2>
-          <p>
-            We have not published a street address or map pin. Use the verified
-            business profile or contact us for directions.
-          </p>
-          <a
-            className="text-link"
-            href={settings.social.business_profile}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Get directions via Google Business Profile{" "}
-            <ArrowUpRight size={14} />
+      <section className="contact-location-panel" aria-labelledby="contact-location-title">
+        <div className="contact-location-copy">
+          <span className="eyebrow">VISIT OUR SERVICE AREA</span>
+          <h2 id="contact-location-title">Zaripora Zoonimar, Srinagar, Jammu &amp; Kashmir</h2>
+          <p>We provide walk-in and online assistance. The map below searches the locality; please contact us to confirm the exact shop directions before travelling.</p>
+          <a className="text-link" href={mapsSearchUrl} target="_blank" rel="noreferrer">
+            Open directions in Google Maps <ArrowUpRight size={14} />
           </a>
+          <div className="opening-hours">
+            <h3><Clock3 size={17} /> Opening Hours</h3>
+            {openingHours.map((item) => (
+              <div className="opening-hours-row" key={item.day}>
+                <span>{item.day}</span><strong>{item.hours}</strong>
+              </div>
+            ))}
+            <small>Hours will be updated here when confirmed. Please call +91 7006865909 before visiting.</small>
+          </div>
         </div>
-      </div>
+        <div className="contact-map-wrap">
+          <iframe
+            title="Map search for Zaripora Zoonimar, Srinagar"
+            src={mapsEmbedUrl}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
+      </section>
     </main>
   );
 }
@@ -3933,92 +4012,6 @@ function NotFound() {
 }
 
 
-function SoundControls() {
-  const [enabled, setEnabled] = useState(() => {
-    try {
-      return window.localStorage.getItem("baba-site-sound") !== "off";
-    } catch {
-      return true;
-    }
-  });
-  const enabledRef = useRef(enabled);
-  const audioRef = useRef<AudioContext | null>(null);
-
-  useEffect(() => {
-    enabledRef.current = enabled;
-    try {
-      window.localStorage.setItem("baba-site-sound", enabled ? "on" : "off");
-    } catch {
-      // Sound preference remains available for this page session.
-    }
-  }, [enabled]);
-
-  useEffect(() => {
-    const playTone = (kind: "tap" | "submit") => {
-      if (!enabledRef.current) return;
-      try {
-        const AudioContextClass = window.AudioContext;
-        if (!AudioContextClass) return;
-        const context = audioRef.current ?? new AudioContextClass();
-        audioRef.current = context;
-        if (context.state === "suspended") void context.resume();
-        const now = context.currentTime;
-        const notes = kind === "submit" ? [660, 880] : [520];
-        notes.forEach((frequency, index) => {
-          const oscillator = context.createOscillator();
-          const gain = context.createGain();
-          const start = now + index * 0.085;
-          oscillator.type = "sine";
-          oscillator.frequency.setValueAtTime(frequency, start);
-          gain.gain.setValueAtTime(0.0001, start);
-          gain.gain.exponentialRampToValueAtTime(kind === "submit" ? 0.045 : 0.022, start + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075);
-          oscillator.connect(gain);
-          gain.connect(context.destination);
-          oscillator.start(start);
-          oscillator.stop(start + 0.08);
-        });
-      } catch {
-        // Audio is an enhancement; it must never interrupt a customer action.
-      }
-    };
-    const onClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const control = target.closest("a,button,[role='button'],summary,input[type='submit'],input[type='button'],select");
-      if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
-      if (control.closest("[data-sound-control]")) return;
-      playTone("tap");
-    };
-    const onSubmit = (event: Event) => {
-      if (event.target instanceof HTMLFormElement) playTone("submit");
-    };
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("submit", onSubmit, true);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      document.removeEventListener("submit", onSubmit, true);
-      void audioRef.current?.close();
-      audioRef.current = null;
-    };
-  }, []);
-
-  return (
-    <button
-      className="sound-control"
-      type="button"
-      data-sound-control
-      aria-label={enabled ? "Turn interface sounds off" : "Turn interface sounds on"}
-      aria-pressed={enabled}
-      title={enabled ? "Sound on · click to mute" : "Sound off · click to enable"}
-      onClick={() => setEnabled((value) => !value)}
-    >
-      {enabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-      <span>{enabled ? "Sound on" : "Sound off"}</span>
-    </button>
-  );
-}
-
 function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
@@ -4097,6 +4090,7 @@ function RoutedApp() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<LegalPage privacy />} />
         <Route path="/terms" element={<LegalPage />} />
+        <Route path="/payment" element={<Navigate to="/pay" replace />} />
         <Route path="/pay" element={<PaymentPortal />} />
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
@@ -4108,7 +4102,7 @@ function RoutedApp() {
       </Routes>
       </Suspense>
       <Footer />
-      <SoundControls />
+      <FloatingContactActions />
       <Suspense fallback={null}><CustomerChatAssistant /></Suspense>
     </div>
   );

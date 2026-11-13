@@ -7,7 +7,6 @@ type Particle = {
 export default function CyberNetworkCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const frameMetricRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,7 +25,6 @@ export default function CyberNetworkCanvas() {
     let frame = 0;
     let lastTime = 0;
     let elapsed = 0;
-    let frameSamples = 0;
     let paused = document.hidden;
     let disposed = false;
 
@@ -99,7 +97,6 @@ export default function CyberNetworkCanvas() {
       const frameMs = lastTime ? time - lastTime : 16.67;
       const delta = Math.min(2, frameMs / 16.67);
       lastTime = time;
-      if (frameMetricRef.current && frameSamples++ % 15 === 0) frameMetricRef.current.textContent = `FRAME ${Math.round(frameMs)}ms`;
       elapsed += delta;
       ctx.clearRect(0, 0, width, height);
       drawGrid();
@@ -229,10 +226,10 @@ export default function CyberNetworkCanvas() {
       <canvas ref={canvasRef} className="cyber-network-canvas" />
       <div className="cyber-network-vignette" />
       <div className="cyber-network-hud cyber-network-hud-top">
-        <span>SYS / 01</span><span>SYSTEM ONLINE · <span ref={frameMetricRef}>FRAME —ms</span></span>
+        <span>LOCAL SERVICE DESK</span><span>WALK-IN &amp; ONLINE SUPPORT</span>
       </div>
       <div className="cyber-network-hud cyber-network-hud-bottom">
-        <span>SRN · 34.0837° N / 74.7973° E</span><span>NODE FIELD // LIVE VISUAL</span>
+        <span>ZARIPORA ZOONIMAR · SRINAGAR</span><span>DIGITAL APPLICATION SUPPORT</span>
       </div>
       <span className="cyber-network-hex cyber-network-hex-one">⌬</span>
       <span className="cyber-network-hex cyber-network-hex-two">⌬</span>
