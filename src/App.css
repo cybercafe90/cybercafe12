@@ -1777,3 +1777,26 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .customer-chat-tools > button { min-width:30px; height:31px; padding-inline:6px; }
   .customer-chat-tools > button span { font-size:7px; }
 }
+
+
+/* Application enquiry form accessibility and trust improvements */
+.form-aside .eyebrow,
+.form-aside .aside-step > b,
+.form-aside .aside-step strong { color: #0b1329; }
+.form-aside .aside-step small,
+.form-aside .aside-caution,
+.form-aside .aside-caution p { color: #334155; }
+.form-aside .aside-caution svg { color: #0b1329; }
+.phone-input { display: flex; align-items: stretch; gap: 8px; }
+.phone-prefix { display: inline-flex; align-items: center; justify-content: center; min-width: 54px; padding: 0 12px; border: 1px solid var(--line); background: #f1efe7; color: #0b1329; font-size: 12px; font-weight: 700; }
+.phone-input input { min-width: 0; flex: 1; }
+.field-helper { display: block; margin-top: 6px; color: #64748b; font-size: 10px; line-height: 1.55; }
+.security-helper { max-width: 680px; }
+.document-checklist { padding: 14px 16px; border: 1px solid #cbd5e1; background: #f8fafc; color: #0b1329; }
+.document-checklist strong { font-size: 11px; }
+.document-checklist ul { margin: 9px 0; padding-left: 18px; color: #334155; font-size: 10px; line-height: 1.7; }
+.document-checklist small { color: #64748b; font-size: 9px; line-height: 1.5; }
+@media (max-width: 600px) {
+  .phone-input { gap: 6px; }
+  .phone-prefix { min-width: 48px; }
+}
