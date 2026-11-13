@@ -934,7 +934,7 @@ function AboutPage() {
         <div className="about-portrait about-service-visual" role="img" aria-label="BABA'S CYBER CAFE local service desk">
           <div className="about-visual-glow" />
           <div className="about-visual-icon"><Building2 size={46} /></div>
-          <span className="about-visual-kicker">YOUR LOCAL DIGITAL HELP DESK</span>
+          <div className="about-visual-kicker">YOUR LOCAL DIGITAL HELP DESK</div>
           <strong>Applications. Documents. Guidance.</strong>
           <p>Friendly walk-in and online assistance in Srinagar.</p>
           <div className="about-visual-footer"><ShieldCheck size={17} /> BABA'S CYBER CAFE <small>ZARIPORA · SRINAGAR</small></div>
