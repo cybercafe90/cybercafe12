@@ -13,6 +13,7 @@ import {
 import Papa from "papaparse";
 import {
   Activity,
+  ArrowLeft,
   ArrowDown,
   ArrowRight,
   ArrowUpRight,
@@ -37,6 +38,8 @@ import {
   Menu,
   MessageCircle,
   PhoneCall,
+  Printer,
+  UploadCloud,
   Search,
   ShieldCheck,
   Sparkles,
@@ -489,10 +492,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="cyber-departments" id="services">
-        <div className="cyber-section-heading"><div><span className="cyber-eyebrow">SERVICE HUB · SIX KEY DESKS</span><h2>Public services, <em>made easier.</em></h2><p>Explore common departments and find the assistance relevant to your request.</p></div><Link to="/services" className="cyber-text-link">View all services <ArrowUpRight size={15}/></Link></div>
-        <div className="cyber-department-grid">{departments.map((department,index)=><Link to={`/services/${department.slug}`} className="cyber-department-card" key={department.slug}><span className="cyber-dept-index">0{index+1}</span><CategoryIcon slug={department.slug}/><h3>{department.title}</h3><p>{department.detail}</p><small>Processing time varies by department and authority</small><ArrowUpRight className="cyber-dept-arrow" size={17}/></Link>)}</div>
-      </section>
+      <DepartmentServiceExplorer />
 
       <section className="cyber-concierge">
         <div><span className="cyber-eyebrow">DIRECT CONCIERGE · SRINAGAR LOCAL DESK</span><h2>Real help. <em>Right here.</em></h2><p>Speak with our team about services, application requirements and next steps.</p><div className="cyber-contact-actions"><a className="cyber-button cyber-button-primary" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noreferrer"><MessageCircle size={16}/> WhatsApp desk <span className="cyber-online-dot"/></a><a className="cyber-button cyber-button-ghost" href={`tel:${settings.contact.phone.replace(/[^+\d]/g,"")}`}><PhoneCall size={16}/> {settings.contact.phone}</a></div></div>
@@ -501,6 +501,100 @@ function HomePage() {
       <section className="cyber-social-wrap"><SocialPreviewSection/></section>
       <section className="cyber-contact-band"><div><span className="cyber-eyebrow">NEED A HAND?</span><h2>Start with a clear conversation.</h2></div><Link to="/contact" className="cyber-button cyber-button-primary">Contact BABA'S CYBER CAFE <ArrowRight size={16}/></Link></section>
     </main>
+  );
+}
+
+
+function DepartmentServiceExplorer() {
+  const categoryList = useCategoryList();
+  const navigate = useNavigate();
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [serviceList, setServiceList] = useState<ServiceRecord[]>(seedServices);
+  const [loadingServices, setLoadingServices] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    setLoadingServices(true);
+    void supabase.from("services").select("*").eq("is_active", true).order("name").range(0, 999)
+      .then(({ data }) => {
+        if (current && data?.length) setServiceList(data as ServiceRecord[]);
+      })
+      .finally(() => { if (current) setLoadingServices(false); });
+    return () => { current = false; };
+  }, []);
+
+  const departments = categoryList.filter((item) => item.slug !== "all");
+  const selected = departments.find((item) => item.slug === selectedDepartment);
+  const selectedServices = serviceList.filter((item) => item.category_slug === selectedDepartment && item.is_active !== false);
+  const uploadPrint = selectedDepartment === "upload-print";
+
+  const openService = (name: string) => {
+    navigate(`/apply?department=${encodeURIComponent(selectedDepartment)}&service=${encodeURIComponent(name)}`);
+  };
+
+  return (
+    <section className="neon-directory" id="services">
+      <div className="neon-directory-heading">
+        <div>
+          <span className="cyber-eyebrow">BABA'S CYBER CAFE · SERVICE DIRECTORY</span>
+          <h2>{selected ? <><>{selected.name}</> <em>Services</em></> : <>Explore our <em>departments.</em></>}</h2>
+          <p>{selected ? selected.description : "Choose a department to discover the services and assistance available."}</p>
+        </div>
+        {selected && <button className="neon-back-button" type="button" onClick={() => setSelectedDepartment("")}><ArrowLeft size={16}/> Back to Departments</button>}
+      </div>
+
+      {!selected && (
+        <div className="neon-card-grid">
+          {departments.map((department, index) => (
+            <button className={`neon-directory-card neon-tone-${index % 6}`} type="button" key={department.slug} onClick={() => setSelectedDepartment(department.slug)}>
+              <span className="neon-icon-badge"><CategoryIcon slug={department.slug}/></span>
+              <strong>{department.name}</strong>
+              <small>View all services</small>
+              <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+            </button>
+          ))}
+          <button className="neon-directory-card neon-tone-4" type="button" onClick={() => setSelectedDepartment("upload-print")}>
+            <span className="neon-icon-badge"><Printer size={22}/></span>
+            <strong>Upload &amp; Print</strong>
+            <small>Upload documents or print files</small>
+            <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+          </button>
+        </div>
+      )}
+
+      {selected && !uploadPrint && (
+        <div className="neon-card-grid">
+          {selectedServices.length ? selectedServices.map((service, index) => (
+            <button className={`neon-directory-card neon-service-card neon-tone-${index % 6}`} type="button" key={service.id} onClick={() => openService(service.name)}>
+              <span className="neon-icon-badge"><FileCheck2 size={22}/></span>
+              <strong>{service.name}</strong>
+              <small>Apply Online · View requirements</small>
+              {service.is_featured && <span className="neon-popular-badge">POPULAR</span>}
+              <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+            </button>
+          )) : <p className="neon-empty-state">No active services are listed in this department yet. Please contact our service desk for assistance.</p>}
+        </div>
+      )}
+
+      {uploadPrint && (
+        <div className="neon-card-grid">
+          <Link className="neon-directory-card neon-tone-4" to="/print">
+            <span className="neon-icon-badge"><UploadCloud size={22}/></span>
+            <strong>Upload Documents</strong>
+            <small>Send files securely for printing</small>
+            <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+          </Link>
+          <Link className="neon-directory-card neon-tone-2" to="/print">
+            <span className="neon-icon-badge"><Printer size={22}/></span>
+            <strong>Print Documents</strong>
+            <small>Prepare and print your files</small>
+            <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+          </Link>
+        </div>
+      )}
+      {selected && <p className="neon-directory-note">{loadingServices ? "Syncing the latest service list…" : "Service availability and official decisions depend on the relevant authority."}</p>}
+    </section>
   );
 }
 
