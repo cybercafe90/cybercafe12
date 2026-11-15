@@ -501,12 +501,11 @@ function DepartmentServiceExplorer() {
   const navigate = useNavigate();
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [serviceList, setServiceList] = useState<ServiceRecord[]>(seedServices);
-  const [loadingServices, setLoadingServices] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(Boolean(supabase));
 
   useEffect(() => {
     if (!supabase) return;
     let current = true;
-    setLoadingServices(true);
     void supabase.from("services").select("*").eq("is_active", true).order("name").range(0, 999)
       .then(({ data }) => {
         if (!current) return;
