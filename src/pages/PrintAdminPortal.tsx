@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 import { Activity, BadgeCheck, Check, ChevronRight, Clock3, FileText, Filter, LockKeyhole, Printer, Search, ShieldCheck, X } from "lucide-react";
 import "./PrintAdminPortal.css";
 
@@ -21,7 +21,7 @@ export default function PrintAdminPortal(){
   const verify=async(sessionUser:{id:string}|null)=>{
    if(!sessionUser){if(active)setAccess("signed-out");return;}
    try{
-    const {data,error}=await supabase.from("user_roles").select("role").eq("user_id",sessionUser.id).eq("role","owner").maybeSingle();
+    const {data,error}=await supabase!.from("user_roles").select("role").eq("user_id",sessionUser.id).eq("role","owner").maybeSingle();
     if(!active)return;
     setAccess(error?"unavailable":data?.role==="owner"?"owner":"not-owner");
    }catch{if(active)setAccess("unavailable");}
