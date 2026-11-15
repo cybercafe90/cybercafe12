@@ -101,7 +101,6 @@ export default function PrintPortal() {
     }
     const count = Number(photoLayout);
     const cols = 4;
-    const rows = Math.ceil(count / cols);
     const photo = `<img src="${photoDataUrl}" alt="Passport photograph">`;
     const body = `<main class="sheet"><div class="photo-grid">${Array.from({length:count},()=>`<div class="photo">${photo}</div>`).join("")}</div></main>`;
     const css = `.sheet{width:210mm;height:297mm;padding:12mm;display:flex;align-items:flex-start;justify-content:center}.photo-grid{display:grid;grid-template-columns:repeat(${cols},${dims.w}mm);grid-auto-rows:${dims.h}mm;gap:5mm 4mm;justify-content:center;align-content:start}.photo{width:${dims.w}mm;height:${dims.h}mm;border:.2mm dashed #84969b;overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover;display:block}@media print{.sheet{width:210mm;height:297mm}}`;
