@@ -64,6 +64,7 @@ const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
 const ChallanPortal = lazy(() => import("./pages/ChallanPortal"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
+const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
@@ -4113,7 +4114,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/grievance/admin", "/print"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -4135,6 +4136,7 @@ function RoutedApp() {
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
+      "/print": "Print Desk Preview | BABA'S CYBER CAFE",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -4179,6 +4181,7 @@ function RoutedApp() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
+        <Route path="/print" element={<PrintPortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
