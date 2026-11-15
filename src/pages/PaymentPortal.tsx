@@ -161,9 +161,9 @@ function CustomerPayment() {
   }, [initialTrackingId, initialMobile]);
 
   const openDemoPayment = () => {
-    setDemoMode(true); setError(\"\"); setMessage(\"DEMO PREVIEW ONLY — sample customer and amount. No real payment can be made.\");
-    setTrackingId(\"BABA-DEMO202611\"); setMobile(\"7000000000\");
-    setRecord({ application: { id: \"demo-application\", tracking_id: \"BABA-DEMO202611\", full_name: \"Demo Customer\", mobile: \"7000000000\", email: \"demo@example.com\", service_name: \"Document Assistance Service\", status: \"under_review\", created_at: new Date().toISOString() }, payment: { id: \"demo-payment\", amount: 1250, currency: \"INR\", status: \"pending\", expires_at: null } });
+    setDemoMode(true); setError(""); setMessage("DEMO PREVIEW ONLY — sample customer and amount. No real payment can be made.");
+    setTrackingId("BABA-DEMO202611"); setMobile("7000000000");
+    setRecord({ application: { id: "demo-application", tracking_id: "BABA-DEMO202611", full_name: "Demo Customer", mobile: "7000000000", email: "demo@example.com", service_name: "Document Assistance Service", status: "under_review", created_at: new Date().toISOString() }, payment: { id: "demo-payment", amount: 1250, currency: "INR", status: "pending", expires_at: null } });
   };
 
   const find = async (event: FormEvent) => {
