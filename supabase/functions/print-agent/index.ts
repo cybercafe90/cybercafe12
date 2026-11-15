@@ -10,7 +10,7 @@ function serviceClient(): SupabaseClient {
   return createClient(url, key, { auth:{autoRefreshToken:false,persistSession:false} })
 }
 async function ownerId(request: Request, admin: SupabaseClient) {
-  const token = request.headers.get('authorization')?.match(/^Bearer\\s+(.+)$/i)?.[1]
+  const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]
   if (!token) throw new Error('Owner sign-in required.')
   // Validate the caller's session with the server-side client. This avoids
   // depending on a publishable/anon key being present in Edge Function secrets.
