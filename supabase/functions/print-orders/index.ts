@@ -85,7 +85,7 @@ function price(d: Record<string, unknown>) {
     const colour = d.colour === 'colour'
     const duplex = d.sides === 'manual-duplex'
     const rate = duplex ? (colour ? 15 : 9) : (colour ? 9 : 5)
-    return Math.round((Math.ceil(pages / (duplex ? 2 : 1)) * rate * copies) + (kind === 'resume' ? 40 : 0))
+    return Math.round(Math.ceil(pages / (duplex ? 2 : 1)) * rate * copies)
   }
   if (kind === 'id') return 10 * copies
   if (kind === 'photo') {
