@@ -417,7 +417,8 @@ body { color: #171713; }
 .portal-theme .csv-preview-head, .portal-theme .csv-preview-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .portal-theme .csv-preview-head b, .portal-theme .csv-preview-row b { color: #f8fbff; font-size: 12px; overflow-wrap: anywhere; }
 .portal-theme .csv-preview-head small, .portal-theme .csv-preview-row small { display: block; margin-top: 3px; color: var(--text-muted); font-size: 10px; }
-.portal-theme .csv-ready { padding: 5px 8px; border: 1px solid rgba(0,255,136,.3); border-radius: 999px; color: #55f0ad; background: rgba(0,255,136,.08); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.portal-theme .csv-ready, .portal-theme .csv-review-needed { padding: 5px 8px; border: 1px solid rgba(0,255,136,.3); border-radius: 999px; color: #55f0ad; background: rgba(0,255,136,.08); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.portal-theme .csv-review-needed { border-color: rgba(255,154,168,.35); color: #ff9aa8; background: rgba(255,92,112,.08); }
 .portal-theme .csv-preview-stats { display: flex; gap: 8px; margin: 12px 0; }
 .portal-theme .csv-preview-stats span { padding: 5px 9px; border-radius: 8px; color: #b8c9dc; background: rgba(148,163,184,.1); font-size: 10px; }
 .portal-theme .csv-preview-list { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(148,163,184,.14); border-bottom: 1px solid rgba(148,163,184,.14); }
