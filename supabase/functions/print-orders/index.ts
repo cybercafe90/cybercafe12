@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+import { PDFDocument } from 'https://esm.sh/pdf-lib@1.17.1'
 
 function serviceClient() {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -147,8 +148,19 @@ Deno.serve(async (request) => {
       if (action === 'create_order') {
         if (job.payment_status === 'paid') return response(request, { error: 'This print job is already paid.' }, 409)
         if (job.status !== 'awaiting_payment') return response(request, { error: 'This print job is not available for payment.' }, 409)
-        const listing = await admin.storage.from('print-jobs').list(job.id, { limit: 10 })
-        if (listing.error || !listing.data?.some(x => x.name === job.file_name)) return response(request, { error: 'The PDF upload is incomplete. Upload it again before paying.' }, 409)
+        const { data: uploadedPdf, error: downloadError } = await admin.storage.from('print-jobs').download(job.storage_path)
+        if (downloadError || !uploadedPdf || uploadedPdf.size !== Number(job.file_size_bytes) || uploadedPdf.type !== 'application/pdf') return response(request, { error: 'The PDF upload is incomplete or invalid. Upload it again before paying.' }, 409)
+        const pdfBytes = new Uint8Array(await uploadedPdf.arrayBuffer())
+        if (new TextDecoder().decode(pdfBytes.slice(0, 5)) !== '%PDF-') return response(request, { error: 'The uploaded file is not a valid PDF document.' }, 415)
+        let actualPages = 1
+        try { actualPages = (await PDFDocument.load(pdfBytes, { ignoreEncryption: true })).getPageCount() } catch { return response(request, { error: 'The PDF could not be opened. Please upload an unlocked PDF.' }, 415) }
+        if (actualPages < 1 || actualPages > 1000) return response(request, { error: 'PDFs must contain between 1 and 1,000 pages.' }, 413)
+        const details = { ...(job.order_details as Record<string, unknown>), pageCount: actualPages, selectedPageCount: actualPages }
+        const verifiedAmount = price(details)
+        if (verifiedAmount < 1 || verifiedAmount > 100000) return response(request, { error: 'The calculated print amount is invalid.' }, 409)
+        const amountUpdate = await admin.from('print_jobs').update({ page_count: actualPages, payment_amount: verifiedAmount, order_details: details, updated_at: new Date().toISOString() }).eq('id', job.id).eq('payment_status', 'pending')
+        if (amountUpdate.error) throw new Error('The verified print total could not be saved.')
+        job.payment_amount = verifiedAmount
         if (job.razorpay_order_id) {
           const existing = await razorpay('/orders/' + encodeURIComponent(job.razorpay_order_id), 'GET')
           if (existing.status === 'created' || existing.status === 'attempted') return response(request, { orderId: existing.id, amount: existing.amount, currency: existing.currency, keyId: Deno.env.get('RAZORPAY_KEY_ID') }, 200, { 'Cache-Control': 'no-store' })
