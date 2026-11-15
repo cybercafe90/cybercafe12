@@ -30,10 +30,11 @@ export default function PrintAdminPortal(){
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
  useEffect(()=>{
-  if(access!=="owner"||!supabase)return;let active=true;
+  const client=supabase;
+  if(access!=="owner"||!client)return;let active=true;
   void load().catch(e=>{if(active)setNotice(e.message||"Could not load print jobs")});
-  const channel=supabase.channel("print-admin-live").on("postgres_changes",{event:"*",schema:"public",table:"print_jobs"},()=>void load().catch(()=>{})).on("postgres_changes",{event:"*",schema:"public",table:"print_agent_devices"},()=>void load().catch(()=>{})).subscribe();
-  return()=>{active=false;void supabase.removeChannel(channel)};
+  const channel=client.channel("print-admin-live").on("postgres_changes",{event:"*",schema:"public",table:"print_jobs"},()=>void load().catch(()=>{})).on("postgres_changes",{event:"*",schema:"public",table:"print_agent_devices"},()=>void load().catch(()=>{})).subscribe();
+  return()=>{active=false;void client.removeChannel(channel)};
  },[access,load]);
  const filtered=useMemo(()=>jobs.filter(j=>(filter==="all"||j.status===filter)&&(j.job_number+j.customer_name+j.customer_mobile+j.file_name).toLowerCase().includes(query.toLowerCase())),[jobs,filter,query]);
  const agentOnline=agents.some(a=>a.is_active&&a.last_seen_at&&Date.now()-new Date(a.last_seen_at).getTime()<30000);
