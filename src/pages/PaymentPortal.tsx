@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { callFunction, supabase } from "../lib/supabase";
 import "../payment.css";
 
 declare global {
   interface Window {
-    QRCode?: new (element: HTMLElement, options: { text: string; width: number; height: number; colorDark: string; colorLight: string; correctLevel: number }) => { clear: () => void };
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
   }
 }
@@ -37,8 +36,7 @@ type Payment = {
   amount: number | string;
   currency?: string;
   status: "pending" | "claimed" | "paid" | "needs_review";
-  claimed_utr?: string | null;
-  utr?: string | null;
+  razorpay_payment_id?: string | null;
   paid_at?: string | null;
   expires_at?: string | null;
 };
@@ -52,39 +50,6 @@ type AdminApplication = PaymentRecord["application"] & { payment: Payment | null
 
 const money = (value: number | string) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(value || 0));
 const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—";
-const payeeVpa = "mohammadzamanbaba@okicici";
-const payeeName = "BABA CYBER CAFE";
-
-function makeUpiUri(amount: number, trackingId: string, paymentId: string) {
-  const params = new URLSearchParams({ pa: payeeVpa, pn: payeeName, am: amount.toFixed(2), cu: "INR", tr: paymentId.replace(/-/g, "").slice(0, 32), tn: trackingId });
-  return `upi://pay?${params.toString()}`;
-}
-
-function useQrCode(value: string, enabled: boolean) {
-  const [ready, setReady] = useState(() => typeof window !== "undefined" && Boolean(window.QRCode));
-  useEffect(() => {
-    if (window.QRCode) return;
-    const existing = document.querySelector<HTMLScriptElement>('script[data-upi-qr]');
-    if (existing) {
-      existing.addEventListener("load", () => setReady(true), { once: true });
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-    script.async = true;
-    script.dataset.upiQr = "true";
-    script.onload = () => setReady(true);
-    document.head.appendChild(script);
-  }, []);
-  useEffect(() => {
-    const target = document.getElementById("upi-payment-qr");
-    if (!target || !enabled || !value || !ready || !window.QRCode) return;
-    target.replaceChildren();
-    new window.QRCode(target, { text: value, width: 230, height: 230, colorDark: "#171713", colorLight: "#ffffff", correctLevel: 2 });
-  }, [value, enabled, ready]);
-  return ready;
-}
-
 function PaymentStatus({ status }: { status: string }) {
   const label = status === "paid" ? "Paid" : status === "claimed" ? "Confirmation submitted" : status === "needs_review" ? "Needs review" : "Pending";
   return <span className={`payment-status payment-status-${status}`}>{label}</span>;
@@ -115,22 +80,10 @@ function CustomerPayment() {
   const [mobile, setMobile] = useState(initialMobile);
   const [record, setRecord] = useState<PaymentRecord | null>(null);
   const [demoMode, setDemoMode] = useState(false);
-  const [utr, setUtr] = useState("");
   const [loading, setLoading] = useState(Boolean(initialTrackingId && initialMobile));
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(0);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
-  const remainingMs = expiresAt - clock;
-  const qrExpired = Boolean(expiresAt && remainingMs <= 0);
-  const uri = useMemo(() => record && Number(record.payment.amount) > 0 && record.payment.id ? makeUpiUri(Number(record.payment.amount), record.application.tracking_id, record.payment.id) : "", [record]);
-  useQrCode(uri, Boolean(uri && record?.payment.status === "pending" && !qrExpired));
-  useEffect(() => {
-    if (!record?.payment.expires_at || record.payment.status !== "pending") return;
-    const timer = window.setInterval(() => setClock(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [record?.payment.expires_at, record?.payment.status]);
 
   const refresh = useCallback(async (action: "lookup" | "status" = "lookup") => {
     if (!record && action === "status") return;
@@ -146,34 +99,31 @@ function CustomerPayment() {
   useEffect(() => {
     if (!initialTrackingId || !initialMobile) return;
     let active = true;
-    void callFunction<PaymentRecord>("payment-customer", {
-      action: "lookup",
-      trackingId: initialTrackingId,
-      mobile: initialMobile,
-    }).then((result) => {
-      if (active) setRecord(result);
-    }).catch((reason) => {
-      if (active) setError(reason instanceof Error ? reason.message : "We could not load the payment details.");
-    }).finally(() => {
-      if (active) setLoading(false);
-    });
+    void callFunction<PaymentRecord>("payment-customer", { action: "lookup", trackingId: initialTrackingId, mobile: initialMobile })
+      .then((result) => { if (active) setRecord(result); })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "We could not load the payment details."); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [initialTrackingId, initialMobile]);
 
   const openDemoPayment = () => {
-    setDemoMode(true); setError(""); setMessage("DEMO PREVIEW ONLY — sample customer and amount. No real payment can be made.");
+    setDemoMode(true); setError(""); setMessage("DESIGN PREVIEW ONLY — this sample cannot accept or create a payment.");
     setTrackingId("BABA-DEMO202611"); setMobile("7000000000");
-    setRecord({ application: { id: "demo-application", tracking_id: "BABA-DEMO202611", full_name: "Demo Customer", mobile: "7000000000", email: "demo@example.com", service_name: "Document Assistance Service", status: "under_review", created_at: new Date().toISOString() }, payment: { id: "demo-payment", amount: 1250, currency: "INR", status: "pending", expires_at: null } });
+    setRecord({
+      application: { id: "demo-application", tracking_id: "BABA-DEMO202611", full_name: "Demo Customer", mobile: "7000000000", email: "demo@example.com", service_name: "Document Assistance Service", status: "under_review", created_at: new Date().toISOString() },
+      payment: { id: "demo-payment", amount: 1250, currency: "INR", status: "pending", expires_at: null },
+    });
   };
 
   const find = async (event: FormEvent) => {
     event.preventDefault(); setDemoMode(false); setLoading(true); setError(""); setMessage(""); setRecord(null);
-    try { await refresh("lookup"); } catch (reason) { setError(reason instanceof Error ? reason.message : "We could not find that application."); }
+    try { await refresh("lookup"); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "We could not find that application."); }
     finally { setLoading(false); }
   };
 
   useEffect(() => {
-    if (!record || record.payment.status === "paid") return;
+    if (!record || record.payment.status === "paid" || demoMode) return;
     const timer = window.setInterval(() => {
       void callFunction<PaymentRecord>("payment-customer", {
         action: "status", trackingId: record.application.tracking_id, mobile: record.application.mobile,
@@ -183,133 +133,99 @@ function CustomerPayment() {
       }).catch(() => undefined);
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [record]);
+  }, [record, demoMode]);
 
   const startRazorpayCheckout = async () => {
-    if (!record || !razorpayCheckoutEnabled || checkoutBusy) return;
+    if (!record || !razorpayCheckoutEnabled || demoMode || checkoutBusy) return;
     setCheckoutBusy(true); setError(""); setMessage("");
     try {
       await loadRazorpayCheckout();
       const order = await callFunction<{ orderId: string; amount: number; currency: string; keyId: string }>("razorpay-checkout", {
-        action: "create_order",
-        trackingId: record.application.tracking_id,
-        mobile: record.application.mobile,
+        action: "create_order", trackingId: record.application.tracking_id, mobile: record.application.mobile,
       });
       if (!window.Razorpay) throw new Error("Razorpay checkout is not ready.");
       const checkout = new window.Razorpay({
-        key: order.keyId,
-        order_id: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "BABA'S CYBER CAFE",
-        description: record.application.service_name,
+        key: order.keyId, order_id: order.orderId, amount: order.amount, currency: order.currency,
+        name: "BABA'S CYBER CAFE", description: record.application.service_name,
         prefill: { name: record.application.full_name, contact: record.application.mobile },
-        notes: { tracking_id: record.application.tracking_id },
-        theme: { color: "#c9a45c" },
+        notes: { tracking_id: record.application.tracking_id }, theme: { color: "#c9a45c" },
         handler: async (result: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           setLoading(true);
           try {
             const verified = await callFunction<{ paid: boolean; message: string }>("razorpay-checkout", {
-              action: "verify_payment",
-              trackingId: record.application.tracking_id,
-              mobile: record.application.mobile,
-              razorpayOrderId: result.razorpay_order_id,
-              razorpayPaymentId: result.razorpay_payment_id,
-              razorpaySignature: result.razorpay_signature,
+              action: "verify_payment", trackingId: record.application.tracking_id, mobile: record.application.mobile,
+              razorpayOrderId: result.razorpay_order_id, razorpayPaymentId: result.razorpay_payment_id, razorpaySignature: result.razorpay_signature,
             });
-            setMessage(verified.message);
+            setMessage(verified.message || "Razorpay has received the payment. Confirmation is being checked.");
             await refresh("status");
           } catch (reason) {
-            setError(reason instanceof Error ? reason.message : "Payment verification is pending. Do not pay again; contact the cafe.");
-          } finally {
-            setLoading(false); setCheckoutBusy(false);
-          }
+            setMessage("Razorpay has returned your payment response. Automatic confirmation is in progress; please do not pay again.");
+            setError(reason instanceof Error ? reason.message : "Payment confirmation is still processing.");
+          } finally { setLoading(false); setCheckoutBusy(false); }
         },
         modal: { ondismiss: () => setCheckoutBusy(false) },
       });
       checkout.open();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Online checkout could not be started.");
+      setError(reason instanceof Error ? reason.message : "Razorpay checkout could not be started.");
       setCheckoutBusy(false);
     }
-  };
-
-  const submitConfirmation = async (event: FormEvent) => {
-    event.preventDefault();
-    if (isPaymentPreview) { setMessage("Preview only: payment submissions are disabled. No real payment has been made."); return; }
-    setLoading(true); setError(""); setMessage("");
-    try {
-      const result = await callFunction<{ submitted: boolean; message: string }>("payment-customer", {
-        action: "submit_confirmation", trackingId: record?.application.tracking_id, mobile: record?.application.mobile, utr,
-      });
-      setMessage(result.message); setUtr(""); await refresh("status");
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Confirmation could not be submitted."); }
-    finally { setLoading(false); }
   };
 
   return (
     <main className="payment-page">
       <div className="payment-shell">
-        <div className="payment-heading"><span className="eyebrow">BABA'S CYBER CAFE · SECURE PAYMENT</span><h1>Application payment</h1><p>Find your application to view the exact amount assigned by our team.</p><Link to="/track">← Back to combined tracking &amp; payment</Link></div>
+        <div className="payment-heading"><span className="eyebrow">BABA'S CYBER CAFE · RAZORPAY SECURE PAYMENTS</span><h1>Application payment</h1><p>Find your application and pay the assigned amount securely through Razorpay.</p><Link to="/track">← Back to application tracking</Link></div>
         <section className="payment-panel">
           <form className="payment-lookup" onSubmit={find}>
             <label>Tracking ID<input value={trackingId} onChange={e => setTrackingId(e.target.value.toUpperCase())} placeholder="BABA-XXXXXXXXXX" pattern="BABA-[A-Z0-9]{10}" required maxLength={15}/></label>
             <label>Registered mobile number<input value={mobile} onChange={e => setMobile(e.target.value)} placeholder="10-digit mobile number" inputMode="tel" required maxLength={16}/></label>
             <button className="button button-dark" disabled={loading}>{loading ? "Checking…" : "Find application"}</button>
           </form>
-          {isPaymentPreview && <div className="payment-preview-demo"><span className="eyebrow">INTERACTIVE DESIGN PREVIEW</span><p>See the customer payment screen using sample details only.</p><button className="button button-gold" type="button" onClick={openDemoPayment}>View sample customer payment</button><small>No customer record, email, UPI transfer or Razorpay transaction is created.</small></div>}
+          {isPaymentPreview && <div className="payment-preview-demo"><span className="eyebrow">INTERACTIVE DESIGN PREVIEW</span><p>View a sample Razorpay-only payment screen. No real customer or payment data is used.</p><button className="button button-gold" type="button" onClick={openDemoPayment}>View sample customer payment</button><small>Razorpay checkout is disabled in this design preview.</small></div>}
           {error && <p className="payment-alert payment-alert-error" role="alert">{error}</p>}
           {message && <p className="payment-alert payment-alert-info" role="status">{message}</p>}
         </section>
-
         {record && (
           <section className="payment-result">
             <div className="payment-customer-card">
               <div><span className="eyebrow">APPLICATION DETAILS</span><h2>{record.application.full_name}</h2><p>{record.application.service_name}</p></div>
-              <div className="payment-detail-grid"><div><small>Tracking ID</small><b>{record.application.tracking_id}</b></div><div><small>Registered mobile</small><b>{record.application.mobile}</b></div><div><small>Application status</small><b>{record.application.status}</b></div><div><small>Payment status</small><PaymentStatus status={record.payment.status}/></div></div>
+              <div className="payment-detail-grid">
+                <div><small>Tracking ID</small><b>{record.application.tracking_id}</b></div>
+                <div><small>Registered mobile</small><b>{record.application.mobile}</b></div>
+                <div><small>Application status</small><b>{record.application.status}</b></div>
+                <div><small>Payment status</small><PaymentStatus status={record.payment.status}/></div>
+              </div>
             </div>
-
             {record.payment.status === "paid" ? (
               <div className="payment-success">
-                <div className="payment-success-icon">✓</div><span className="eyebrow">PAYMENT VERIFIED</span><h2>Payment received</h2><strong>{money(record.payment.amount)}</strong>
-                <div className="payment-detail-grid"><div><small>UPI reference / UTR</small><b>{record.payment.utr}</b></div><div><small>Verified at</small><b>{dateTime(record.payment.paid_at)}</b></div></div>
+                <div className="payment-success-icon">✓</div><span className="eyebrow">RAZORPAY PAYMENT VERIFIED</span><h2>Payment received</h2><strong>{money(record.payment.amount)}</strong>
+                <div className="payment-detail-grid"><div><small>Razorpay payment ID</small><b>{record.payment.razorpay_payment_id || "Verified by Razorpay"}</b></div><div><small>Paid at</small><b>{dateTime(record.payment.paid_at)}</b></div></div>
                 <button className="button button-dark" onClick={() => window.print()}>Download / print receipt</button>
               </div>
             ) : Number(record.payment.amount) <= 0 ? (
-              <div className="payment-empty"><h2>Amount not assigned yet</h2><p>Payment amount has not been assigned by admin yet. Please check back shortly.</p></div>
+              <div className="payment-empty"><h2>Amount not assigned yet</h2><p>Our team will email you when your application fee is assigned.</p></div>
             ) : (
               <div className="payment-method">
-                <div className="payment-amount"><small>AMOUNT DUE</small><strong>{money(record.payment.amount)}</strong><span>Pay only the exact amount shown.</span></div>
-                {(razorpayCheckoutEnabled || isPaymentPreview) && record.payment.status === "pending" && (
+                <div className="payment-amount"><small>AMOUNT DUE</small><strong>{money(record.payment.amount)}</strong><span>Pay the exact amount securely through Razorpay.</span></div>
+                {record.payment.status === "pending" ? (
                   <div className="payment-razorpay-panel">
-                    <h2>Pay securely online</h2>
-                    <p>Complete your payment using Razorpay's secure checkout.</p>
-                    {isPaymentPreview ? <><button className="button button-gold" type="button" disabled>Razorpay checkout · demo preview</button><small>Visible for design review only. Test-mode backend is not connected.</small></> : <><button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>{checkoutBusy ? "Opening secure checkout…" : `Pay ${money(record.payment.amount)} online`}</button><small>Do not close the page until payment verification is complete. Never share your UPI PIN or OTP.</small></>}
+                    <h2>Pay securely with Razorpay</h2>
+                    <p>Use the available payment methods shown in Razorpay checkout, such as UPI, cards or netbanking, depending on eligibility.</p>
+                    {demoMode ? <><button className="button button-gold" type="button" disabled>Razorpay checkout · sample only</button><small>Preview mode: no payment is initiated.</small></> :
+                      razorpayCheckoutEnabled ? <><button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>{checkoutBusy ? "Opening Razorpay…" : `Pay ${money(record.payment.amount)} with Razorpay`}</button><small>Payment confirmation is automatic. Do not pay again if the status is still updating.</small></> :
+                      <><button className="button button-gold" type="button" disabled>Razorpay checkout is being configured</button><small>Online checkout will appear here once the secure Razorpay service is enabled.</small></>}
                   </div>
-                )}
-                {demoMode ? <div className="payment-preview-demo"><h2>Sample payment methods</h2><p>This is a visual sample. A real customer will see their assigned amount and available payment methods.</p><div className="payment-preview-methods"><span>Razorpay · Cards / UPI / Netbanking</span><span>UPI QR · Manual reference fallback</span></div></div> : record.payment.status === "claimed" || record.payment.status === "needs_review" ? (
-                  <div className="payment-awaiting"><h2>Confirmation received</h2><p>Your UPI reference {record.payment.claimed_utr ? <b>{record.payment.claimed_utr}</b> : ""} is awaiting verification. This page checks for updates automatically.</p></div>
-                ) : qrExpired ? (
-                  <div className="payment-awaiting"><h2>QR code expired</h2><p>This QR was valid for five minutes. Contact BABA'S CYBER CAFE to renew it before paying. If you already paid, do not pay again; contact us with your UTR.</p></div>
                 ) : (
-                    <div className="payment-pay-grid">
-                      <div className="payment-qr-card"><div id="upi-payment-qr" aria-label="Dynamic UPI payment QR code"/><small>Scan with GPay, PhonePe or Paytm</small><b className="payment-countdown">QR expires in {String(Math.floor(remainingMs / 60000)).padStart(2,"0")}:{String(Math.floor((remainingMs % 60000) / 1000)).padStart(2,"0")}</b></div>
-                      <div className="payment-instructions"><h2>Pay using any UPI app</h2><p>Scan the QR code or open your UPI app using the button below.</p><a className="button button-gold payment-deep-link" href={uri}>Click to pay via UPI app ↗</a><p className="payment-warning">Do not change the payment remark / note. It contains your tracking ID and helps us reconcile your payment.</p><div className="payment-payee"><small>PAY TO</small><b>{payeeName}</b><span>{payeeVpa}</span></div></div>
-                    </div>
+                  <div className="payment-awaiting"><h2>Payment is being reconciled</h2><p>Razorpay confirmation is pending. This page checks for updates automatically. Please do not make another payment.</p></div>
                 )}
-                {record.payment.status === "pending" && (
-                  <form className="payment-utr-form" onSubmit={submitConfirmation}>
-                    <label>Enter 12-digit UPI reference / UTR number<input value={utr} onChange={e => setUtr(e.target.value.replace(/\D/g, "").slice(0,12))} inputMode="numeric" pattern="[0-9]{12}" minLength={12} maxLength={12} placeholder="12-digit UTR" required/></label>
-                    <button className="button button-dark" disabled={loading || utr.length !== 12}>{loading ? "Submitting…" : "Submit confirmation"}</button>
-                    <small>Submitting a reference does not itself confirm payment. Your payment status changes to Paid only after verification.</small>
-                  </form>
-                )}
-                <p className="payment-poll-note">Payment status refreshes automatically every 3 seconds while this page is open.</p>
+                {demoMode && <div className="payment-preview-methods"><span>Razorpay Checkout</span><span>Automatic payment verification</span><span>Digital payment receipt</span></div>}
+                <p className="payment-poll-note">Payment status refreshes automatically while this page is open.</p>
               </div>
             )}
           </section>
         )}
-        <p className="payment-footnote">Never share your UPI PIN, bank password or OTP with anyone. BABA'S CYBER CAFE will never ask you to disclose these details.</p>
+        <p className="payment-footnote">All payments are processed by Razorpay. BABA'S CYBER CAFE will never ask for your UPI PIN, bank password or OTP.</p>
       </div>
     </main>
   );
