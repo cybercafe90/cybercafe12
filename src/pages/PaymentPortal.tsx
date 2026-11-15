@@ -11,6 +11,7 @@ declare global {
 }
 
 const razorpayCheckoutEnabled = import.meta.env.VITE_RAZORPAY_CHECKOUT_ENABLED === "true";
+const isPaymentPreview = typeof window !== "undefined" && window.location.hostname.endsWith(".pages.dev");
 
 function loadRazorpayCheckout(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
@@ -227,7 +228,9 @@ function CustomerPayment() {
   };
 
   const submitConfirmation = async (event: FormEvent) => {
-    event.preventDefault(); setLoading(true); setError(""); setMessage("");
+    event.preventDefault();
+    if (isPaymentPreview) { setMessage("Preview only: payment submissions are disabled. No real payment has been made."); return; }
+    setLoading(true); setError(""); setMessage("");
     try {
       const result = await callFunction<{ submitted: boolean; message: string }>("payment-customer", {
         action: "submit_confirmation", trackingId: record?.application.tracking_id, mobile: record?.application.mobile, utr,
@@ -358,13 +361,16 @@ function AdminPayments() {
   }, [token, api]);
 
   const run = async (key:string, body:object) => {
+    if (isPaymentPreview) { setNotice("Preview mode: payment changes are disabled. No live records will be modified."); return; }
     setBusy(key); setError(""); setNotice("");
     try { const result = await api<{notification?:string}>(body); await load(); setNotice(result.notification ?? "Payment records updated."); }
     catch(reason) { setError(reason instanceof Error?reason.message:"The action could not be completed."); }
     finally { setBusy(""); }
   };
   const createApplication = async (event:FormEvent) => {
-    event.preventDefault(); setBusy("create"); setError(""); setNotice("");
+    event.preventDefault();
+    if (isPaymentPreview) { setNotice("Preview mode: new payment applications cannot be created here."); return; }
+    setBusy("create"); setError(""); setNotice("");
     try { const result=await api<{trackingId:string}>({action:"create_application",fullName:create.fullName,mobile:create.mobile,email:create.email,serviceName:create.serviceName,categorySlug:create.categorySlug,amount:Number(create.amount||0)}); setCreate({fullName:"",mobile:"",email:"",serviceName:"",categorySlug:"",amount:""}); await load(); setNotice(`Application created: ${result.trackingId}`); }
     catch(reason) { setError(reason instanceof Error?reason.message:"Application could not be created."); }
     finally { setBusy(""); }
@@ -373,7 +379,7 @@ function AdminPayments() {
   if (!ready) return <main className="payment-page"><div className="payment-shell"><p>Verifying owner access…</p></div></main>;
   return (
     <main className="payment-page payment-admin-page"><div className="payment-shell payment-admin-shell">
-      <div className="payment-heading"><span className="eyebrow">OWNER CONTROL CENTRE</span><h1>UPI payments</h1><p>Assign payment amounts, reconcile bank alerts and review customer confirmations.</p>{selectedApplicationId && <p>Showing the selected application only.</p>}<Link to="/admin">← Back to main admin</Link></div>
+      <div className="payment-heading"><span className="eyebrow">OWNER CONTROL CENTRE · PREVIEW</span><h1>Payment management</h1><p>Assign payment amounts, reconcile bank alerts and review customer confirmations.</p>{selectedApplicationId && <p>Showing the selected application only.</p>}{isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts, marking payments paid and sending emails are disabled.</p>}<Link to="/admin">← Back to main admin</Link></div>
       {error && <p className="payment-alert payment-alert-error">{error}</p>}{notice && <p className="payment-alert payment-alert-info">{notice}</p>}
       <form className="payment-create-form" onSubmit={createApplication}><h2>New payment application</h2><div className="payment-admin-fields"><label>Customer name<input required minLength={2} maxLength={120} value={create.fullName} onChange={e=>setCreate({...create,fullName:e.target.value})}/></label><label>Mobile<input required value={create.mobile} onChange={e=>setCreate({...create,mobile:e.target.value})}/></label><label>Customer email<input type="email" required value={create.email} onChange={e=>setCreate({...create,email:e.target.value})} placeholder="customer@example.com"/></label><label>Service type<input required list="payment-service-list" value={create.serviceName} onChange={e=>setCreate({...create,serviceName:e.target.value})}/><datalist id="payment-service-list">{categories.map(c=><option key={c.slug} value={c.name}/>)}</datalist></label><label>Category<select required value={create.categorySlug} onChange={e=>setCreate({...create,categorySlug:e.target.value})}><option value="">Select category</option>{categories.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label><label>Amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={create.amount} onChange={e=>setCreate({...create,amount:e.target.value})}/></label></div><button className="button button-dark" disabled={busy==="create"}>{busy==="create"?"Creating…":"Create application"}</button></form>
       <div className="payment-admin-tabs"><button className={tab==="applications"?"is-active":""} onClick={()=>setTab("applications")} type="button">Applications ({apps.length})</button><button className={tab==="alerts"?"is-active":""} onClick={()=>setTab("alerts")} type="button">Bank alerts ({alerts.length})</button><button className={tab==="audit"?"is-active":""} onClick={()=>setTab("audit")} type="button">Audit log ({audit.length})</button><button className="payment-refresh" type="button" onClick={()=>void load()}>Refresh</button></div>
