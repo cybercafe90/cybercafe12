@@ -8,7 +8,7 @@ function serviceClient() {
 }
 function normalizeMobile(value: unknown) {
   if (typeof value !== 'string') return null
-  const raw = value.trim(); let digits = raw.replace(/\\D/g, '')
+  const raw = value.trim(); let digits = raw.replace(/\D/g, '')
   if (digits.length === 10) digits = '91' + digits
   else if (digits.length === 11 && digits.startsWith('0')) digits = '91' + digits.slice(1)
   if (digits.length === 12 && digits.startsWith('91')) return '+' + digits
