@@ -108,6 +108,55 @@ export default function PrintPortal() {
           </section>
         </div>
 
+        <section className="print-studio">
+          <div className="print-studio-heading">
+            <span className="print-eyebrow">YOUR PERSONAL DOCUMENT STUDIO</span>
+            <h2>Create it here. Get it shop-approved.</h2>
+            <p>Prepare a clean resume or passport-photo sheet. Nothing is sent to print until the shop reviews and approves it.</p>
+          </div>
+          <div className="print-studio-tabs" role="tablist" aria-label="Document studio">
+            <button type="button" className={studioMode === "resume" ? "is-active" : ""} onClick={() => { setStudioMode("resume"); setStudioNotice(""); }}><WandSparkles size={17}/> Resume creator</button>
+            <button type="button" className={studioMode === "photo" ? "is-active" : ""} onClick={() => { setStudioMode("photo"); setStudioNotice(""); }}><Camera size={17}/> Passport photo studio</button>
+          </div>
+          {studioMode === "resume" ? (
+            <div className="print-studio-grid">
+              <div className="print-studio-form">
+                <label className="print-field"><span>Full name</span><input value={resumeName} onChange={e => setResumeName(e.target.value)} placeholder="Enter your full name"/></label>
+                <label className="print-field"><span>Career goal / applying for</span><input value={resumeRole} onChange={e => setResumeRole(e.target.value)} placeholder="e.g. Office assistant"/></label>
+                <label className="print-field"><span>Skills, education and experience</span><textarea value={resumeSkills} onChange={e => setResumeSkills(e.target.value)} placeholder="Add your education, skills and work experience..." rows={5}/></label>
+                <button type="button" className="print-continue" onClick={() => setStudioNotice(resumeName.trim() ? "Resume draft prepared in the preview. Shop approval is required before any resume is printed." : "Please enter your full name to prepare the resume preview.")}>Prepare resume draft <ArrowRight size={17}/></button>
+              </div>
+              <div className="print-resume-preview">
+                <span className="print-eyebrow">LIVE RESUME PREVIEW</span>
+                <div className="print-resume-paper">
+                  <h3>{resumeName.trim() || "Your Full Name"}</h3>
+                  <b>{resumeRole.trim() || "Career objective"}</b>
+                  <hr/>
+                  <h4>PROFILE &amp; EXPERIENCE</h4>
+                  <p>{resumeSkills.trim() || "Your education, skills and experience will appear here as you type."}</p>
+                  <small>Prepared with BABA'S CYBER CAFE · Draft for review</small>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="print-studio-grid">
+              <div className="print-studio-form">
+                <label className="print-field"><span>Choose your photo</span><input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { setFile(e.target.files?.[0] ?? null); setStudioNotice(""); }}/></label>
+                <label className="print-field"><span>Photo size</span><select value={photoSize} onChange={e => setPhotoSize(e.target.value)}><option>35 × 45 mm</option><option>2 × 2 inches</option><option>Custom size</option></select></label>
+                <label className="print-field"><span>Photos per sheet</span><select value={photoLayout} onChange={e => setPhotoLayout(e.target.value)}><option value="6">6 photos</option><option value="8">8 photos</option><option value="12">12 photos</option></select></label>
+                <button type="button" className="print-continue" onClick={() => setStudioNotice(file ? "Photo selected. Final cropping, exact-size layout and print approval will be completed by the shop before printing." : "Please select a JPG or PNG photo first.")}>Prepare photo layout <ArrowRight size={17}/></button>
+              </div>
+              <div className="print-photo-preview">
+                <span className="print-eyebrow">PHOTO SHEET PREVIEW</span>
+                <div className="print-photo-sheet">{Array.from({length: Number(photoLayout)}, (_, i) => <div key={i} className="print-photo-placeholder"><UserRound size={22}/></div>)}</div>
+                <small>{photoSize} · {photoLayout} photos · A4 sheet concept</small>
+              </div>
+            </div>
+          )}
+          {studioNotice && <p className="print-preview-notice" role="status">{studioNotice}</p>}
+          <div className="print-routing-note"><ShieldCheck size={16}/><span><b>Shop approval required</b> — all created resumes and passport-photo sheets are reviewed before printing. This is a design preview; final PDF generation and automatic photo processing are not connected yet.</span></div>
+        </section>
+
         <section className="print-how"><div><span className="print-eyebrow">HOW IT WILL WORK</span><h2>From your phone to our printer.</h2></div><div className="print-how-steps"><span><b>01</b><small>Scan the shop QR</small></span><i></i><span><b>02</b><small>Upload &amp; choose</small></span><i></i><span><b>03</b><small>Pay securely</small></span><i></i><span><b>04</b><small>Collect at the cafe</small></span></div></section>
         <footer className="print-footer"><span>BABA'S CYBER CAFE · SRINAGAR</span><span>Questions? <a href="https://wa.me/917006865909" target="_blank" rel="noreferrer">WhatsApp the shop</a></span></footer>
       </div>
