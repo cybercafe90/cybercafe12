@@ -9,7 +9,6 @@ declare global {
   }
 }
 
-const razorpayCheckoutEnabled = import.meta.env.VITE_RAZORPAY_CHECKOUT_ENABLED === "true";
 const isPaymentPreview = typeof window !== "undefined" && window.location.hostname.endsWith(".pages.dev");
 
 function loadRazorpayCheckout(): Promise<void> {
@@ -213,8 +212,7 @@ function CustomerPayment() {
                     <h2>Pay securely with Razorpay</h2>
                     <p>Use the available payment methods shown in Razorpay checkout, such as UPI, cards or netbanking, depending on eligibility.</p>
                     {demoMode ? <><button className="button button-gold" type="button" disabled>Razorpay checkout · sample only</button><small>Preview mode: no payment is initiated.</small></> :
-                      razorpayCheckoutEnabled ? <><button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>{checkoutBusy ? "Opening Razorpay…" : `Pay ${money(record.payment.amount)} with Razorpay`}</button><small>Payment confirmation is automatic. Do not pay again if the status is still updating.</small></> :
-                      <><button className="button button-gold" type="button" disabled>Razorpay checkout is being configured</button><small>Online checkout will appear here once the secure Razorpay service is enabled.</small></>}
+                      <><button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>{checkoutBusy ? "Opening Razorpay…" : `Pay ${money(record.payment.amount)} with Razorpay`}</button><small>Payment confirmation is automatic. Do not pay again if the status is still updating.</small></>}
                   </div>
                 ) : (
                   <div className="payment-awaiting"><h2>Payment is being reconciled</h2><p>Razorpay confirmation is pending. This page checks for updates automatically. Please do not make another payment.</p></div>
