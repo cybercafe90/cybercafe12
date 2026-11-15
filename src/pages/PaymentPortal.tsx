@@ -11,23 +11,48 @@ declare global {
 
 const isPaymentPreview = typeof window !== "undefined" && window.location.hostname.endsWith(".pages.dev");
 
+let razorpayScriptPromise: Promise<void> | null = null;
+
 function loadRazorpayCheckout(): Promise<void> {
   if (window.Razorpay) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout]');
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Razorpay checkout could not be loaded.")), { once: true });
-      return;
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+
+  const pending = new Promise<void>((resolve, reject) => {
+    let settled = false;
+    let timeoutId = 0;
+    let script = document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout]');
+
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      script?.removeEventListener("load", onLoad);
+      script?.removeEventListener("error", onError);
+      if (error) reject(error);
+      else if (window.Razorpay) resolve();
+      else reject(new Error("Razorpay loaded but checkout is unavailable. Please refresh and try again."));
+    };
+    const onLoad = () => finish();
+    const onError = () => finish(new Error("Razorpay checkout could not be loaded. Check your internet connection and try again."));
+
+    if (!script) {
+      script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.dataset.razorpayCheckout = "true";
     }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.dataset.razorpayCheckout = "true";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Razorpay checkout could not be loaded."));
-    document.head.appendChild(script);
+    script.addEventListener("load", onLoad, { once: true });
+    script.addEventListener("error", onError, { once: true });
+    timeoutId = window.setTimeout(() => finish(new Error("Razorpay is taking too long to load. Please refresh the page and try again.")), 15000);
+
+    if (!script.isConnected) document.head.appendChild(script);
   });
+
+  razorpayScriptPromise = pending.catch((error) => {
+    razorpayScriptPromise = null;
+    throw error;
+  });
+  return razorpayScriptPromise;
 }
 
 type Payment = {
