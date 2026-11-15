@@ -164,6 +164,17 @@ Deno.serve(async (request) => {
         if (job.razorpay_order_id) {
           const existing = await razorpay('/orders/' + encodeURIComponent(job.razorpay_order_id), 'GET')
           if (existing.status === 'created' || existing.status === 'attempted') return response(request, { orderId: existing.id, amount: existing.amount, currency: existing.currency, keyId: Deno.env.get('RAZORPAY_KEY_ID') }, 200, { 'Cache-Control': 'no-store' })
+          if (existing.status === 'paid') {
+            const payments = await razorpay('/orders/' + encodeURIComponent(job.razorpay_order_id) + '/payments', 'GET')
+            const captured = (payments.items ?? []).find((p: Record<string, unknown>) => p.status === 'captured' && p.captured === true && Number(p.amount) === Math.round(Number(job.payment_amount) * 100) && p.currency === 'INR')
+            if (captured && typeof captured.id === 'string') {
+              const reconciled = await admin.from('print_jobs').update({ payment_status: 'paid', razorpay_payment_id: captured.id, status: 'queued', updated_at: new Date().toISOString() }).eq('id', job.id).eq('payment_status', 'pending').select('id').maybeSingle()
+              if (reconciled.error) throw reconciled.error
+              if (reconciled.data) await admin.from('print_job_events').insert({ print_job_id: job.id, actor_type: 'system', event_type: 'razorpay_payment_reconciled', details: { order_id: job.razorpay_order_id, payment_id: captured.id, amount_paise: captured.amount } })
+              return response(request, { verified: true, paid: true, message: 'Your payment is verified and the print request is queued.' }, 200, { 'Cache-Control': 'no-store' })
+            }
+            return response(request, { verified: false, paid: false, message: 'Payment is already being confirmed. Do not pay again; refresh your tracking page shortly.' }, 202, { 'Cache-Control': 'no-store' })
+          }
         }
         const amountPaise = Math.round(Number(job.payment_amount) * 100)
         if (!Number.isSafeInteger(amountPaise) || amountPaise < 100) return response(request, { error: 'The print amount is invalid.' }, 409)
