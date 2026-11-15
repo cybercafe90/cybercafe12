@@ -77,7 +77,7 @@ Deno.serve(async (request) => {
       if (!Number.isFinite(amount) || amount < 0 || amount > 10000000 || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(email)) return response(request, { error: 'Enter a valid amount and customer email address.' }, 400)
       const { data: app } = await admin.from('applications').select('id, tracking_id, full_name, service_name').eq('id', body.applicationId).maybeSingle()
       if (!app) return response(request, { error: 'Application not found.' }, 404)
-      const { data: existing } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
+      const { data: existing } = await admin.from('payment_orders').select('id, status, amount, payment_provider, razorpay_payment_id').eq('application_id', body.applicationId).maybeSingle()
       if (existing && existing.status === 'paid' && existing.payment_provider === 'razorpay' && existing.razorpay_payment_id) return response(request, { error: 'This application is already paid through Razorpay. A new payment link cannot be issued.' }, 409)
       const { error: emailUpdateError } = await admin.from('applications').update({ email }).eq('id', body.applicationId)
       if (emailUpdateError) throw emailUpdateError
