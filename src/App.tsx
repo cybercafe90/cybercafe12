@@ -61,6 +61,7 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
+const SmartOperationsPreview = lazy(() => import("./pages/SmartOperationsPreview"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
@@ -4309,6 +4310,7 @@ function RoutedApp() {
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/preview/operations" element={<SmartOperationsPreview />} />
         <Route path="/grievance" element={<GrievancePage />} />
         <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="/feedback" element={<FeedbackCentre />} />
