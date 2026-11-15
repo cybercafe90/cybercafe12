@@ -198,3 +198,14 @@
 .print-photo-preview>small{display:block;text-align:center;margin-top:12px;color:#a8c4cc;font-size:9px}
 @media(max-width:700px){.print-quick-actions{display:grid;grid-template-columns:1fr}.print-quick-actions button{justify-content:center}.print-studio-grid{grid-template-columns:1fr}.print-photo-sheet{max-width:100%;gap:6px;padding:10px}.print-resume-preview{min-height:230px}}
 @media(prefers-reduced-motion:reduce){.print-quick-actions button{transition:none}}
+
+/* Print pricing and review summary */
+.print-preview-total>div{display:grid;gap:5px}
+.print-preview-total>div>b{font-size:22px;color:#f5d58f;letter-spacing:-.03em}
+.print-preview-total>div>small:last-child{color:#a8c5ce;font-size:9px;line-height:1.5}
+.print-review-card{margin:14px 0;padding:16px;border:1px solid #c5a66a;border-radius:12px;background:linear-gradient(145deg,#172d36,#0c1b25);color:#eaf8fa;box-shadow:0 12px 30px #0003;animation:print-rise .25s both}
+.print-review-card h3{margin:7px 0 13px;font-size:19px;color:#fff}
+.print-review-card p{margin:8px 0;color:#c1d5da;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.print-review-total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;padding:13px 0;border-top:1px solid #38515a;border-bottom:1px solid #38515a;color:#dcebef;font-size:12px}
+.print-review-total strong{font-size:22px;color:#f5d58f}
+.print-review-card .print-review-note{font-size:10px;color:#a8c5ce}
