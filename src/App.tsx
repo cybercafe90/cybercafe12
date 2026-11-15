@@ -2217,6 +2217,26 @@ function AdminPage() {
   const [csvRows, setCsvRows] = useState<Record<string, string>[]>([]);
   const [csvFileName, setCsvFileName] = useState("");
   const [csvPreviewError, setCsvPreviewError] = useState("");
+  const [csvImportPhase, setCsvImportPhase] = useState("");
+  const csvReview = csvRows.map((row, index) => {
+    const issues: string[] = [];
+    const name = row.name?.trim() ?? "";
+    const category = adminCategories.find((item) => item.slug === row.category_slug?.trim());
+    if (name.length < 2 || name.length > 160) issues.push("Service name must be 2–160 characters.");
+    if (!category || category.is_active === false) issues.push("Choose an active department slug.");
+    const officialUrl = row.official_url?.trim() ?? "";
+    if (officialUrl) {
+      try {
+        if (new URL(officialUrl).protocol !== "https:") issues.push("Official links must use HTTPS.");
+      } catch {
+        issues.push("Official link is not a valid URL.");
+      }
+      if (!csvFlag(row.official_url_verified, false)) issues.push("Confirm the official link before importing.");
+    }
+    return { row, index, issues };
+  });
+  const csvValidCount = csvReview.filter((item) => item.issues.length === 0).length;
+  const csvInvalidCount = csvReview.length - csvValidCount;
   const [categoryNameInput, setCategoryNameInput] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -2620,26 +2640,21 @@ function AdminPage() {
   }
 
   async function submitCsvImport() {
-    if (!supabase || !csvRows.length) return;
-    const valid = csvRows.filter(
-      (row) =>
-        row.name?.trim() &&
-        adminCategories.some((item) => item.slug === row.category_slug?.trim()),
-    );
-    if (!valid.length) {
-      setCsvPreviewError("No valid rows. Check service names and category_slug values against the active categories.");
-      return;
-    }
+    if (!supabase || !csvRows.length || !csvValidCount) return;
+    const valid = csvReview.filter((item) => item.issues.length === 0).map((item) => item.row);
     setBusy(true);
     setError("");
     setNotice("");
+    setCsvImportPhase("Checking your catalogue rows…");
     try {
       const { data: session } = await supabase.auth.getSession();
+      setCsvImportPhase(`Securely importing ${valid.length} valid service rows…`);
       const result = await callFunction<{
         imported: number;
         skipped: number;
       }>("import-services", { rows: valid }, session.session?.access_token);
-      setNotice(`${result.imported} service(s) imported or updated; ${result.skipped + (csvRows.length - valid.length)} row(s) skipped. Featured flags were applied from the CSV.`);
+      setCsvImportPhase("Refreshing the service catalogue…");
+      setNotice(`${result.imported} service(s) imported or updated. ${result.skipped + csvInvalidCount} row(s) skipped. Existing matching services are updated rather than duplicated.`);
       setCsvRows([]);
       setCsvFileName("");
       setCsvPreviewError("");
@@ -2648,6 +2663,7 @@ function AdminPage() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "CSV import failed.");
     } finally {
+      setCsvImportPhase("");
       setBusy(false);
     }
   }
@@ -3275,38 +3291,44 @@ function AdminPage() {
                   <div className="csv-preview">
                     <div className="csv-preview-head">
                       <div><b>{csvFileName}</b><small>{csvRows.length} rows ready to review</small></div>
-                      <span className="csv-ready">Ready to submit</span>
+                      <span className={csvInvalidCount ? "csv-review-needed" : "csv-ready"}>{csvInvalidCount ? "Review required" : "Ready to submit"}</span>
                     </div>
                     <div className="csv-preview-stats">
-                      <span>{csvRows.filter((row) => csvFlag(row.is_featured, false)).length} featured</span>
-                      <span>{csvRows.filter((row) => csvFlag(row.is_active, true)).length} active</span>
+                      <span>{csvRows.length} total rows</span>
+                      <span className="csv-stat-valid">{csvValidCount} ready</span>
+                      <span className={csvInvalidCount ? "csv-stat-invalid" : ""}>{csvInvalidCount} need attention</span>
                     </div>
                     <div className="csv-preview-list">
-                      {csvRows.slice(0, 5).map((row, index) => (
+                      {csvReview.slice(0, 8).map(({ row, index, issues }) => (
                         <div className="csv-preview-row" key={`${row.category_slug}-${row.name}-${index}`}>
-                          <span><b>{row.name || "Unnamed service"}</b><small>{row.category_slug || "No category"}</small></span>
-                          <span className={csvFlag(row.is_featured, false) ? "csv-featured-on" : "csv-featured-off"}>{csvFlag(row.is_featured, false) ? "★ Featured" : "Not featured"}</span>
+                          <span className="csv-preview-service">
+                            <b>{row.name || "Unnamed service"}</b>
+                            <small>{adminCategories.find((item) => item.slug === row.category_slug?.trim())?.name ?? row.category_slug ?? "No department"}</small>
+                            {issues.length > 0 && <small className="csv-row-issue">{issues.join(" ")}</small>}
+                          </span>
+                          <span className={issues.length ? "csv-row-invalid" : "csv-row-valid"}>{issues.length ? "Needs attention" : "Ready"}</span>
                         </div>
                       ))}
-                      {csvRows.length > 5 && <small>and {csvRows.length - 5} more rows…</small>}
+                      {csvRows.length > 8 && <small>Showing 8 of {csvRows.length} rows. All rows are checked before import.</small>}
                     </div>
-                    <button type="button" className="text-button csv-cancel" onClick={() => { setCsvRows([]); setCsvFileName(""); setCsvPreviewError(""); }} disabled={busy}>Remove selected CSV</button>
+                    <p className="csv-import-note">Matching services already in the catalogue will be updated. No public prices are imported.</p>
+                    <button type="button" className="text-button csv-cancel" onClick={() => { setCsvRows([]); setCsvFileName(""); setCsvPreviewError(""); setCsvImportPhase(""); }} disabled={busy}>Remove selected CSV</button>
                   </div>
                 )}
                 <button
                   type="button"
                   className="button button-dark csv-submit"
                   onClick={() => void submitCsvImport()}
-                  disabled={busy || csvRows.length === 0}
+                  disabled={busy || csvValidCount === 0}
                   aria-describedby="csv-submit-help"
                 >
-                  {busy ? "Updating catalogue…" : csvRows.length ? `Submit and update ${csvRows.length} rows` : "Submit CSV"}
+                  {busy ? (csvImportPhase || "Updating catalogue…") : csvRows.length ? `Import ${csvValidCount} valid services` : "Import CSV"}
                   <ArrowRight size={15} />
                 </button>
                 <small id="csv-submit-help" className="csv-submit-help">
                   {csvRows.length
                     ? "Review the preview above, then submit to publish these catalogue changes."
-                    : "Choose a valid CSV file to enable submission. The preview and any CSV errors will appear here."}
+                    : "Choose a CSV file to validate it before importing."}
                 </small>
               </div>
             </div>
