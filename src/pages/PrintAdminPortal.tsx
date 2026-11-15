@@ -20,18 +20,30 @@ export default function PrintAdminPortal(){
   setNotice("Live database connected · "+new Date().toLocaleTimeString("en-IN"));
  },[]);
  useEffect(()=>{
-  if(!supabase){setAccess("unavailable");return}
   let active=true;
-  const verify=async(id:string|null)=>{if(!id){if(active)setAccess("signed-out");return}const {data,error}=await supabase!.from("user_roles").select("role").eq("user_id",id).eq("role","owner").maybeSingle();if(active)setAccess(error?"unavailable":data?.role==="owner"?"owner":"not-owner")};
-  void supabase.auth.getSession().then(({data,error})=>error?setAccess("unavailable"):verify(data.session?.user?.id??null));
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>void verify(s?.user?.id??null));
+  const client=supabase;
+  if(!client){
+   void Promise.resolve().then(()=>{if(active)setAccess("unavailable")});
+   return()=>{active=false};
+  }
+  const verify=async(id:string|null)=>{
+   if(!id){if(active)setAccess("signed-out");return}
+   const {data,error}=await client.from("user_roles").select("role").eq("user_id",id).eq("role","owner").maybeSingle();
+   if(active)setAccess(error?"unavailable":data?.role==="owner"?"owner":"not-owner");
+  };
+  void Promise.resolve().then(()=>client.auth.getSession()).then(({data,error})=>{
+   if(error){if(active)setAccess("unavailable");return}
+   return verify(data.session?.user?.id??null);
+  }).catch(()=>{if(active)setAccess("unavailable")});
+  const {data:{subscription}}=client.auth.onAuthStateChange((_e,s)=>void verify(s?.user?.id??null));
   return()=>{active=false;subscription.unsubscribe()};
  },[]);
  useEffect(()=>{
   const client=supabase;
-  if(access!=="owner"||!client)return;let active=true;
-  void load().catch(e=>{if(active)setNotice(e.message||"Could not load print jobs")});
-  const channel=client.channel("print-admin-live").on("postgres_changes",{event:"*",schema:"public",table:"print_jobs"},()=>void load().catch(()=>{})).subscribe();
+  if(access!=="owner"||!client)return;
+  let active=true;
+  void Promise.resolve().then(()=>load()).catch(e=>{if(active)setNotice(e.message||"Could not load print jobs")});
+  const channel=client.channel("print-admin-live").on("postgres_changes",{event:"*",schema:"public",table:"print_jobs"},()=>void load().catch(()=>undefined)).subscribe();
   return()=>{active=false;void client.removeChannel(channel)};
  },[access,load]);
  const filtered=useMemo(()=>jobs.filter(j=>(filter==="all"||j.status===filter)&&(j.job_number+j.customer_name+j.customer_mobile+j.file_name).toLowerCase().includes(query.toLowerCase())),[jobs,filter,query]);

@@ -73,7 +73,8 @@ type PaymentRecord = {
 type Audit = { id: string; payment_id: string; action: string; metadata: Record<string, unknown>; created_at: string };
 type AdminApplication = PaymentRecord["application"] & { payment: Payment | null };
 
-const money = (value: number | string) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(value || 0));
+const inrFormatter = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" });
+const money = (value: number | string) => inrFormatter.format(Number(value || 0));
 const dateTime = (value?: string | null) => value ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—";
 function PaymentStatus({ status }: { status: string }) {
   const label = status === "paid" ? "Paid" : status === "claimed" ? "Confirmation submitted" : status === "needs_review" ? "Needs review" : "Pending";
@@ -156,7 +157,7 @@ function CustomerPayment() {
         if (next.payment.status === "paid" && record.payment.status !== "paid") playSuccessTone();
         setRecord(next);
       }).catch(() => undefined);
-    }, 3000);
+    }, 15000);
     return () => window.clearInterval(timer);
   }, [record, demoMode]);
 
@@ -303,8 +304,19 @@ function AdminPayments() {
   }, []);
   useEffect(() => {
     if (!token) return;
-    void load().then(()=>setReady(true)).catch(reason=>{setError(reason instanceof Error?reason.message:"Owner access could not be verified.");setReady(true);});
-    if (supabase) void supabase.from("service_categories").select("slug,name").eq("is_active",true).order("sort_order").then(({data})=>setCategories(data??[]));
+    let active = true;
+    // Defer the first data load until after the effect commits, and ignore late responses after unmount.
+    void Promise.resolve().then(() => load()).then(() => {
+      if (active) setReady(true);
+    }).catch(reason => {
+      if (!active) return;
+      setError(reason instanceof Error ? reason.message : "Owner access could not be verified.");
+      setReady(true);
+    });
+    if (supabase) void supabase.from("service_categories").select("slug,name").eq("is_active",true).order("sort_order").then(({data}) => {
+      if (active) setCategories(data ?? []);
+    });
+    return () => { active = false; };
   }, [token, load]);
 
   // Keep the owner dashboard fresh without overwriting in-progress fee/email edits.
@@ -314,7 +326,7 @@ function AdminPayments() {
       void api<{applications:AdminApplication[];audit:Audit[]}>({action:"list"})
         .then(result => { setApps(result.applications); setAudit(result.audit); setLastSynced(new Date()); })
         .catch(() => undefined);
-    }, 12000);
+    }, 20000);
     return () => window.clearInterval(timer);
   }, [token, api]);
 
@@ -344,7 +356,7 @@ function AdminPayments() {
         <span className="eyebrow">BABA'S CYBER CAFE · OPERATIONS INTELLIGENCE</span>
         <h1>Payment command centre</h1>
         <p>Monitor every application, payment confirmation and customer fee from one owner-only workspace.</p>
-        <div className="payment-live-line"><i/> LIVE SYNC · {lastSynced ? `Last updated ${lastSynced.toLocaleTimeString("en-IN")}` : "Connecting"} <span>Auto-refresh every 12 seconds</span></div>
+        <div className="payment-live-line"><i/> LIVE SYNC · {lastSynced ? `Last updated ${lastSynced.toLocaleTimeString("en-IN")}` : "Connecting"} <span>Auto-refresh every 20 seconds</span></div>
         <Link to="/admin">← Main admin workspace</Link>
         {selectedApplicationId && <p>Filtered to the selected application.</p>}
         {isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts and sending emails are disabled.</p>}

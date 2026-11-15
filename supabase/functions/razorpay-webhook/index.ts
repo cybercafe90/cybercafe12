@@ -9,7 +9,7 @@ function response(request: Request, body: unknown, status=200) {
   const origin = request.headers.get('origin') || ''
   const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
   let valid = allowed.includes(origin)
-  try { const u = new URL(origin); valid ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch {}
+  try { const u = new URL(origin); valid ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch { /* Invalid URL: keep the origin disallowed. */ }
   return new Response(JSON.stringify(body), { status, headers: { 'Access-Control-Allow-Origin': valid ? origin : 'https://babacybercafe.in', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-razorpay-signature, x-razorpay-event-id', 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Content-Type':'application/json; charset=utf-8' } })
 }
 
