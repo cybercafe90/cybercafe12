@@ -62,6 +62,7 @@ import {
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 const SmartOperationsPreview = lazy(() => import("./pages/SmartOperationsPreview"));
+const D1OperationsPreview = lazy(() => import("./pages/D1OperationsPreview"));
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
@@ -4312,6 +4313,7 @@ function RoutedApp() {
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/preview/operations" element={<SmartOperationsPreview />} />
+        <Route path="/preview/d1-operations" element={<D1OperationsPreview />} />
         <Route path="/grievance" element={<GrievancePage />} />
         <Route path="/grievance/admin" element={<AdminGrievancePage />} />
         <Route path="/feedback" element={<FeedbackCentre />} />
