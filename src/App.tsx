@@ -64,6 +64,8 @@ const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
 const ChallanPortal = lazy(() => import("./pages/ChallanPortal"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
+const PrintPortal = lazy(() => import("./pages/PrintPortal"));
+const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
@@ -4183,6 +4185,8 @@ function RoutedApp() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
+        <Route path="/print" element={<PrintPortal />} />
+        <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
