@@ -1,5 +1,5 @@
 import { useMemo, useState, type ChangeEvent } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, Clock3, FileImage, FileText, IdCard, Printer, ShieldCheck, UploadCloud, Wallet, X, WandSparkles, UserRound, Camera, Sparkles, ScanFace } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Clock3, FileImage, FileText, IdCard, Printer, ShieldCheck, UploadCloud, Wallet, X, WandSparkles, UserRound, Camera } from "lucide-react";
 import "./PrintPortal.css";
 
 type PrintKind = "document" | "photo" | "id" | "resume";
