@@ -44,7 +44,6 @@ type PaymentRecord = {
   application: { id: string; tracking_id: string; full_name: string; mobile: string; email?: string; service_name: string; status: string; created_at: string };
   payment: Payment;
 };
-type Alert = { id: string; sender: string; message: string; bank_timestamp: string; received_at: string; parsed_amount: number | null; parsed_utr: string | null; parsed_tracking_id: string | null; matched_payment_id: string | null; status: string; processing_note: string | null };
 type Audit = { id: string; payment_id: string; action: string; metadata: Record<string, unknown>; created_at: string };
 type AdminApplication = PaymentRecord["application"] & { payment: Payment | null };
 
@@ -237,31 +236,23 @@ function AdminPayments() {
   const [token, setToken] = useState("");
   const [ready, setReady] = useState(false);
   const [apps, setApps] = useState<AdminApplication[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [audit, setAudit] = useState<Audit[]>([]);
-  const [matchTargets, setMatchTargets] = useState<Record<string,string>>({});
   const [categories, setCategories] = useState<{slug: string; name: string}[]>([]);
   const [amounts, setAmounts] = useState<Record<string,string>>({});
-  const [reasons, setReasons] = useState<Record<string,string>>({});
+  const [customerEmails, setCustomerEmails] = useState<Record<string,string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
-  const [tab, setTab] = useState<"applications"|"alerts"|"audit">("applications");
+  const [tab, setTab] = useState<"applications"|"audit">("applications");
   const [create, setCreate] = useState({fullName:"", mobile:"", email:"", serviceName:"", categorySlug:"", amount:""});
-  const [customerEmails, setCustomerEmails] = useState<Record<string,string>>({});
-  const [manualUtr, setManualUtr] = useState<Record<string,string>>({});
-  const [manualReason, setManualReason] = useState<Record<string,string>>({});
-  const [manualStatementVerified, setManualStatementVerified] = useState<Record<string,boolean>>({});
-  const [alertStatementVerified, setAlertStatementVerified] = useState<Record<string,boolean>>({});
-  const visibleApps = selectedApplicationId
-    ? apps.filter((app) => app.id === selectedApplicationId)
-    : apps;
+  const visibleApps = selectedApplicationId ? apps.filter((app) => app.id === selectedApplicationId) : apps;
 
   const api = useCallback(async <T,>(body: object) => callFunction<T>("admin-payments", body, token), [token]);
   const load = useCallback(async () => {
-    const result = await api<{applications:AdminApplication[];alerts:Alert[];audit:Audit[]}>({action:"list"});
-    setApps(result.applications); setAlerts(result.alerts); setAudit(result.audit);
-    setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)]))); setCustomerEmails(Object.fromEntries(result.applications.map(item=>[item.id,item.email ?? ""])));
+    const result = await api<{applications:AdminApplication[];audit:Audit[]}>({action:"list"});
+    setApps(result.applications); setAudit(result.audit);
+    setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)])));
+    setCustomerEmails(Object.fromEntries(result.applications.map(item=>[item.id,item.email ?? ""])));
   }, [api]);
 
   useEffect(() => {
@@ -277,7 +268,12 @@ function AdminPayments() {
   }, []);
   useEffect(() => {
     if (!token) return;
-    void api<{applications:AdminApplication[];alerts:Alert[];audit:Audit[]}>({action:"list"}).then(result=>{setApps(result.applications);setAlerts(result.alerts);setAudit(result.audit);setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)])));setReady(true);}).catch(reason=>{setError(reason instanceof Error?reason.message:"Owner access could not be verified.");setReady(true);});
+    void api<{applications:AdminApplication[];audit:Audit[]}>({action:"list"}).then(result=>{
+      setApps(result.applications); setAudit(result.audit);
+      setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)])));
+      setCustomerEmails(Object.fromEntries(result.applications.map(item=>[item.id,item.email ?? ""])));
+      setReady(true);
+    }).catch(reason=>{setError(reason instanceof Error?reason.message:"Owner access could not be verified.");setReady(true);});
     if (supabase) void supabase.from("service_categories").select("slug,name").eq("is_active",true).order("sort_order").then(({data})=>setCategories(data??[]));
   }, [token, api]);
 
@@ -292,20 +288,52 @@ function AdminPayments() {
     event.preventDefault();
     if (isPaymentPreview) { setNotice("Preview mode: new payment applications cannot be created here."); return; }
     setBusy("create"); setError(""); setNotice("");
-    try { const result=await api<{trackingId:string}>({action:"create_application",fullName:create.fullName,mobile:create.mobile,email:create.email,serviceName:create.serviceName,categorySlug:create.categorySlug,amount:Number(create.amount||0)}); setCreate({fullName:"",mobile:"",email:"",serviceName:"",categorySlug:"",amount:""}); await load(); setNotice(`Application created: ${result.trackingId}`); }
-    catch(reason) { setError(reason instanceof Error?reason.message:"Application could not be created."); }
+    try {
+      const result=await api<{trackingId:string;notification?:string}>({action:"create_application",fullName:create.fullName,mobile:create.mobile,email:create.email,serviceName:create.serviceName,categorySlug:create.categorySlug,amount:Number(create.amount||0)});
+      setCreate({fullName:"",mobile:"",email:"",serviceName:"",categorySlug:"",amount:""});
+      await load(); setNotice(`Application created: ${result.trackingId}. ${result.notification??""}`);
+    } catch(reason) { setError(reason instanceof Error?reason.message:"Application could not be created."); }
     finally { setBusy(""); }
   };
 
   if (!ready) return <main className="payment-page"><div className="payment-shell"><p>Verifying owner access…</p></div></main>;
   return (
     <main className="payment-page payment-admin-page"><div className="payment-shell payment-admin-shell">
-      <div className="payment-heading"><span className="eyebrow">OWNER CONTROL CENTRE · PREVIEW</span><h1>Payment management</h1><p>Assign payment amounts, reconcile bank alerts and review customer confirmations.</p>{selectedApplicationId && <p>Showing the selected application only.</p>}{isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts, marking payments paid and sending emails are disabled.</p>}<Link to="/admin">← Back to main admin</Link></div>
+      <div className="payment-heading"><span className="eyebrow">OWNER CONTROL CENTRE · RAZORPAY AUTOMATION</span><h1>Payment management</h1><p>Assign application fees, email secure payment links and monitor automatic Razorpay confirmations.</p>{selectedApplicationId && <p>Showing the selected application only.</p>}{isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts and sending emails are disabled.</p>}<Link to="/admin">← Back to main admin</Link></div>
       {error && <p className="payment-alert payment-alert-error">{error}</p>}{notice && <p className="payment-alert payment-alert-info">{notice}</p>}
-      <form className="payment-create-form" onSubmit={createApplication}><h2>New payment application</h2><div className="payment-admin-fields"><label>Customer name<input required minLength={2} maxLength={120} value={create.fullName} onChange={e=>setCreate({...create,fullName:e.target.value})}/></label><label>Mobile<input required value={create.mobile} onChange={e=>setCreate({...create,mobile:e.target.value})}/></label><label>Customer email<input type="email" required value={create.email} onChange={e=>setCreate({...create,email:e.target.value})} placeholder="customer@example.com"/></label><label>Service type<input required list="payment-service-list" value={create.serviceName} onChange={e=>setCreate({...create,serviceName:e.target.value})}/><datalist id="payment-service-list">{categories.map(c=><option key={c.slug} value={c.name}/>)}</datalist></label><label>Category<select required value={create.categorySlug} onChange={e=>setCreate({...create,categorySlug:e.target.value})}><option value="">Select category</option>{categories.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label><label>Amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={create.amount} onChange={e=>setCreate({...create,amount:e.target.value})}/></label></div><button className="button button-dark" disabled={busy==="create"}>{busy==="create"?"Creating…":"Create application"}</button></form>
-      <div className="payment-admin-tabs"><button className={tab==="applications"?"is-active":""} onClick={()=>setTab("applications")} type="button">Applications ({apps.length})</button><button className={tab==="alerts"?"is-active":""} onClick={()=>setTab("alerts")} type="button">Bank alerts ({alerts.length})</button><button className={tab==="audit"?"is-active":""} onClick={()=>setTab("audit")} type="button">Audit log ({audit.length})</button><button className="payment-refresh" type="button" onClick={()=>void load()}>Refresh</button></div>
-      {tab==="applications" ? <div className="payment-admin-list">{visibleApps.map(app=><article className="payment-admin-card" key={app.id}><div className="payment-admin-card-head"><div><b>{app.full_name}</b><span>{app.tracking_id} · {app.service_name}</span><small>{app.mobile} · {app.email || "No email saved"} · {dateTime(app.created_at)}</small></div><PaymentStatus status={app.payment?.status??"pending"}/></div><div className="payment-admin-controls"><label>Customer email for payment link<input type="email" required value={customerEmails[app.id]??""} onChange={e=>setCustomerEmails({...customerEmails,[app.id]:e.target.value})} placeholder="customer@example.com"/></label><label>Assigned amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={amounts[app.id]??"0"} onChange={e=>setAmounts({...amounts,[app.id]:e.target.value})}/></label><button className="button button-outline" disabled={!!busy || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(customerEmails[app.id]??"")} onClick={()=>void run(app.id,{action:"set_amount",applicationId:app.id,amount:Number(amounts[app.id]||0),email:customerEmails[app.id]})}>Save amount &amp; email payment link</button></div>{app.payment?.status==="pending" && Number(app.payment.amount)>0 && <button className="text-button" disabled={!!busy} onClick={()=>void run(app.id,{action:"renew_qr",applicationId:app.id})}>Renew 5-minute QR</button>}{app.payment?.status==="paid" ? <><p className="payment-admin-meta">Verified UTR: <b>{app.payment.utr}</b> · {dateTime(app.payment.paid_at)}</p><button className="text-button" disabled={!!busy} onClick={()=>{const reason=window.prompt("Why are you reopening this payment?");if(reason && reason.trim().length>=10) void run(app.id,{action:"manual_mark_pending",applicationId:app.id,reason});}}>Reopen / mark pending</button></> : <div className="payment-admin-controls"><label>Manual UTR<input inputMode="numeric" maxLength={12} value={(manualUtr[app.id]??app.payment?.claimed_utr??"").replace(/\D/g,"").slice(0,12)} onChange={e=>setManualUtr({...manualUtr,[app.id]:e.target.value.replace(/\D/g,"").slice(0,12)})} placeholder="12-digit UTR"/></label><label>Verification note<input value={manualReason[app.id]??""} onChange={e=>setManualReason({...manualReason,[app.id]:e.target.value})} placeholder="Describe the bank-statement match (min. 10 characters)"/></label><label className="payment-verify-checkbox"><input type="checkbox" checked={manualStatementVerified[app.id]===true} onChange={e=>setManualStatementVerified({...manualStatementVerified,[app.id]:e.target.checked})}/><span>I personally verified the matching credit in the ICICI account or bank statement. An SMS or customer UTR alone is not proof.</span></label><ul className="payment-verification-checklist"><li className={(manualUtr[app.id]??app.payment?.claimed_utr??"").replace(/\D/g,"").length===12?"is-ready":""}>12-digit UTR {(manualUtr[app.id]??app.payment?.claimed_utr??"").replace(/\D/g,"").length===12?"✓":"—"}</li><li className={(manualReason[app.id]??"").trim().length>=10?"is-ready":""}>Verification note: {(manualReason[app.id]??"").trim().length}/10 characters</li><li className={manualStatementVerified[app.id]===true?"is-ready":""}>Bank statement personally checked {manualStatementVerified[app.id]===true?"✓":"—"}</li><li className={Number(app.payment?.amount??0)>0?"is-ready":""}>Payment amount assigned: {money(app.payment?.amount??0)}</li></ul><button className="button button-dark" disabled={!!busy || Number(app.payment?.amount??0)<=0 || (manualUtr[app.id]??app.payment?.claimed_utr??"").replace(/\D/g,"").length!==12 || (manualReason[app.id]??"").trim().length<10 || manualStatementVerified[app.id]!==true} onClick={()=>void run(app.id,{action:"manual_mark_paid",applicationId:app.id,utr:(manualUtr[app.id]??app.payment?.claimed_utr??"").replace(/\D/g,"").slice(0,12),reason:manualReason[app.id],bankStatementVerified:true})}>Mark paid</button></div>}{app.payment?.claimed_utr && <p className="payment-admin-meta">Customer submitted: {app.payment.claimed_utr} (not verified)</p>}</article>)}{visibleApps.length===0 && <p className="payment-empty">No payment application was found. Return to the admin dashboard and open the payment action from its application row.</p>}</div> : tab==="alerts" ? <div className="payment-alert-list">{alerts.map(alert=><article className="payment-alert-card" key={alert.id}><div className="payment-admin-card-head"><div><b>{alert.sender}</b><small>{dateTime(alert.received_at)} · {alert.parsed_tracking_id??"No tracking ID detected"}</small></div><PaymentStatus status={alert.status==="matched"?"paid":"needs_review"}/></div><p>{alert.message}</p><div className="payment-admin-meta">Amount: {alert.parsed_amount?money(alert.parsed_amount):"Not parsed"} · UTR: {alert.parsed_utr??"Not parsed"}</div>{alert.status!=="matched" && alert.parsed_utr && alert.parsed_amount ? <div className="payment-admin-controls"><label>Match to application<select value={matchTargets[alert.id]??apps.find(app=>app.payment?.id===alert.matched_payment_id)?.id??""} onChange={e=>setMatchTargets({...matchTargets,[alert.id]:e.target.value})}><option value="">Select matching application</option>{apps.filter(app=>Number(app.payment?.amount??0)===Number(alert.parsed_amount) && app.payment?.status!=="paid").map(app=><option key={app.id} value={app.id}>{app.tracking_id} · {app.full_name} · {money(app.payment?.amount??0)}</option>)}</select></label><label>Review note<input value={reasons[alert.id]??""} onChange={e=>setReasons({...reasons,[alert.id]:e.target.value})} placeholder="Describe the bank-statement match"/></label><label className="payment-verify-checkbox"><input type="checkbox" checked={alertStatementVerified[alert.id]===true} onChange={e=>setAlertStatementVerified({...alertStatementVerified,[alert.id]:e.target.checked})}/><span>I verified this exact credit in the ICICI account or bank statement; the SMS alert alone is not proof.</span></label><button className="button button-dark" disabled={!!busy || !(matchTargets[alert.id]??apps.find(app=>app.payment?.id===alert.matched_payment_id)?.id) || (reasons[alert.id]??"").trim().length<10 || alertStatementVerified[alert.id]!==true} onClick={()=>void run(alert.id,{action:"manual_match",alertId:alert.id,applicationId:matchTargets[alert.id]??apps.find(app=>app.payment?.id===alert.matched_payment_id)?.id,reason:reasons[alert.id],bankStatementVerified:true})}>Match payment</button></div>:null}<small>{alert.processing_note}</small></article>)}</div> : <div className="payment-alert-list">{audit.map(event=><article className="payment-alert-card" key={event.id}><b>{event.action.replaceAll("_"," ")}</b><small>{dateTime(event.created_at)} · Payment record {event.payment_id}</small><pre>{JSON.stringify(event.metadata,null,2)}</pre></article>)}</div>}
-      <p className="payment-footnote">Customer-entered UTRs are claims, not proof. Confirm against the bank account before using manual mark-paid. All owner actions are audited.</p>
+      <form className="payment-create-form" onSubmit={createApplication}>
+        <h2>New payment application</h2>
+        <div className="payment-admin-fields">
+          <label>Customer name<input required minLength={2} maxLength={120} value={create.fullName} onChange={e=>setCreate({...create,fullName:e.target.value})}/></label>
+          <label>Mobile<input required value={create.mobile} onChange={e=>setCreate({...create,mobile:e.target.value})}/></label>
+          <label>Customer email<input type="email" required value={create.email} onChange={e=>setCreate({...create,email:e.target.value})} placeholder="customer@example.com"/></label>
+          <label>Service type<input required list="payment-service-list" value={create.serviceName} onChange={e=>setCreate({...create,serviceName:e.target.value})}/><datalist id="payment-service-list">{categories.map(c=><option key={c.slug} value={c.name}/>)}</datalist></label>
+          <label>Category<select required value={create.categorySlug} onChange={e=>setCreate({...create,categorySlug:e.target.value})}><option value="">Select category</option>{categories.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label>
+          <label>Amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={create.amount} onChange={e=>setCreate({...create,amount:e.target.value})}/></label>
+        </div>
+        <button className="button button-dark" disabled={busy==="create"}>{busy==="create"?"Creating…":"Create application & send payment email"}</button>
+      </form>
+      <div className="payment-admin-tabs"><button className={tab==="applications"?"is-active":""} onClick={()=>setTab("applications")} type="button">Applications ({apps.length})</button><button className={tab==="audit"?"is-active":""} onClick={()=>setTab("audit")} type="button">Payment activity ({audit.length})</button><button className="payment-refresh" type="button" onClick={()=>void load()}>Refresh</button></div>
+      {tab==="applications" ? (
+        <div className="payment-admin-list">
+          {visibleApps.map(app=>(
+            <article className="payment-admin-card" key={app.id}>
+              <div className="payment-admin-card-head"><div><b>{app.full_name}</b><span>{app.tracking_id} · {app.service_name}</span><small>{app.mobile} · {app.email || "No email saved"} · {dateTime(app.created_at)}</small></div><PaymentStatus status={app.payment?.status??"pending"}/></div>
+              <div className="payment-admin-controls">
+                <label>Customer email<input type="email" required value={customerEmails[app.id]??""} onChange={e=>setCustomerEmails({...customerEmails,[app.id]:e.target.value})} placeholder="customer@example.com"/></label>
+                <label>Assigned amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={amounts[app.id]??"0"} onChange={e=>setAmounts({...amounts,[app.id]:e.target.value})}/></label>
+                <button className="button button-outline" disabled={!!busy || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(customerEmails[app.id]??"")} onClick={()=>void run(app.id,{action:"set_amount",applicationId:app.id,amount:Number(amounts[app.id]||0),email:customerEmails[app.id]})}>Save fee &amp; email Razorpay payment link</button>
+              </div>
+              {app.payment?.status==="paid" ? <p className="payment-admin-meta">Razorpay payment ID: <b>{app.payment.razorpay_payment_id || "Verified"}</b> · Paid at {dateTime(app.payment.paid_at)}</p> :
+                <p className="payment-admin-meta">{Number(app.payment?.amount??0)>0 ? "Awaiting automatic Razorpay payment confirmation." : "Assign an amount to start the payment process."}</p>}
+            </article>
+          ))}
+          {visibleApps.length===0 && <p className="payment-empty">No payment application was found. Return to the admin dashboard and open the payment action from its application row.</p>}
+        </div>
+      ) : (
+        <div className="payment-alert-list">{audit.map(event=><article className="payment-alert-card" key={event.id}><b>{event.action.replaceAll("_"," ")}</b><small>{dateTime(event.created_at)} · Payment record {event.payment_id}</small><pre>{JSON.stringify(event.metadata,null,2)}</pre></article>)}</div>
+      )}
+      <p className="payment-footnote">Payment status is updated from verified Razorpay checkout responses and Razorpay webhook events. Manual UTR and bank-alert reconciliation are not part of this portal.</p>
     </div></main>
   );
 }
