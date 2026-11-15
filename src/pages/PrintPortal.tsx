@@ -36,6 +36,9 @@ export default function PrintPortal() {
   const [customPhotoWidth, setCustomPhotoWidth] = useState("35");
   const [customPhotoHeight, setCustomPhotoHeight] = useState("45");
   const [studioNotice, setStudioNotice] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerMobile, setCustomerMobile] = useState("");
+  const [submittedOrder, setSubmittedOrder] = useState<{ id: string; createdAt: string } | null>(null);
 
   const accept = kind === "document" || kind === "resume" ? ".pdf,application/pdf" : "image/jpeg,image/png,.jpg,.jpeg,.png,.pdf";
   const allowed = useMemo(() => {
@@ -96,6 +99,52 @@ export default function PrintPortal() {
       return;
     }
     setShowReview(true);
+  }
+
+  function sendWhatsAppRequest() {
+    if (!customerName.trim()) {
+      setNotice("Enter your name before continuing to WhatsApp.");
+      return;
+    }
+    const mobile = customerMobile.replace(/\\D/g, "");
+    if (mobile.length !== 10) {
+      setNotice("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    if (!file || !allowed || estimate.amount <= 0) {
+      setNotice("Please check your file and print settings first.");
+      return;
+    }
+    const id = "BABA-PRN-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const createdAt = new Date().toISOString();
+    const order = {
+      id, createdAt, customerName: customerName.trim(), mobile,
+      service: kinds.find(item => item.id === kind)?.title ?? kind,
+      fileName: file.name, estimate: estimate.amount, detail: estimate.detail,
+      status: "WhatsApp confirmation pending"
+    };
+    try {
+      const key = "baba_print_requests_v1";
+      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+      localStorage.setItem(key, JSON.stringify([order, ...existing].slice(0, 20)));
+    } catch {
+      setNotice("This browser could not save a local reference. Please contact the shop directly.");
+      return;
+    }
+    setSubmittedOrder({ id, createdAt });
+    const message = [
+      "Hello BABA'S CYBER CAFE, I want to place a print request.",
+      "Reference: " + id,
+      "Name: " + order.customerName,
+      "Mobile: +91 " + mobile,
+      "Service: " + order.service,
+      "File name: " + file.name,
+      "Settings: " + estimate.detail,
+      "Estimated amount: ₹" + estimate.amount,
+      "Please confirm the final amount and payment/collection details. I will attach my document here."
+    ].join("\\n");
+    const url = "https://wa.me/917006865909?text=" + encodeURIComponent(message);
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function openPrintDocument(title: string, body: string, pageCss: string) {
@@ -211,7 +260,9 @@ export default function PrintPortal() {
             <div className="print-preview-total"><div><small>ESTIMATED TOTAL</small><b>{estimate.amount > 0 ? "₹" + estimate.amount.toFixed(2) : "Check your configuration"}</b><small>{estimate.detail}</small></div><Wallet size={21}/></div>
             <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed || estimate.amount <= 0}>Review print request <ArrowRight size={17}/></button>
             {notice && <p className="print-preview-notice" role="status">{notice}</p>}
-            {showReview && <div className="print-review-card"><span className="print-eyebrow">ORDER SUMMARY · CHECK BEFORE PAYMENT</span><h3>Review print request</h3><p><b>Service:</b> {kinds.find(item => item.id === kind)?.title}</p><p><b>File:</b> {file?.name}</p><p><b>Configuration:</b> {estimate.detail}</p><div className="print-review-total"><span>Estimated total</span><strong>₹{estimate.amount.toFixed(2)}</strong></div><p className="print-review-note">{kind === "photo" ? "Photo orders require shop/admin approval before printing." : kind === "resume" ? "Resume print orders require shop review. Resume formatting is ₹40, separate from printing." : "Payment must be verified before the print job enters the shop queue."}</p><p className="print-review-note">Razorpay checkout will be connected only after the print-order endpoint, signature verification and webhook flow are verified. This preview has not initiated payment.</p><button type="button" className="print-remove-file" onClick={() => setShowReview(false)}>Back to edit request</button></div>}
+            {showReview && <div className="print-review-card"><span className="print-eyebrow">ORDER SUMMARY · CHECK BEFORE PAYMENT</span><h3>Review print request</h3><p><b>Service:</b> {kinds.find(item => item.id === kind)?.title}</p><p><b>File:</b> {file?.name}</p><p><b>Configuration:</b> {estimate.detail}</p><div className="print-review-total"><span>Estimated total</span><strong>₹{estimate.amount.toFixed(2)}</strong></div><p className="print-review-note">{kind === "photo" ? "Photo orders require shop/admin approval before printing." : kind === "resume" ? "Resume print orders require shop review. Resume formatting is ₹40, separate from printing." : "Payment must be verified before the print job enters the shop queue."}</p><p className="print-review-note">This free preview saves a reference on this device and opens WhatsApp with your request details. Your document is not uploaded automatically; attach it in the WhatsApp chat. The shop must confirm the final price and order.</p>
+              {submittedOrder ? <div className="print-local-order" role="status"><b>Request prepared</b><strong>{submittedOrder.id}</strong><small>Saved only in this browser · Awaiting WhatsApp confirmation</small><a href={"https://wa.me/917006865909?text=" + encodeURIComponent("Hello, please help me with print request " + submittedOrder.id + ".")} target="_blank" rel="noreferrer">Reopen WhatsApp chat</a></div> : <div className="print-order-contact"><label className="print-field"><span>Your name</span><input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Full name" maxLength={80}/></label><label className="print-field"><span>Mobile number</span><input value={customerMobile} onChange={e => setCustomerMobile(e.target.value.replace(/\\D/g, "").slice(0,10))} placeholder="10-digit mobile number" inputMode="numeric" maxLength={10}/></label><button type="button" className="print-continue" onClick={sendWhatsAppRequest}>Continue with WhatsApp <ArrowRight size={17}/></button></div>}
+              <button type="button" className="print-remove-file" onClick={() => { setShowReview(false); setSubmittedOrder(null); }}>Back to edit request</button></div>}
             <small className="print-no-charge">Estimate only · No payment collected · No print job created</small>
           </section>
         </div>
