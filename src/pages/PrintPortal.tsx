@@ -37,7 +37,7 @@ export default function PrintPortal() {
   const [colour, setColour] = useState<"mono" | "colour">("mono");
   const [sides, setSides] = useState<"single" | "manual-duplex">("single");
   const [pageCount, setPageCount] = useState(1);
-  const [selectedPageCount, setSelectedPageCount] = useState(1);
+  const [selectedPageCount] = useState(1);
   const [photoCount, setPhotoCount] = useState(8);
   const [photoWidth, setPhotoWidth] = useState(35);
   const [photoHeight, setPhotoHeight] = useState(45);
@@ -49,11 +49,11 @@ export default function PrintPortal() {
   const [trackMobile, setTrackMobile] = useState("");
   const [tracked, setTracked] = useState<Tracked | null>(null);
 
-  const details: OrderDetails = { kind, copies, colour, sides, pageCount, selectedPageCount, photoCount, photoWidth, photoHeight };
+  const details: OrderDetails = { kind, copies, colour, sides, pageCount, selectedPageCount: pageCount, photoCount, photoWidth, photoHeight };
   const estimate = useMemo(() => {
     if (kind === "document" || kind === "resume") {
       const rate = sides === "manual-duplex" ? (colour === "mono" ? 9 : 15) : (colour === "mono" ? 5 : 9);
-      return Math.ceil(selectedPageCount / (sides === "manual-duplex" ? 2 : 1)) * rate * copies + (kind === "resume" ? 40 : 0);
+      return Math.ceil(pageCount / (sides === "manual-duplex" ? 2 : 1)) * rate * copies;
     }
     if (kind === "id") return 10 * copies;
     const base = photoCount === 6 ? 30 : photoCount === 12 ? 60 : 40;
@@ -66,7 +66,7 @@ export default function PrintPortal() {
     if (!supabase) { setNotice("Secure ordering is temporarily unavailable. Please contact the cafe."); return; }
     if (!name.trim() || !/^[+0-9()\s-]{8,18}$/.test(mobile.trim())) { setNotice("Enter your name and a valid mobile number."); return; }
     if (!file || file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf") || file.size < 1 || file.size > 25 * 1024 * 1024) { setNotice("Choose a PDF file up to 25 MB."); return; }
-    if ((kind === "document" || kind === "resume") && (pageCount < 1 || selectedPageCount < 1 || selectedPageCount > pageCount)) { setNotice("Check the PDF page count and selected page count."); return; }
+    if ((kind === "document" || kind === "resume") && (pageCount < 1 || pageCount > 1000)) { setNotice("Enter a valid PDF page count."); return; }
     if (kind === "photo" && (photoWidth < 15 || photoWidth > 80 || photoHeight < 15 || photoHeight > 100)) { setNotice("Photo dimensions must be 15–80 mm wide and 15–100 mm high."); return; }
     setBusy(true);
     try {
@@ -120,7 +120,7 @@ export default function PrintPortal() {
     <div className="print-content">
       <div className="print-step-heading"><div><span className="print-eyebrow">01 / SELECT SERVICE</span><h2>What would you like to print?</h2></div></div>
       <div className="print-kind-grid">
-        {([["document","Document printing","PDF pages · B&W or colour"],["photo","Passport photographs","Photo sheet PDF"],["id","ID card / Aadhaar","Front and back PDF"],["resume","Resume printing","Resume PDF + formatting"]] as [Kind,string,string][]).map(([id,title,description])=><button key={id} type="button" className={kind===id?"print-kind is-selected":"print-kind"} onClick={()=>setKind(id)}><span className="print-kind-icon"><FileText size={21}/></span><span className="print-kind-copy"><b>{title}</b><small>{description}</small></span><span className="print-kind-check">{kind===id?<CheckCircle2 size={19}/>:<ArrowRight size={18}/>}</span></button>)}
+        {([["document","Document printing","PDF pages · B&W or colour"],["photo","Passport photographs","Photo sheet PDF"],["id","ID card / Aadhaar","Front and back PDF"],["resume","Resume printing","Print your existing resume PDF"]] as [Kind,string,string][]).map(([id,title,description])=><button key={id} type="button" className={kind===id?"print-kind is-selected":"print-kind"} onClick={()=>setKind(id)}><span className="print-kind-icon"><FileText size={21}/></span><span className="print-kind-copy"><b>{title}</b><small>{description}</small></span><span className="print-kind-check">{kind===id?<CheckCircle2 size={19}/>:<ArrowRight size={18}/>}</span></button>)}
       </div>
       <form className="print-panel" onSubmit={pay} style={{display:"grid",gap:18}}>
         <div className="print-panel-title"><span className="print-eyebrow">02 / ORDER DETAILS</span><h2>Prepare your print order</h2><p>PDF only · Maximum 25 MB · Your document is stored privately.</p></div>
@@ -131,7 +131,7 @@ export default function PrintPortal() {
         <label className="print-dropzone"><input type="file" accept="application/pdf,.pdf" onChange={e=>setFile(e.target.files?.[0]??null)}/><span className="print-upload-icon"><UploadCloud size={26}/></span><b>{file?file.name:"Choose your PDF file"}</b><small>{file?((file.size/1024/1024).toFixed(2)+" MB selected"):"Tap to browse files on your phone · PDF only"}</small></label>
         {(kind==="document"||kind==="resume")&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12}}>
           <label className="print-field">Total PDF pages<input type="number" min="1" max="1000" value={pageCount} onChange={e=>setPageCount(Number(e.target.value))}/></label>
-          <label className="print-field">Pages to print<input type="number" min="1" max={pageCount} value={selectedPageCount} onChange={e=>setSelectedPageCount(Number(e.target.value))}/></label>
+          
           <label className="print-field">Copies<input type="number" min="1" max="100" value={copies} onChange={e=>setCopies(Number(e.target.value))}/></label>
         </div>}
         {(kind==="document"||kind==="resume")&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12}}>
