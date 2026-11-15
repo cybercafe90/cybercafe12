@@ -8,7 +8,7 @@ async function sendAssignedPaymentEmail(request: Request, to: string, trackingId
   const baseUrl = 'https://babacybercafe.in'
   const paymentUrl = `${baseUrl}/payment-portal?trackingId=${encodeURIComponent(trackingId)}`
   const formattedAmount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount)
-  const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;')
+  const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   const safeName = escapeHtml(customerName.slice(0, 120))
   const safeService = escapeHtml(serviceName.slice(0, 160))
   const html = `<!doctype html><html><body style="margin:0;background:#f5f2eb;font-family:Arial,sans-serif;color:#25231e"><div style="max-width:600px;margin:32px auto;padding:32px;background:#fff;border:1px solid #e7dfcf;border-radius:16px"><p style="letter-spacing:2px;color:#98763c;font-size:11px;font-weight:bold">BABA'S CYBER CAFE · SECURE PAYMENT</p><h1 style="font-size:26px">Payment link for your application</h1><p>Hello ${safeName},</p><p>An amount has been assigned for your ${safeService} application.</p><p style="font-size:30px;font-weight:bold;color:#98763c">${formattedAmount}</p><p>Tracking ID: <strong>${trackingId}</strong></p><p>Open the secure payment portal, then enter your registered mobile number to view and pay.</p><p style="margin:28px 0"><a href="${paymentUrl}" style="display:inline-block;padding:14px 22px;background:#b99450;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">Open payment portal</a></p><p style="font-size:13px;color:#666">If you did not request this service, contact us at support@babacybercafe.in. Never share your UPI PIN, bank password or OTP.</p><p style="font-size:12px;color:#777">BABA'S CYBER CAFE · Srinagar, Jammu &amp; Kashmir</p></div></body></html>`
@@ -77,7 +77,7 @@ Deno.serve(async (request) => {
       if (!Number.isFinite(amount) || amount < 0 || amount > 10000000 || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(email)) return response(request, { error: 'Enter a valid amount and customer email address.' }, 400)
       const { data: app } = await admin.from('applications').select('id, tracking_id, full_name, service_name').eq('id', body.applicationId).maybeSingle()
       if (!app) return response(request, { error: 'Application not found.' }, 404)
-      const { data: existing } = await admin.from('payment_orders').select('id, status, amount').eq('application_id', body.applicationId).maybeSingle()
+      const { data: existing } = await admin.from('payment_orders').select('id, status, amount, payment_provider, razorpay_payment_id').eq('application_id', body.applicationId).maybeSingle()
       if (existing && existing.status === 'paid' && existing.payment_provider === 'razorpay' && existing.razorpay_payment_id) return response(request, { error: 'This application is already paid through Razorpay. A new payment link cannot be issued.' }, 409)
       const { error: emailUpdateError } = await admin.from('applications').update({ email }).eq('id', body.applicationId)
       if (emailUpdateError) throw emailUpdateError
