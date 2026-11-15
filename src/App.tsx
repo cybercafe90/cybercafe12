@@ -3291,7 +3291,7 @@ function AdminPage() {
                   <div className="csv-preview">
                     <div className="csv-preview-head">
                       <div><b>{csvFileName}</b><small>{csvRows.length} rows ready to review</small></div>
-                      <span className="csv-ready">Ready to submit</span>
+                      <span className={csvInvalidCount ? "csv-review-needed" : "csv-ready"}>{csvInvalidCount ? "Review required" : "Ready to submit"}</span>
                     </div>
                     <div className="csv-preview-stats">
                       <span>{csvRows.length} total rows</span>
