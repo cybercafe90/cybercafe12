@@ -135,7 +135,7 @@ function CustomerPayment() {
   }, [record, demoMode]);
 
   const startRazorpayCheckout = async () => {
-    if (!record || !razorpayCheckoutEnabled || demoMode || checkoutBusy) return;
+    if (!record || demoMode || checkoutBusy) return;
     setCheckoutBusy(true); setError(""); setMessage("");
     try {
       await loadRazorpayCheckout();
