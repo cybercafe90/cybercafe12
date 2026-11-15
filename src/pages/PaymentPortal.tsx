@@ -257,6 +257,7 @@ function CustomerPayment() {
             <label>Registered mobile number<input value={mobile} onChange={e => setMobile(e.target.value)} placeholder="10-digit mobile number" inputMode="tel" required maxLength={16}/></label>
             <button className="button button-dark" disabled={loading}>{loading ? "Checking…" : "Find application"}</button>
           </form>
+          {isPaymentPreview && <div className="payment-preview-demo"><span className="eyebrow">INTERACTIVE DESIGN PREVIEW</span><p>See the customer payment screen using sample details only.</p><button className="button button-gold" type="button" onClick={openDemoPayment}>View sample customer payment</button><small>No customer record, email, UPI transfer or Razorpay transaction is created.</small></div>}
           {error && <p className="payment-alert payment-alert-error" role="alert">{error}</p>}
           {message && <p className="payment-alert payment-alert-info" role="status">{message}</p>}
         </section>
@@ -279,17 +280,14 @@ function CustomerPayment() {
             ) : (
               <div className="payment-method">
                 <div className="payment-amount"><small>AMOUNT DUE</small><strong>{money(record.payment.amount)}</strong><span>Pay only the exact amount shown.</span></div>
-                {razorpayCheckoutEnabled && record.payment.status === "pending" && (
+                {(razorpayCheckoutEnabled || isPaymentPreview) && record.payment.status === "pending" && (
                   <div className="payment-razorpay-panel">
                     <h2>Pay securely online</h2>
                     <p>Complete your payment using Razorpay's secure checkout.</p>
-                    <button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>
-                      {checkoutBusy ? "Opening secure checkout…" : `Pay ${money(record.payment.amount)} online`}
-                    </button>
-                    <small>Do not close the page until payment verification is complete. Never share your UPI PIN or OTP.</small>
+                    {isPaymentPreview ? <><button className="button button-gold" type="button" disabled>Razorpay checkout · demo preview</button><small>Visible for design review only. Test-mode backend is not connected.</small></> : <><button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>{checkoutBusy ? "Opening secure checkout…" : `Pay ${money(record.payment.amount)} online`}</button><small>Do not close the page until payment verification is complete. Never share your UPI PIN or OTP.</small></>}
                   </div>
                 )}
-                {record.payment.status === "claimed" || record.payment.status === "needs_review" ? (
+                {demoMode ? <div className="payment-preview-demo"><h2>Sample payment methods</h2><p>This is a visual sample. A real customer will see their assigned amount and available payment methods.</p><div className="payment-preview-methods"><span>Razorpay · Cards / UPI / Netbanking</span><span>UPI QR · Manual reference fallback</span></div></div> : record.payment.status === "claimed" || record.payment.status === "needs_review" ? (
                   <div className="payment-awaiting"><h2>Confirmation received</h2><p>Your UPI reference {record.payment.claimed_utr ? <b>{record.payment.claimed_utr}</b> : ""} is awaiting verification. This page checks for updates automatically.</p></div>
                 ) : qrExpired ? (
                   <div className="payment-awaiting"><h2>QR code expired</h2><p>This QR was valid for five minutes. Contact BABA'S CYBER CAFE to renew it before paying. If you already paid, do not pay again; contact us with your UTR.</p></div>
