@@ -73,14 +73,14 @@ export default function PrintPortal() {
     if (kind === "document" || kind === "resume") {
       const rate = sides === "manual-duplex" ? (colour === "mono" ? 9 : 15) : (colour === "mono" ? 5 : 9);
       const sheets = sides === "manual-duplex" ? Math.ceil(selectedPageCount / 2) : selectedPageCount;
-      return { amount: selectedPageCount > 0 ? sheets * rate * copies : 0, detail: selectedPageCount + " page(s) · " + copies + " cop" + (copies === 1 ? "y" : "ies") + " · " + (sides === "manual-duplex" ? "two-sided" : "single-sided") + " · " + (colour === "mono" ? "B&W" : "colour") };
+      return { amount: selectedPageCount > 0 ? sheets * rate * copies + (kind === "resume" ? 40 : 0) : 0, detail: selectedPageCount + " page(s) · " + copies + " cop" + (copies === 1 ? "y" : "ies") + " · " + (sides === "manual-duplex" ? "two-sided" : "single-sided") + " · " + (colour === "mono" ? "B&W" : "colour") + (kind === "resume" ? " · includes ₹40 resume formatting" : "") };
     }
     if (kind === "id") return { amount: 10 * copies, detail: (idSides === "both" ? "Front + back" : "Front only") + " · " + copies + " cop" + (copies === 1 ? "y" : "ies") };
     const base = Number(photoCount) === 6 ? 30 : Number(photoCount) === 12 ? 60 : 40;
     const w = photoPrintSize === "2x2" ? 50.8 : photoPrintSize === "custom" ? printPhotoWidth : 35;
     const h = photoPrintSize === "2x2" ? 50.8 : photoPrintSize === "custom" ? printPhotoHeight : 45;
     const valid = Number.isFinite(w) && Number.isFinite(h) && w >= 15 && h >= 15 && w <= 80 && h <= 100;
-    return { amount: valid ? Math.ceil(base * (w * h) / (35 * 45)) : 0, detail: photoCount + " photos · " + w + " × " + h + " mm · per sheet", valid };
+    return { amount: valid ? Math.ceil((base * (w * h) / (35 * 45)) / 5) * 5 : 0, detail: photoCount + " photos · " + w + " × " + h + " mm · per sheet · rounded up to nearest ₹5", valid };
   }, [kind, sides, colour, selectedPageCount, copies, idSides, photoCount, photoPrintSize, printPhotoWidth, printPhotoHeight]);
 
   function submitPreview() {
@@ -198,7 +198,7 @@ export default function PrintPortal() {
               <div className="print-field"><span>Print colour</span><div className="print-choice-row"><button type="button" className={colour === "mono" ? "is-active" : ""} onClick={() => setColour("mono")}><span className="colour-dot mono-dot"></span>Black &amp; white</button><button type="button" className={colour === "colour" ? "is-active" : ""} onClick={() => setColour("colour")}><span className="colour-dot colour-dot-full"></span>Colour</button></div></div>
               <div className="print-field"><span>Paper sides</span><div className="print-choice-row"><button type="button" className={sides === "single" ? "is-active" : ""} onClick={() => setSides("single")}>Single-sided</button><button type="button" className={sides === "manual-duplex" ? "is-active" : ""} onClick={() => setSides("manual-duplex")}>Two-sided*</button></div><small className="print-hint">*Two-sided jobs require manual paper handling on the current shop printer.</small></div>
             </> : kind === "photo" ? <>
-              <div className="print-field"><span>Passport photo layout</span><div className="print-choice-row">{["6","8","12"].map(n => <button key={n} type="button" className={photoCount === n ? "is-active" : ""} onClick={() => setPhotoCount(n)}>{n} photos</button>)}</div></div>
+              <div className="print-field"><span>Passport photo layout</span><div className="print-choice-row">{["6","8","12"].map(n => <button key={n} type="button" className={photoCount === n ? "is-active" : ""} onClick={() => setPhotoCount(n)}>{n} photos · ₹{n === "6" ? 30 : n === "8" ? 40 : 60}</button>)}</div></div>
               <label className="print-field"><span>Photo size</span><select value={photoPrintSize} onChange={e => setPhotoPrintSize(e.target.value as "35x45" | "2x2" | "custom")}><option value="35x45">35 × 45 mm</option><option value="2x2">2 × 2 inches</option><option value="custom">Custom size</option></select></label>
               {photoPrintSize === "custom" && <div className="print-choice-row"><label className="print-field"><span>Width (mm)</span><input type="number" min="15" max="80" value={printPhotoWidth} onChange={e => setPrintPhotoWidth(Number(e.target.value))}/></label><label className="print-field"><span>Height (mm)</span><input type="number" min="15" max="100" value={printPhotoHeight} onChange={e => setPrintPhotoHeight(Number(e.target.value))}/></label></div>}
               <div className="print-privacy-note"><FileImage size={17}/><span>Final layout will use 35 × 45 mm photo sizing on A4 with cut guides, subject to image review.</span></div>
