@@ -4113,7 +4113,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -4130,6 +4130,7 @@ function RoutedApp() {
       "/contact": "Contact | BABA'S CYBER CAFE",
       "/privacy": "Privacy Policy | BABA'S CYBER CAFE",
       "/terms": "Terms & Conditions | BABA'S CYBER CAFE",
+      "/payment-portal": "Secure Payment Portal | BABA'S CYBER CAFE",
       "/admin": "Owner Dashboard | BABA'S CYBER CAFE",
       "/admin/login": "Secure Admin Login | BABA'S CYBER CAFE",
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
@@ -4169,6 +4170,9 @@ function RoutedApp() {
     });
     return () => { cancelled = true; };
   }, [location.pathname]);
+  if (location.pathname === "/payment-portal") return (
+    <div className="payment-standalone"><Suspense fallback={<main className="payment-page"><div className="payment-shell">Loading secure payment portal…</div></main>}><Routes><Route path="/payment-portal" element={<PaymentPortal />} /></Routes></Suspense></div>
+  );
   return (
     <div className="site-shell">
       <Header />
