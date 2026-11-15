@@ -398,15 +398,6 @@ function HomePage() {
   const [trackingBusy, setTrackingBusy] = useState(false);
   const [trackingError, setTrackingError] = useState("");
 
-  const departments = [
-    { slug: "revenue", title: "Revenue Department", detail: "Land records, Jamabandi, mutations" },
-    { slug: "smc", title: "Srinagar Municipal Corporation", detail: "Trade licences, birth and death assistance" },
-    { slug: "rto", title: "RTO & Transport", detail: "Driving licence, vehicle transfer, permits" },
-    { slug: "labour", title: "Labour & Employment", detail: "e-Shram and eligible artisan schemes" },
-    { slug: "handloom", title: "Handloom & Handicrafts", detail: "Artisan identification and handloom support" },
-    { slug: "central", title: "Central & National Services", detail: "PAN, passport and health-scheme assistance" },
-  ];
-
   async function lookupApplication(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setTrackingBusy(true);
@@ -518,9 +509,12 @@ function DepartmentServiceExplorer() {
     setLoadingServices(true);
     void supabase.from("services").select("*").eq("is_active", true).order("name").range(0, 999)
       .then(({ data }) => {
-        if (current && data?.length) setServiceList(data as ServiceRecord[]);
-      })
-      .finally(() => { if (current) setLoadingServices(false); });
+        if (!current) return;
+        if (data?.length) setServiceList(data as ServiceRecord[]);
+        setLoadingServices(false);
+      }, () => {
+        if (current) setLoadingServices(false);
+      });
     return () => { current = false; };
   }, []);
 
