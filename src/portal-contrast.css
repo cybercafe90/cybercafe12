@@ -1,0 +1,167 @@
+/* Accessibility contrast layer for every active customer and owner workspace.
+   Keep the midnight/cyan identity while making all supporting text readable. */
+.site-shell:not(:has(.cyber-home)),
+.portal-theme,
+.payment-admin-page {
+  --portal-text: #f4f7ff;
+  --portal-muted: #c0ccdc;
+  --portal-subtle: #aebdd0;
+  --portal-border: rgba(0, 245, 255, .32);
+}
+
+/* Customer, tracking, grievance, insurance and owner portal headings/body copy. */
+.site-shell:not(:has(.cyber-home)) :is(
+  .content-page, .track-layout, .tracking-page, .tracking-result,
+  .admin-section, .admin-head, .admin-signin, .signin-panel,
+  .profile-panel, .dashboard-heading, .admin-portal-shortcuts,
+  .admin-modal, .service-admin, .category-admin, .grievance-page,
+  .grievance-admin-page, .grievance-panel, .grievance-admin-card,
+  .grievance-track-result, .grievance-update, .feedback-page,
+  .feedback-form, .feedback-owner, .feedback-modal,
+  .insurance-portal-page, .insurance-customer-form, .insurance-lookup-card,
+  .insurance-admin-form, .insurance-request-detail, .insurance-request-list,
+  .challan-page, .challan-form, .challan-success, .dashboard-panel,
+  .form-panel, .track-form, .tracking-result, .success-panel,
+  .contact-panel, .contact-card, .legal-panel, .empty-state
+) {
+  color: var(--portal-text);
+}
+
+/* Prevent inherited dark text in nested headings and normal copy. */
+.site-shell:not(:has(.cyber-home)) :is(
+  .admin-section, .admin-head, .admin-signin, .signin-panel,
+  .profile-panel, .dashboard-heading, .admin-portal-shortcuts,
+  .admin-modal, .service-admin, .category-admin, .grievance-page,
+  .grievance-admin-page, .grievance-panel, .grievance-admin-card,
+  .grievance-track-result, .grievance-update, .feedback-page,
+  .feedback-form, .feedback-owner, .feedback-modal,
+  .insurance-portal-page, .insurance-customer-form, .insurance-lookup-card,
+  .insurance-admin-form, .insurance-request-detail, .insurance-request-list,
+  .challan-page, .challan-form, .challan-success, .dashboard-panel,
+  .form-panel, .track-form, .tracking-result, .success-panel
+) :is(h1,h2,h3,h4,strong,b,th,td,dt,dd,p,li,label,small) {
+  color: var(--portal-text);
+}
+
+.site-shell:not(:has(.cyber-home)) :is(
+  .admin-section, .admin-head, .admin-signin, .signin-panel,
+  .profile-panel, .dashboard-heading, .admin-portal-shortcuts,
+  .admin-modal, .service-admin, .category-admin, .grievance-page,
+  .grievance-admin-page, .grievance-panel, .grievance-admin-card,
+  .grievance-track-result, .grievance-update, .feedback-page,
+  .feedback-form, .feedback-owner, .feedback-modal,
+  .insurance-portal-page, .insurance-customer-form, .insurance-lookup-card,
+  .insurance-admin-form, .insurance-request-detail, .insurance-request-list,
+  .challan-page, .challan-form, .challan-success, .dashboard-panel,
+  .form-panel, .track-form, .tracking-result, .success-panel
+) :is(p,li,small,.muted,.helper-text,.field-hint,.form-hint,.admin-meta,.empty-description) {
+  color: var(--portal-muted);
+}
+
+/* Tables, activity feeds and nested cards must not fall back to low-contrast grey. */
+.site-shell:not(:has(.cyber-home)) :is(
+  table, thead, tbody, tr, th, td,
+  .admin-table, .admin-table-wrap, .table-wrap, .data-table,
+  .activity-list, .activity-item, .timeline, .timeline-item,
+  .application-card, .application-row, .admin-card, .admin-panel,
+  .admin-stat-card, .investigation-summary, .investigation-event,
+  .incident-card, .grievance-track-result, .insurance-request-detail
+) {
+  border-color: var(--portal-border);
+}
+.site-shell:not(:has(.cyber-home)) :is(th, .table-heading) {
+  color: #f8fbff;
+  background: rgba(0, 245, 255, .09);
+}
+.site-shell:not(:has(.cyber-home)) :is(td, .activity-item, .timeline-item, .application-row) {
+  color: #e5edf8;
+}
+.site-shell:not(:has(.cyber-home)) :is(
+  .admin-meta, .admin-subtitle, .activity-time, .timeline time,
+  .application-meta, .tracking-meta, .payment-footnote
+) { color: var(--portal-muted); }
+
+/* All form controls: explicit text, placeholder, option and disabled-state contrast. */
+.site-shell:not(:has(.cyber-home)) :is(
+  input:not([type=checkbox]):not([type=radio]), select, textarea,
+  .admin-section input, .admin-section select, .admin-section textarea,
+  .grievance-page input, .grievance-page select, .grievance-page textarea,
+  .feedback-page input, .feedback-page select, .feedback-page textarea,
+  .insurance-portal-page input, .insurance-portal-page select, .insurance-portal-page textarea
+) {
+  color: #f8fbff;
+  background-color: #091426;
+  border-color: rgba(0, 245, 255, .38);
+  caret-color: #00f5ff;
+}
+.site-shell:not(:has(.cyber-home)) :is(input,textarea)::placeholder {
+  color: #a7b5c9;
+  opacity: 1;
+}
+.site-shell:not(:has(.cyber-home)) select option {
+  color: #f4f7ff;
+  background: #0d1729;
+}
+.site-shell:not(:has(.cyber-home)) :is(input,select,textarea):disabled {
+  color: #c0ccdc;
+  background-color: #18243a;
+  opacity: 1;
+}
+
+/* Keep semantic status colours distinguishable from the surrounding dark surface. */
+.site-shell:not(:has(.cyber-home)) :is(
+  .status-tag,.payment-status,.feedback-status,.grievance-status,
+  .status-completed,.status-paid,.payment-status-paid,
+  .notice-success,.notice-error,.notice-warn,.feedback-notice,.feedback-error
+) {
+  font-weight: 700;
+  opacity: 1;
+}
+.site-shell:not(:has(.cyber-home)) :is(.status-tag,.payment-status,.feedback-status,.grievance-status) {
+  color: #b8f7ff;
+  background-color: rgba(0, 245, 255, .12);
+}
+.site-shell:not(:has(.cyber-home)) :is(.status-completed,.status-paid,.payment-status-paid) {
+  color: #7dffc0;
+  background-color: rgba(0, 255, 136, .12);
+}
+
+/* The separate payment command centre has its own root outside the site shell. */
+.payment-admin-page {
+  color: #f4f7ff;
+}
+.payment-admin-page :is(
+  .payment-create-form,.payment-admin-card,.payment-alert-card,.payment-panel,
+  .payment-admin-card-head,.payment-card-details,.payment-verified-details
+) { color: #f4f7ff; }
+.payment-admin-page :is(
+  p,li,small,label,.payment-admin-meta,.payment-admin-card-head span,
+  .payment-admin-card-head small,.payment-footnote,.payment-live-line span
+) { color: #c0ccdc; }
+.payment-admin-page :is(h1,h2,h3,h4,b,strong,th,td) { color: #f8fbff; }
+.payment-admin-page :is(input,select,textarea) {
+  color: #f8fbff;
+  background-color: #071222;
+  border-color: rgba(0, 235, 255, .38);
+}
+.payment-admin-page :is(input,textarea)::placeholder { color: #a7b5c9; opacity: 1; }
+.payment-admin-page select option { color: #f4f7ff; background: #0d1729; }
+.payment-admin-page .payment-command-metrics small,
+.payment-admin-page .payment-card-details small,
+.payment-admin-page .payment-verified-details small { color: #b4c5d9; }
+.payment-admin-page .application-status-chip { color: #d9f7ff !important; }
+
+/* Legacy shared portal wrapper: enforce the same readable text hierarchy. */
+.portal-theme :is(.field,.field > span,label,small,.payment-admin-meta,.payment-footnote) {
+  color: #c0ccdc;
+}
+.portal-theme :is(.admin-section,.admin-head,.signin-panel,.profile-panel,.dashboard-heading) {
+  color: #f4f7ff;
+}
+.portal-theme :is(.admin-section,.admin-head,.signin-panel,.profile-panel,.dashboard-heading) :is(h1,h2,h3,p,small,label,th,td) {
+  color: #eaf2ff;
+}
+@media (prefers-contrast: more) {
+  .site-shell:not(:has(.cyber-home)) { --portal-muted: #e0e8f3; --portal-subtle: #d2deec; }
+  .site-shell:not(:has(.cyber-home)) :is(input,select,textarea) { border-width: 2px; }
+}
