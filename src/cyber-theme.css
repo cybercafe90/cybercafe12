@@ -421,6 +421,16 @@ body { color: #171713; }
 .portal-theme .csv-preview-stats { display: flex; gap: 8px; margin: 12px 0; }
 .portal-theme .csv-preview-stats span { padding: 5px 9px; border-radius: 8px; color: #b8c9dc; background: rgba(148,163,184,.1); font-size: 10px; }
 .portal-theme .csv-preview-list { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid rgba(148,163,184,.14); border-bottom: 1px solid rgba(148,163,184,.14); }
+.portal-theme .csv-preview-stats span { flex: 1; text-align: center; }
+.portal-theme .csv-stat-valid, .portal-theme .csv-row-valid { color: #61e6ad !important; }
+.portal-theme .csv-stat-invalid, .portal-theme .csv-row-invalid { color: #ff9aa8 !important; }
+.portal-theme .csv-preview-service { display: block; min-width: 0; flex: 1; }
+.portal-theme .csv-preview-row > .csv-row-valid, .portal-theme .csv-preview-row > .csv-row-invalid { flex: 0 0 auto; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.portal-theme .csv-row-issue { color: #ff9aa8 !important; line-height: 1.45; }
+.portal-theme .csv-import-note { margin: 0; color: var(--text-muted); font-size: 10px; line-height: 1.55; }
+.portal-theme .csv-submit:disabled { opacity: .42; cursor: not-allowed; box-shadow: none; }
+.portal-theme .csv-submit { min-height: 46px; transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
+.portal-theme .csv-submit:active:not(:disabled) { transform: translateY(1px); }
 .portal-theme .csv-preview-row { min-width: 0; }
 .portal-theme .csv-preview-row > span:first-child { min-width: 0; }
 .portal-theme .csv-featured-on { color: #ffd166; font-size: 10px; font-weight: 800; white-space: nowrap; }
