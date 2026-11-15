@@ -37,7 +37,6 @@ export default function PrintPortal() {
   const [colour, setColour] = useState<"mono" | "colour">("mono");
   const [sides, setSides] = useState<"single" | "manual-duplex">("single");
   const [pageCount, setPageCount] = useState(1);
-  const [selectedPageCount] = useState(1);
   const [photoCount, setPhotoCount] = useState(8);
   const [photoWidth, setPhotoWidth] = useState(35);
   const [photoHeight, setPhotoHeight] = useState(45);
