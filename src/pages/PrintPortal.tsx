@@ -1,5 +1,5 @@
 import { useMemo, useState, type ChangeEvent } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, Clock3, FileImage, FileText, IdCard, Printer, ShieldCheck, UploadCloud, Wallet, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Clock3, FileImage, FileText, IdCard, Printer, ShieldCheck, UploadCloud, Wallet, X, WandSparkles, UserRound, Camera, Sparkles, ScanFace } from "lucide-react";
 import "./PrintPortal.css";
 
 type PrintKind = "document" | "photo" | "id" | "resume";
@@ -19,6 +19,13 @@ export default function PrintPortal() {
   const [pages, setPages] = useState("all");
   const [photoCount, setPhotoCount] = useState("8");
   const [notice, setNotice] = useState("");
+  const [studioMode, setStudioMode] = useState<"resume" | "photo">("resume");
+  const [resumeName, setResumeName] = useState("");
+  const [resumeRole, setResumeRole] = useState("");
+  const [resumeSkills, setResumeSkills] = useState("");
+  const [photoSize, setPhotoSize] = useState("35 × 45 mm");
+  const [photoLayout, setPhotoLayout] = useState("8");
+  const [studioNotice, setStudioNotice] = useState("");
 
   const accept = kind === "document" || kind === "resume" ? ".pdf,application/pdf" : "image/jpeg,image/png,.jpg,.jpeg,.png,.pdf";
   const allowed = useMemo(() => {
@@ -93,6 +100,7 @@ export default function PrintPortal() {
               <div className="print-field"><span>Document sides</span><div className="print-choice-row"><button type="button" className="is-active">Front + back</button><button type="button">Front only</button></div></div>
               <div className="print-privacy-note"><IdCard size={17}/><span>We'll arrange the ID images at a suitable card size on an A4 sheet after checking the uploaded file.</span></div>
             </>}
+            <div className="print-routing-note">{kind === "photo" || kind === "resume" ? <><ShieldCheck size={16}/><span><b>Admin approval required</b> — externally prepared photos and resumes are reviewed before printing.</span></> : <><CheckCircle2 size={16}/><span><b>Fast copy workflow</b> — standard B&amp;W and colour copies can enter the automatic queue after verified payment.</span></>}</div>
             <div className="print-preview-total"><div><small>ESTIMATED TOTAL</small><b>Price shown after configuration</b></div><Wallet size={21}/></div>
             <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed}>Review print request <ArrowRight size={17}/></button>
             {notice && <p className="print-preview-notice" role="status">{notice}</p>}
