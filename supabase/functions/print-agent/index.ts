@@ -10,12 +10,13 @@ function serviceClient(): SupabaseClient {
   return createClient(url, key, { auth:{autoRefreshToken:false,persistSession:false} })
 }
 async function ownerId(request: Request, admin: SupabaseClient) {
-  const token = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1], anon = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!token || !anon) throw new Error('Owner sign-in required.')
-  const userClient = createClient(Deno.env.get('SUPABASE_URL')!, anon, { global:{headers:{Authorization:`Bearer ${token}`}}, auth:{autoRefreshToken:false,persistSession:false} })
-  const {data:{user},error} = await userClient.auth.getUser(token)
+  const token = request.headers.get('authorization')?.match(/^Bearer\\s+(.+)$/i)?.[1]
+  if (!token) throw new Error('Owner sign-in required.')
+  // Validate the caller's session with the server-side client. This avoids
+  // depending on a publishable/anon key being present in Edge Function secrets.
+  const { data: { user }, error } = await admin.auth.getUser(token)
   if (error || !user) throw new Error('Owner sign-in required.')
-  const {data:role,error:roleError} = await admin.from('user_roles').select('role').eq('user_id',user.id).eq('role','owner').maybeSingle()
+  const { data: role, error: roleError } = await admin.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'owner').maybeSingle()
   if (roleError || !role) throw new Error('Owner authorization required.')
   return user.id
 }
