@@ -15,7 +15,7 @@ function normalizeMobile(value: unknown) {
   if (raw.startsWith('+') && digits.length >= 8 && digits.length <= 15) return '+' + digits
   return null
 }
-function cors(request: Request): HeadersInit {
+function cors(request: Request): Record<string, string> {
   const origin = request.headers.get('origin') || ''
   const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
   let ok = allowed.includes(origin)
