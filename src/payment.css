@@ -124,3 +124,80 @@
 .payment-preview-methods{display:grid;gap:8px}
 .payment-preview-methods span{padding:12px;border-radius:9px;background:rgba(201,164,92,.1);font-size:13px;font-weight:650}
 .payment-standalone .payment-preview-demo{color:#28251e;background:#fffaf0}
+
+
+/* High-contrast readability fix for the standalone payment portal */
+.payment-standalone .payment-panel,
+.payment-standalone .payment-customer-card,
+.payment-standalone .payment-method,
+.payment-standalone .payment-success,
+.payment-standalone .payment-empty,
+.payment-standalone .payment-create-form,
+.payment-standalone .payment-admin-card,
+.payment-standalone .payment-alert-card {
+  color: #26251f;
+}
+.payment-standalone .payment-panel p,
+.payment-standalone .payment-customer-card p,
+.payment-standalone .payment-method p,
+.payment-standalone .payment-success p,
+.payment-standalone .payment-empty p,
+.payment-standalone .payment-admin-card p,
+.payment-standalone .payment-alert-card p {
+  color: #55534b;
+}
+.payment-standalone .payment-detail-grid small,
+.payment-standalone .payment-amount small,
+.payment-standalone .payment-payee small,
+.payment-standalone .payment-qr-card small,
+.payment-standalone .payment-poll-note,
+.payment-standalone .payment-footnote,
+.payment-standalone .payment-utr-form small,
+.payment-standalone .payment-admin-meta,
+.payment-standalone .payment-admin-card-head span,
+.payment-standalone .payment-admin-card-head small,
+.payment-standalone .payment-alert-card > small {
+  color: #625f55;
+}
+.payment-standalone .payment-detail-grid b,
+.payment-standalone .payment-payee b,
+.payment-standalone .payment-admin-card-head b,
+.payment-standalone .payment-alert-card b,
+.payment-standalone .payment-customer-card h2,
+.payment-standalone .payment-success h2,
+.payment-standalone .payment-empty h2,
+.payment-standalone .payment-instructions h2,
+.payment-standalone .payment-awaiting h2 {
+  color: #24231f;
+}
+.payment-standalone .payment-lookup label,
+.payment-standalone .payment-utr-form label,
+.payment-standalone .payment-admin-fields label,
+.payment-standalone .payment-admin-controls label {
+  color: #39372f;
+}
+.payment-standalone .payment-lookup input,
+.payment-standalone .payment-utr-form input,
+.payment-standalone .payment-admin-fields input,
+.payment-standalone .payment-admin-fields select,
+.payment-standalone .payment-admin-controls input,
+.payment-standalone .payment-admin-controls select {
+  background: #fff;
+  color: #24231f;
+  border-color: #bdb7a9;
+}
+.payment-standalone .payment-lookup input::placeholder,
+.payment-standalone .payment-utr-form input::placeholder,
+.payment-standalone .payment-admin-fields input::placeholder,
+.payment-standalone .payment-admin-controls input::placeholder {
+  color: #777267;
+  opacity: 1;
+}
+.payment-standalone .payment-preview-demo {
+  color: #24231f;
+}
+.payment-standalone .payment-preview-demo p { color: #4f4a3e; }
+.payment-standalone .payment-preview-demo small { color: #625c50; }
+.payment-standalone .payment-admin-tabs button { color: #575348; }
+.payment-standalone .payment-admin-tabs button.is-active { color: #24231f; }
+.payment-standalone .payment-verification-checklist { color: #765d35; }
