@@ -57,7 +57,7 @@ export default function PrintPortal() {
     if (kind === "id") return 10 * copies;
     const base = photoCount === 6 ? 30 : photoCount === 12 ? 60 : 40;
     return Math.ceil((base * photoWidth * photoHeight / (35 * 45)) / 5) * 5;
-  }, [kind, sides, colour, selectedPageCount, copies, photoCount, photoWidth, photoHeight]);
+  }, [kind, sides, colour, pageCount, copies, photoCount, photoWidth, photoHeight]);
 
   async function pay(event: FormEvent) {
     event.preventDefault();
