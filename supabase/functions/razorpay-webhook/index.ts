@@ -1,5 +1,17 @@
-import { serviceClient } from '../_shared/auth.ts'
-import { response } from '../_shared/http.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+
+function serviceClient() {
+  const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) throw new Error('Backend is not configured.')
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+}
+function response(request: Request, body: unknown, status=200) {
+  const origin = request.headers.get('origin') || ''
+  const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
+  let valid = allowed.includes(origin)
+  try { const u = new URL(origin); valid ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch {}
+  return new Response(JSON.stringify(body), { status, headers: { 'Access-Control-Allow-Origin': valid ? origin : 'https://babacybercafe.in', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-razorpay-signature, x-razorpay-event-id', 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Content-Type':'application/json; charset=utf-8' } })
+}
 
 const encoder = new TextEncoder()
 
