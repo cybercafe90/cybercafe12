@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, CheckCircle2, Database, FileText, RefreshCw, ShieldCheck, Sparkles, Users, Wallet } from "lucide-react";
+import { Activity, CheckCircle2, Database, FileText, Mail, RefreshCw, ShieldCheck, Sparkles, Users } from "lucide-react";
 import "./D1OperationsPreview.css";
 
 type Snapshot = {
@@ -14,7 +14,7 @@ const metrics = [
   { key: "print_orders", label: "Print orders", icon: FileText },
   { key: "print_customers", label: "Independent customers", icon: Users },
   { key: "print_events", label: "Activity events", icon: Activity },
-  { key: "email_delivery_log", label: "Email log rows", icon: Wallet },
+  { key: "email_delivery_log", label: "Email log rows", icon: Mail },
   { key: "integration_events", label: "Integration events", icon: Database },
 ];
 
