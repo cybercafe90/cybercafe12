@@ -1,4 +1,3 @@
-interface D1Result<T> { results: T[] }
 interface D1Statement {
   bind(...values: unknown[]): D1Statement;
   first<T>(): Promise<T | null>;
