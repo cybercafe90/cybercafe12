@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { Activity, BadgeCheck, Check, ChevronRight, Clock3, FileText, Filter, LockKeyhole, Printer, Search, ShieldCheck, X } from "lucide-react";
 import "./PrintAdminPortal.css";
 
@@ -13,6 +14,32 @@ const seed:Job[] = [
 ];
 const cls = (s:Status) => s.toLowerCase().replaceAll(" ","-");
 export default function PrintAdminPortal(){
+ const [access,setAccess]=useState<"checking"|"signed-out"|"not-owner"|"owner"|"unavailable">("checking");
+ useEffect(()=>{
+  if(!supabase){setAccess("unavailable");return;}
+  let active=true;
+  const verify=async(sessionUser:{id:string}|null)=>{
+   if(!sessionUser){if(active)setAccess("signed-out");return;}
+   try{
+    const {data,error}=await supabase.from("user_roles").select("role").eq("user_id",sessionUser.id).eq("role","owner").maybeSingle();
+    if(!active)return;
+    setAccess(error?"unavailable":data?.role==="owner"?"owner":"not-owner");
+   }catch{if(active)setAccess("unavailable");}
+  };
+  void supabase.auth.getSession().then(({data,error})=>{
+   if(error){if(active)setAccess("unavailable");return;}
+   void verify(data.session?.user?{id:data.session.user.id}:null);
+  });
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
+   void verify(session?.user?{id:session.user.id}:null);
+  });
+  return ()=>{active=false;subscription.unsubscribe();};
+ },[]);
+ if(access!=="owner") return <main className="print-admin"><section className="pa-main" style={{maxWidth:620,margin:"12vh auto",padding:24}}>
+  <div className="pa-kicker">BABA'S CYBER CAFE / OWNER ACCESS</div><h1>Print command centre</h1>
+  {access==="checking"?<p>Checking your owner access…</p>:access==="signed-out"?<><p>Please sign in with the existing BABA'S CYBER CAFE owner account to access print administration.</p><a className="pa-approve" href="/admin/login">Go to owner login</a></>:access==="not-owner"?<p>This account does not have owner privileges. Please sign in with the authorised owner account.</p>:<p>Secure owner access could not be verified. The dashboard is locked; no demo or customer data is shown.</p>}
+  <p><a href="/print">Return to customer print portal</a></p>
+ </section></main>;
  const [jobs,setJobs]=useState(seed); const [filter,setFilter]=useState("All jobs"); const [query,setQuery]=useState(""); const [selected,setSelected]=useState<Job|null>(seed[0]); const [notice,setNotice]=useState("Demo workspace — actions change sample data only.");
  const filtered=useMemo(()=>jobs.filter(j=>(filter==="All jobs"||j.status===filter)&&(j.id+j.customer+j.service).toLowerCase().includes(query.toLowerCase())),[jobs,filter,query]);
  const change=(id:string,status:Status)=>{setJobs(old=>old.map(j=>j.id===id?{...j,status}:j));setSelected(old=>old?.id===id?{...old,status}:old);setNotice(id+" updated in preview only: "+status+".");};
