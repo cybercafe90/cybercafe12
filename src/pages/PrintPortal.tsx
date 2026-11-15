@@ -157,7 +157,7 @@ export default function PrintPortal() {
     <main className="print-portal">
       <section className="print-hero">
         <div className="print-hero-inner">
-          <div className="print-brandline"><span className="print-brandmark"><Printer size={19}/></span><span>BABA'S CYBER CAFE <i>· DIGITAL PRINT DESK</i></span><span className="preview-pill">DESIGN PREVIEW</span></div>
+          <div className="print-brandline"><span className="print-brandmark"><Printer size={19}/></span><span>BABA'S CYBER CAFE <i>· DIGITAL PRINT DESK</i></span><span className="preview-pill">DESIGN PREVIEW</span><a href="/print/admin" style={{marginLeft:"auto",display:"inline-flex",alignItems:"center",gap:6,color:"inherit",fontWeight:700,textDecoration:"none"}}>Desktop admin <ArrowRight size={14}/></a></div>
           <div className="print-hero-copy">
             <span className="print-eyebrow">SCAN · UPLOAD · COLLECT</span>
             <h1>Printing, made <em>simple.</em></h1>
