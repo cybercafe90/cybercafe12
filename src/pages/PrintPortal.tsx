@@ -157,7 +157,7 @@ export default function PrintPortal() {
     <main className="print-portal">
       <section className="print-hero">
         <div className="print-hero-inner">
-          <div className="print-brandline"><span className="print-brandmark"><Printer size={19}/></span><span>BABA'S CYBER CAFE <i>· DIGITAL PRINT DESK</i></span><span className="preview-pill">DESIGN PREVIEW</span><a href="/print/admin" style={{marginLeft:"auto",display:"inline-flex",alignItems:"center",gap:6,color:"inherit",fontWeight:700,textDecoration:"none"}}>Desktop admin <ArrowRight size={14}/></a></div>
+          <div className="print-brandline"><span className="print-brandmark"><Printer size={19}/></span><span>BABA'S CYBER CAFE <i>· DIGITAL PRINT DESK</i></span><span className="preview-pill">DESIGN PREVIEW</span><a href="/print/admin" style={{marginLeft:"auto",display:"inline-flex",alignItems:"center",gap:6,color:"inherit",fontWeight:700,textDecoration:"none"}}>Owner print desk <ArrowRight size={14}/></a></div>
           <div className="print-hero-copy">
             <span className="print-eyebrow">SCAN · UPLOAD · COLLECT</span>
             <h1>Printing, made <em>simple.</em></h1>
@@ -188,7 +188,7 @@ export default function PrintPortal() {
             </label>
             {file && <button type="button" className="print-remove-file" onClick={() => setFile(null)}><X size={14}/> Remove file</button>}
             {file && !allowed && <p className="print-error">This file type is not supported for the selected service.</p>}
-            <div className="print-privacy-note"><ShieldCheck size={17}/><span><b>Your documents are sensitive.</b> The final service will use private storage, short-lived access links and an automatic deletion policy.</span></div>
+            <div className="print-privacy-note"><ShieldCheck size={17}/><span><b>Your documents are sensitive.</b> The live service will use private storage and short-lived access links. Files are not uploaded from this preview page yet.</span></div>
           </section>
 
           <section className="print-panel print-options-panel">
@@ -208,7 +208,7 @@ export default function PrintPortal() {
               <div className="print-field"><span>Document sides</span><div className="print-choice-row"><button type="button" className={idSides === "both" ? "is-active" : ""} onClick={() => setIdSides("both")}>Front + back</button><button type="button" className={idSides === "front" ? "is-active" : ""} onClick={() => setIdSides("front")}>Front only</button></div></div>
               <div className="print-privacy-note"><IdCard size={17}/><span>We'll arrange the ID images at a suitable card size on an A4 sheet after checking the uploaded file.</span></div>
             </>}
-            <div className="print-routing-note">{kind === "photo" || kind === "resume" ? <><ShieldCheck size={16}/><span><b>Admin approval required</b> — externally prepared photos and resumes are reviewed before printing.</span></> : <><CheckCircle2 size={16}/><span><b>Fast copy workflow</b> — standard B&amp;W and colour copies can enter the automatic queue after verified payment.</span></>}</div>
+            <div className="print-routing-note">{kind === "photo" || kind === "resume" ? <><ShieldCheck size={16}/><span><b>Admin approval required</b> — externally prepared photos and resumes are reviewed before printing.</span></> : <><CheckCircle2 size={16}/><span><b>Phone-assisted workflow</b> — after owner approval and payment verification, the document is opened on the shop phone and printed using Android Print.</span></>}</div>
             <div className="print-preview-total"><div><small>ESTIMATED TOTAL</small><b>{estimate.amount > 0 ? "₹" + estimate.amount.toFixed(2) : "Check your configuration"}</b><small>{estimate.detail}</small></div><Wallet size={21}/></div>
             <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed || estimate.amount <= 0}>Review print request <ArrowRight size={17}/></button>
             {notice && <p className="print-preview-notice" role="status">{notice}</p>}
