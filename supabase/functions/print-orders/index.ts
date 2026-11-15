@@ -1,5 +1,48 @@
-import { checkRateLimit, serviceClient } from '../_shared/auth.ts'
-import { normalizeMobile, preflight, response } from '../_shared/http.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+
+function serviceClient() {
+  const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) throw new Error('Backend is not configured.')
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+}
+function normalizeMobile(value: unknown) {
+  if (typeof value !== 'string') return null
+  const raw = value.trim(); let digits = raw.replace(/\\D/g, '')
+  if (digits.length === 10) digits = '91' + digits
+  else if (digits.length === 11 && digits.startsWith('0')) digits = '91' + digits.slice(1)
+  if (digits.length === 12 && digits.startsWith('91')) return '+' + digits
+  if (raw.startsWith('+') && digits.length >= 8 && digits.length <= 15) return '+' + digits
+  return null
+}
+function cors(request: Request): HeadersInit {
+  const origin = request.headers.get('origin') || ''
+  const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
+  let ok = allowed.includes(origin)
+  try { const u = new URL(origin); ok ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch {}
+  return { 'Access-Control-Allow-Origin': ok ? origin : 'https://babacybercafe.in', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' }
+}
+function response(request: Request, body: unknown, status=200, extra: Record<string,string>={}) {
+  return new Response(JSON.stringify(body), { status, headers: { ...cors(request), 'Content-Type':'application/json; charset=utf-8', ...extra } })
+}
+function preflight(request: Request) {
+  if (request.method === 'OPTIONS') return new Response('ok', { headers: cors(request) })
+  const origin = request.headers.get('origin') || ''
+  if (origin && cors(request)['Access-Control-Allow-Origin'] !== origin) return response(request,{error:'Origin not allowed.'},403)
+  if (request.method !== 'POST') return response(request,{error:'Method not allowed.'},405)
+  return null
+}
+async function checkRateLimit(admin: ReturnType<typeof serviceClient>, request: Request, purpose: string, identifier: string, limit: number, windowMinutes: number) {
+  const secret = Deno.env.get('TRACK_RATE_SECRET')
+  if (!secret) throw new Error('Rate-limit service is not configured.')
+  const ip = request.headers.get('cf-connecting-ip') ?? request.headers.get('x-real-ip') ?? 'unknown'
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${secret}:${purpose}:${ip}:${identifier}`))
+  const scopeHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2,'0')).join('')
+  const ms = windowMinutes * 60000
+  const windowStart = new Date(Math.floor(Date.now()/ms)*ms).toISOString()
+  const { data, error } = await admin.rpc('consume_rate_limit', { p_scope_hash: scopeHash, p_window_start: windowStart, p_limit: limit })
+  if (error) throw new Error('Rate-limit storage is unavailable.')
+  return data === true
+}
 
 const encoder = new TextEncoder()
 const validName = (v: unknown) => typeof v === 'string' && v.trim().length >= 1 && v.trim().length <= 120
