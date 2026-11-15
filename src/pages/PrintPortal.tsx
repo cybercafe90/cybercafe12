@@ -213,7 +213,7 @@ export default function PrintPortal() {
             <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed || estimate.amount <= 0}>Review print request <ArrowRight size={17}/></button>
             {notice && <p className="print-preview-notice" role="status">{notice}</p>}
             {showReview && <div className="print-review-card"><span className="print-eyebrow">ORDER SUMMARY · CHECK BEFORE PAYMENT</span><h3>Review print request</h3><p><b>Service:</b> {kinds.find(item => item.id === kind)?.title}</p><p><b>File:</b> {file?.name}</p><p><b>Configuration:</b> {estimate.detail}</p><div className="print-review-total"><span>Estimated total</span><strong>₹{estimate.amount.toFixed(2)}</strong></div><p className="print-review-note">{kind === "photo" ? "Photo orders require shop/admin approval before printing." : kind === "resume" ? "Resume print orders require shop review. Resume formatting is ₹40, separate from printing." : "Payment must be verified before the print job enters the shop queue."}</p><p className="print-review-note">Secure online ordering, document upload, payment and shop printing are not connected yet. This preview does not upload your file, collect payment or create a real order.</p>
-              <div className="print-order-contact"><div className="print-local-order"><b>Automatic print ordering · Setup in progress</b><small>Your selected file and print settings stay on this device. No WhatsApp handoff or external message will be opened.</small></div></div>
+              <div className="print-order-contact"><div className="print-local-order"><b>Automatic print ordering · Setup in progress</b><small>Your selected file and print settings stay on this device. No external message will be opened.</small></div></div>
               <button type="button" className="print-remove-file" onClick={() => { setShowReview(false); }}>Back to edit request</button></div>}
             <small className="print-no-charge">Estimate only · No payment collected · No print job created</small>
           </section>
@@ -271,7 +271,7 @@ export default function PrintPortal() {
         </section>
 
         <section className="print-how"><div><span className="print-eyebrow">HOW IT WILL WORK</span><h2>From your phone to our printer.</h2></div><div className="print-how-steps"><span><b>01</b><small>Scan the shop QR</small></span><i></i><span><b>02</b><small>Upload &amp; choose</small></span><i></i><span><b>03</b><small>Pay securely</small></span><i></i><span><b>04</b><small>Collect at the cafe</small></span></div></section>
-        <footer className="print-footer"><span>BABA'S CYBER CAFE · SRINAGAR</span><span>Questions? <a href="https://wa.me/917006865909" target="_blank" rel="noreferrer">WhatsApp the shop</a></span></footer>
+        <footer className="print-footer"><span>BABA'S CYBER CAFE · SRINAGAR</span><span>Questions? <a href="tel:+917006865909">Call the shop</a></span></footer>
       </div>
     </main>
   );
