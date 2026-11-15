@@ -54,11 +54,12 @@ export default function PrintPortal() {
   }
 
   function openPrintDocument(title: string, body: string, pageCss: string) {
-    const popup = window.open("", "_blank", "noopener,noreferrer");
+    const popup = window.open("", "_blank");
     if (!popup) {
       setStudioNotice("Please allow pop-ups for this site, then try downloading your PDF again.");
       return;
     }
+    popup.opener = null;
     popup.document.open();
     popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>
       *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#172a32;background:#fff}
