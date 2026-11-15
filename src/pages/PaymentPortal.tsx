@@ -6,7 +6,29 @@ import "../payment.css";
 declare global {
   interface Window {
     QRCode?: new (element: HTMLElement, options: { text: string; width: number; height: number; colorDark: string; colorLight: string; correctLevel: number }) => { clear: () => void };
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
   }
+}
+
+const razorpayCheckoutEnabled = import.meta.env.VITE_RAZORPAY_CHECKOUT_ENABLED === "true";
+
+function loadRazorpayCheckout(): Promise<void> {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Razorpay checkout could not be loaded.")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.dataset.razorpayCheckout = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Razorpay checkout could not be loaded."));
+    document.head.appendChild(script);
+  });
 }
 
 type Payment = {
@@ -96,6 +118,7 @@ function CustomerPayment() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [clock, setClock] = useState(0);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
   const expiresAt = record?.payment.expires_at ? new Date(record.payment.expires_at).getTime() : 0;
   const remainingMs = expiresAt - clock;
   const qrExpired = Boolean(expiresAt && remainingMs <= 0);
@@ -154,6 +177,55 @@ function CustomerPayment() {
     return () => window.clearInterval(timer);
   }, [record]);
 
+  const startRazorpayCheckout = async () => {
+    if (!record || !razorpayCheckoutEnabled || checkoutBusy) return;
+    setCheckoutBusy(true); setError(""); setMessage("");
+    try {
+      await loadRazorpayCheckout();
+      const order = await callFunction<{ orderId: string; amount: number; currency: string; keyId: string }>("razorpay-checkout", {
+        action: "create_order",
+        trackingId: record.application.tracking_id,
+        mobile: record.application.mobile,
+      });
+      if (!window.Razorpay) throw new Error("Razorpay checkout is not ready.");
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "BABA'S CYBER CAFE",
+        description: record.application.service_name,
+        prefill: { name: record.application.full_name, contact: record.application.mobile },
+        notes: { tracking_id: record.application.tracking_id },
+        theme: { color: "#c9a45c" },
+        handler: async (result: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          setLoading(true);
+          try {
+            const verified = await callFunction<{ paid: boolean; message: string }>("razorpay-checkout", {
+              action: "verify_payment",
+              trackingId: record.application.tracking_id,
+              mobile: record.application.mobile,
+              razorpayOrderId: result.razorpay_order_id,
+              razorpayPaymentId: result.razorpay_payment_id,
+              razorpaySignature: result.razorpay_signature,
+            });
+            setMessage(verified.message);
+            await refresh("status");
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "Payment verification is pending. Do not pay again; contact the cafe.");
+          } finally {
+            setLoading(false); setCheckoutBusy(false);
+          }
+        },
+        modal: { ondismiss: () => setCheckoutBusy(false) },
+      });
+      checkout.open();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Online checkout could not be started.");
+      setCheckoutBusy(false);
+    }
+  };
+
   const submitConfirmation = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true); setError(""); setMessage("");
     try {
@@ -197,6 +269,16 @@ function CustomerPayment() {
             ) : (
               <div className="payment-method">
                 <div className="payment-amount"><small>AMOUNT DUE</small><strong>{money(record.payment.amount)}</strong><span>Pay only the exact amount shown.</span></div>
+                {razorpayCheckoutEnabled && record.payment.status === "pending" && (
+                  <div className="payment-razorpay-panel">
+                    <h2>Pay securely online</h2>
+                    <p>Complete your payment using Razorpay's secure checkout.</p>
+                    <button className="button button-gold" type="button" onClick={() => void startRazorpayCheckout()} disabled={checkoutBusy || loading}>
+                      {checkoutBusy ? "Opening secure checkout…" : `Pay ${money(record.payment.amount)} online`}
+                    </button>
+                    <small>Do not close the page until payment verification is complete. Never share your UPI PIN or OTP.</small>
+                  </div>
+                )}
                 {record.payment.status === "claimed" || record.payment.status === "needs_review" ? (
                   <div className="payment-awaiting"><h2>Confirmation received</h2><p>Your UPI reference {record.payment.claimed_utr ? <b>{record.payment.claimed_utr}</b> : ""} is awaiting verification. This page checks for updates automatically.</p></div>
                 ) : qrExpired ? (
