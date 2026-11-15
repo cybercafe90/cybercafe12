@@ -1,6 +1,7 @@
 import { Component, StrictMode, useEffect, type ErrorInfo, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './portal-contrast.css'
 import App from './App.tsx'
 import { initializeAnalytics } from './analytics'
 
