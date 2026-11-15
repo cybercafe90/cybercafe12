@@ -209,3 +209,14 @@
 .print-review-total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;padding:13px 0;border-top:1px solid #38515a;border-bottom:1px solid #38515a;color:#dcebef;font-size:12px}
 .print-review-total strong{font-size:22px;color:#f5d58f}
 .print-review-card .print-review-note{font-size:10px;color:#a8c5ce}
+
+/* Free preview order handoff */
+.print-order-contact{display:grid;gap:8px;margin:14px 0}
+.print-order-contact .print-field{margin:0}
+.print-order-contact input{width:100%;box-sizing:border-box}
+.print-local-order{display:grid;gap:7px;margin:14px 0;padding:14px;border:1px solid #39856f;border-radius:10px;background:#0c2c29;color:#dffbf0}
+.print-local-order>b{font-size:12px}
+.print-local-order>strong{font-size:18px;letter-spacing:.08em;color:#9af0c7}
+.print-local-order>small{font-size:9px;color:#a7c9bf}
+.print-local-order>a{font-size:10px;color:#7ce5ed;text-decoration:underline}
+.print-order-contact .print-continue{margin-top:4px}
