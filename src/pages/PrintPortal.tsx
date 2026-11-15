@@ -26,6 +26,9 @@ export default function PrintPortal() {
   const [photoSize, setPhotoSize] = useState("35 × 45 mm");
   const [photoLayout, setPhotoLayout] = useState("8");
   const [photoDataUrl, setPhotoDataUrl] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [customPhotoWidth, setCustomPhotoWidth] = useState("35");
+  const [customPhotoHeight, setCustomPhotoHeight] = useState("45");
   const [studioNotice, setStudioNotice] = useState("");
 
   const accept = kind === "document" || kind === "resume" ? ".pdf,application/pdf" : "image/jpeg,image/png,.jpg,.jpeg,.png,.pdf";
@@ -48,6 +51,60 @@ export default function PrintPortal() {
   }
   function submitPreview() {
     setNotice("Preview only: your file has not been uploaded, charged or sent to a printer. Live ordering will be enabled only after approval and system testing.");
+  }
+
+  function openPrintDocument(title: string, body: string, pageCss: string) {
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    if (!popup) {
+      setStudioNotice("Please allow pop-ups for this site, then try downloading your PDF again.");
+      return;
+    }
+    popup.document.open();
+    popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>
+      *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#172a32;background:#fff}
+      .toolbar{position:sticky;top:0;padding:12px 18px;background:#09202b;color:#eafcff;display:flex;align-items:center;justify-content:space-between;gap:12px;font:13px Arial}
+      .toolbar button{border:0;border-radius:7px;padding:10px 16px;background:#5be5f4;color:#06202a;font-weight:700;cursor:pointer}
+      .sheet{margin:22px auto;background:white}
+      ${pageCss}
+      @page{size:A4;margin:0}
+      @media print{.toolbar{display:none!important}.sheet{margin:0!important;box-shadow:none!important}body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+    </style></head><body><div class="toolbar"><span>${title} · Check the preview, then choose “Save as PDF” in the print dialog.</span><button onclick="window.print()">Save / Print PDF</button></div>${body}</body></html>`);
+    popup.document.close();
+    setStudioNotice("Your print-ready layout is open in a new tab. Choose “Save as PDF” in the print destination. This does not submit a job to the shop; shop approval is still required before printing.");
+  }
+
+  function downloadResumePdf() {
+    if (!resumeName.trim()) {
+      setStudioNotice("Enter your full name before preparing your resume PDF.");
+      return;
+    }
+    const safe = (value: string) => value.replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch] ?? ch));
+    const body = `<main class="sheet"><header><h1>${safe(resumeName)}</h1><h2>${safe(resumeRole || "Professional Profile")}</h2></header><section><h3>PROFILE</h3><p>${safe(resumeSkills || "Add your education, skills and experience.")}</p></section><footer>Resume draft prepared with BABA'S CYBER CAFE · Review all details before submission</footer></main>`;
+    const css = `.sheet{width:210mm;min-height:297mm;padding:22mm 20mm;box-shadow:0 3px 20px #0002}.sheet header{border-bottom:3px solid #1596a4;padding-bottom:12mm;margin-bottom:12mm}.sheet h1{font:700 27pt Georgia,serif;margin:0 0 5mm;color:#122f3a;overflow-wrap:anywhere}.sheet h2{font:600 12pt Arial;color:#16899a;margin:0}.sheet h3{font-size:10pt;letter-spacing:2px;color:#16899a}.sheet p{font:11pt/1.8 Arial;white-space:pre-wrap;overflow-wrap:anywhere}.sheet footer{margin-top:35mm;padding-top:5mm;border-top:1px solid #d8e2e3;color:#71838a;font-size:8pt}@media print{.sheet{min-height:297mm}}`;
+    openPrintDocument("BABA'S CYBER CAFE · Resume", body, css);
+  }
+
+  function downloadPhotoPdf() {
+    if (!photoDataUrl || !photoFile) {
+      setStudioNotice("Choose a JPG or PNG photo first.");
+      return;
+    }
+    if (photoFile.size > 10 * 1024 * 1024) {
+      setStudioNotice("Please choose a photo smaller than 10 MB.");
+      return;
+    }
+    const dims = photoSize === "2 × 2 inches" ? {w:50.8,h:50.8} : photoSize === "Custom size" ? {w:Number(customPhotoWidth),h:Number(customPhotoHeight)} : {w:35,h:45};
+    if (!Number.isFinite(dims.w) || !Number.isFinite(dims.h) || dims.w < 15 || dims.h < 15 || dims.w > 80 || dims.h > 100) {
+      setStudioNotice("Custom dimensions must be between 15–80 mm wide and 15–100 mm high.");
+      return;
+    }
+    const count = Number(photoLayout);
+    const cols = 4;
+    const rows = Math.ceil(count / cols);
+    const photo = `<img src="${photoDataUrl}" alt="Passport photograph">`;
+    const body = `<main class="sheet"><div class="photo-grid">${Array.from({length:count},()=>`<div class="photo">${photo}</div>`).join("")}</div></main>`;
+    const css = `.sheet{width:210mm;height:297mm;padding:12mm;display:flex;align-items:flex-start;justify-content:center}.photo-grid{display:grid;grid-template-columns:repeat(${cols},${dims.w}mm);grid-auto-rows:${dims.h}mm;gap:5mm 4mm;justify-content:center;align-content:start}.photo{width:${dims.w}mm;height:${dims.h}mm;border:.2mm dashed #84969b;overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover;display:block}@media print{.sheet{width:210mm;height:297mm}}`;
+    openPrintDocument("BABA'S CYBER CAFE · Passport Photo Sheet", body, css);
   }
 
   return (
@@ -126,7 +183,7 @@ export default function PrintPortal() {
                 <label className="print-field"><span>Full name</span><input value={resumeName} onChange={e => setResumeName(e.target.value)} placeholder="Enter your full name"/></label>
                 <label className="print-field"><span>Career goal / applying for</span><input value={resumeRole} onChange={e => setResumeRole(e.target.value)} placeholder="e.g. Office assistant"/></label>
                 <label className="print-field"><span>Skills, education and experience</span><textarea value={resumeSkills} onChange={e => setResumeSkills(e.target.value)} placeholder="Add your education, skills and work experience..." rows={5}/></label>
-                <button type="button" className="print-continue" onClick={() => setStudioNotice(resumeName.trim() ? "Resume draft prepared in the preview. Shop approval is required before any resume is printed." : "Please enter your full name to prepare the resume preview.")}>Prepare resume draft <ArrowRight size={17}/></button>
+                <button type="button" className="print-continue" onClick={downloadResumePdf}>Create resume PDF <ArrowRight size={17}/></button>
               </div>
               <div className="print-resume-preview">
                 <span className="print-eyebrow">LIVE RESUME PREVIEW</span>
@@ -143,10 +200,11 @@ export default function PrintPortal() {
           ) : (
             <div className="print-studio-grid">
               <div className="print-studio-form">
-                <label className="print-field"><span>Choose your photo</span><input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { const selected = e.target.files?.[0] ?? null; setFile(selected); setStudioNotice(""); if (selected) { const reader = new FileReader(); reader.onload = () => setPhotoDataUrl(String(reader.result ?? "")); reader.readAsDataURL(selected); } else { setPhotoDataUrl(""); } }}/></label>
+                <label className="print-field"><span>Choose your photo</span><input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { const selected = e.target.files?.[0] ?? null; setPhotoFile(selected); setStudioNotice(""); if (selected && selected.size <= 10 * 1024 * 1024 && ["image/jpeg","image/png"].includes(selected.type)) { const reader = new FileReader(); reader.onload = () => setPhotoDataUrl(String(reader.result ?? "")); reader.readAsDataURL(selected); } else { setPhotoDataUrl(""); if (selected) setStudioNotice("Choose a JPG or PNG image up to 10 MB."); } }}/></label>
                 <label className="print-field"><span>Photo size</span><select value={photoSize} onChange={e => setPhotoSize(e.target.value)}><option>35 × 45 mm</option><option>2 × 2 inches</option><option>Custom size</option></select></label>
+                {photoSize === "Custom size" && <><label className="print-field"><span>Width (mm)</span><input type="number" min="15" max="80" value={customPhotoWidth} onChange={e => setCustomPhotoWidth(e.target.value)}/></label><label className="print-field"><span>Height (mm)</span><input type="number" min="15" max="100" value={customPhotoHeight} onChange={e => setCustomPhotoHeight(e.target.value)}/></label></>}
                 <label className="print-field"><span>Photos per sheet</span><select value={photoLayout} onChange={e => setPhotoLayout(e.target.value)}><option value="6">6 photos</option><option value="8">8 photos</option><option value="12">12 photos</option></select></label>
-                <button type="button" className="print-continue" onClick={() => setStudioNotice(file ? "Photo selected. Final cropping, exact-size layout and print approval will be completed by the shop before printing." : "Please select a JPG or PNG photo first.")}>Prepare photo layout <ArrowRight size={17}/></button>
+                <button type="button" className="print-continue" onClick={downloadPhotoPdf} disabled={!photoDataUrl}>Create passport photo PDF <ArrowRight size={17}/></button>
               </div>
               <div className="print-photo-preview">
                 <span className="print-eyebrow">PHOTO SHEET PREVIEW</span>
@@ -156,7 +214,7 @@ export default function PrintPortal() {
             </div>
           )}
           {studioNotice && <p className="print-preview-notice" role="status">{studioNotice}</p>}
-          <div className="print-routing-note"><ShieldCheck size={16}/><span><b>Shop approval required</b> — all created resumes and passport-photo sheets are reviewed before printing. This is a design preview; final PDF generation and automatic photo processing are not connected yet.</span></div>
+          <div className="print-routing-note"><ShieldCheck size={16}/><span><b>Shop approval required</b> — all created resumes and passport-photo sheets are reviewed before printing. PDF drafts can be created on your device. Check photo positioning and dimensions before use; shop approval is required before printing.</span></div>
         </section>
 
         <section className="print-how"><div><span className="print-eyebrow">HOW IT WILL WORK</span><h2>From your phone to our printer.</h2></div><div className="print-how-steps"><span><b>01</b><small>Scan the shop QR</small></span><i></i><span><b>02</b><small>Upload &amp; choose</small></span><i></i><span><b>03</b><small>Pay securely</small></span><i></i><span><b>04</b><small>Collect at the cafe</small></span></div></section>
