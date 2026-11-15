@@ -1,0 +1,1 @@
+alter table public.print_jobs add column if not exists order_details jsonb not null default '{}'::jsonb;

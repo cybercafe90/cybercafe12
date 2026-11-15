@@ -1,5 +1,17 @@
-import { serviceClient } from '../_shared/auth.ts'
-import { response } from '../_shared/http.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+
+function serviceClient() {
+  const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !key) throw new Error('Backend is not configured.')
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+}
+function response(request: Request, body: unknown, status=200) {
+  const origin = request.headers.get('origin') || ''
+  const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
+  let valid = allowed.includes(origin)
+  try { const u = new URL(origin); valid ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch {}
+  return new Response(JSON.stringify(body), { status, headers: { 'Access-Control-Allow-Origin': valid ? origin : 'https://babacybercafe.in', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-razorpay-signature, x-razorpay-event-id', 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Content-Type':'application/json; charset=utf-8' } })
+}
 
 const encoder = new TextEncoder()
 
@@ -61,7 +73,26 @@ Deno.serve(async (request) => {
         .eq('razorpay_order_id', orderId).maybeSingle()
       if (lookupError) throw lookupError
       if (!paymentOrder) {
-        await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, ignored: 'Order not found in payment records.' } }).eq('event_id', eventId)
+        const { data: printJob, error: printLookupError } = await admin.from('print_jobs')
+          .select('id, job_number, payment_amount, payment_status, status, razorpay_order_id')
+          .eq('razorpay_order_id', orderId).maybeSingle()
+        if (printLookupError) throw printLookupError
+        if (printJob && entity.status === 'captured' && entity.captured === true && paymentId) {
+          const expectedPrintPaise = Math.round(Number(printJob.payment_amount) * 100)
+          if (Number(entity.amount) !== expectedPrintPaise || entity.currency !== 'INR') {
+            await admin.from('print_job_events').insert({ print_job_id: printJob.id, actor_type: 'system', event_type: 'razorpay_webhook_amount_mismatch', details: { event_id: eventId, order_id: orderId, payment_id: paymentId, received_amount: entity.amount, expected_amount: expectedPrintPaise, received_currency: entity.currency } })
+            await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, rejected: 'Print job amount or currency mismatch.' } }).eq('event_id', eventId)
+            return response(request, { received: true, processed: false }, 200)
+          }
+          const { data: paidJob, error: printUpdateError } = await admin.from('print_jobs').update({
+            payment_status: 'paid', razorpay_payment_id: paymentId, status: 'queued', updated_at: new Date().toISOString(),
+          }).eq('id', printJob.id).eq('payment_status', 'pending').eq('razorpay_order_id', orderId).select('id').maybeSingle()
+          if (printUpdateError) throw printUpdateError
+          if (paidJob) await admin.from('print_job_events').insert({ print_job_id: printJob.id, actor_type: 'system', event_type: 'razorpay_payment_captured_webhook', details: { event_id: eventId, order_id: orderId, payment_id: paymentId, amount_paise: entity.amount } })
+          await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, print_job_number: printJob.job_number, paid: Boolean(paidJob) } }).eq('event_id', eventId)
+          return response(request, { received: true, processed: true, print_job: printJob.job_number }, 200)
+        }
+        await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, ignored: 'Order not found in application or print payment records.' } }).eq('event_id', eventId)
         return response(request, { received: true, processed: false }, 200)
       }
       const expectedPaise = Math.round(Number(paymentOrder.amount) * 100)
