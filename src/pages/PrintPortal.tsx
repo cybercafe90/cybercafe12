@@ -59,7 +59,7 @@ export default function PrintPortal() {
     if (!pages.trim() || pages.trim().toLowerCase() === "all") return pageCount;
     const selected = new Set<number>();
     for (const part of pages.split(",")) {
-      const match = part.trim().match(/^(\\d+)(?:\\s*-\\s*(\\d+))?$/);
+      const match = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/);
       if (!match) return 0;
       const start = Number(match[1]);
       const end = Number(match[2] || match[1]);
