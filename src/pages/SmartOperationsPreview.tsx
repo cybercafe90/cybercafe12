@@ -4,17 +4,21 @@ import {
   CheckCircle2, ChevronDown, CircleDollarSign, Clock3, Download, FileCheck2,
   FileClock, FileSearch, Filter, FolderLock, Gauge, LayoutDashboard, LockKeyhole,
   Menu, MessageSquareText, MoreHorizontal, Search, ShieldCheck, Sparkles, Users,
-  Wallet, X,
+  Wallet, X, BellRing, CalendarClock, ChartNoAxesCombined, ClipboardCheck, UserRoundCheck,
+  ListChecks, TrendingUp, CircleAlert, TimerReset,
 } from "lucide-react";
 import "./SmartOperationsPreview.css";
 
-type Screen = "overview" | "applications" | "payments" | "customers" | "security";
+type Screen = "overview" | "applications" | "payments" | "customers" | "security" | "intelligence" | "team" | "insights";
 const screens: { id: Screen; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "overview", label: "Command centre", icon: LayoutDashboard },
   { id: "applications", label: "Applications", icon: BriefcaseBusiness },
   { id: "payments", label: "Payments", icon: Wallet },
   { id: "customers", label: "Customers & files", icon: Users },
   { id: "security", label: "Security & reports", icon: ShieldCheck },
+  { id: "intelligence", label: "Smart alerts", icon: BellRing },
+  { id: "team", label: "Team & SLA", icon: UserRoundCheck },
+  { id: "insights", label: "Insights", icon: ChartNoAxesCombined },
 ];
 const demoApplications = [
   { id: "BABA-8K4P2M9Q1A", name: "Aamir Hussain", service: "Revenue Certificate", status: "Under review", age: "2h ago", priority: "Normal" },
@@ -65,11 +69,99 @@ export default function SmartOperationsPreview() {
         {screen === "payments" && <><div className="sop-metrics compact"><Metric label="Gateway verification" value="—" detail="Reconcile from webhook events" icon={ShieldCheck} tone="green"/><Metric label="Pending review" value="01" detail="Sample only" icon={Clock3} tone="amber"/><Metric label="Refund controls" value="Ready to design" detail="Approval and audit required" icon={Wallet}/></div><article className="sop-panel"><div className="sop-panel-head"><div><h2>Payment control centre</h2><p>Application-linked payment ledger · demo entries only</p></div><Pill tone="green">RECONCILIATION CONCEPT</Pill></div><div className="sop-table-wrap"><table><thead><tr><th>Reference</th><th>Customer</th><th>Method</th><th>Amount</th><th>Status</th><th>Received</th><th/></tr></thead><tbody>{demoPayments.map(p=><tr key={p.ref}><td><b>{p.ref}</b></td><td>{p.customer}</td><td>{p.method}</td><td>{p.amount}</td><td><Pill tone={p.status==="Verified"?"green":p.status==="Pending"?"amber":"violet"}>{p.status}</Pill></td><td>{p.date}</td><td><button className="sop-icon-btn" onClick={()=>action("Payment detail panel is a design preview. No transaction can be edited or refunded here.")}><MoreHorizontal size={17}/></button></td></tr>)}</tbody></table></div></article><div className="sop-warning"><AlertTriangle size={17}/><span><b>Financial safety:</b> gateway-confirmed payment status must remain authoritative. Manual corrections, refunds and deletions require restricted permissions, reason capture and immutable audit history.</span></div></>}
         {screen === "customers" && <><div className="sop-metrics compact"><Metric label="Customer profiles" value="—" detail="Existing linked profiles" icon={Users}/><Metric label="Secure files" value="—" detail="Private storage inventory" icon={FolderLock} tone="violet"/><Metric label="Readiness checks" value="Planned" detail="Document quality assistance" icon={FileCheck2} tone="green"/></div><div className="sop-grid-two"><article className="sop-panel"><div className="sop-panel-head"><div><h2>Customer workspace</h2><p>One profile connected to relevant cases</p></div></div><div className="sop-profile"><div className="sop-profile-avatar">CU</div><div><b>Customer profile preview</b><small>Contact details · Applications · Communication history</small></div><Pill tone="demo">MOCK</Pill></div><div className="sop-profile-list"><span>Application history <b>Linked by tracking reference</b></span><span>Notifications <b>WhatsApp / email when configured</b></span><span>Consent record <b>Visible to authorized owner</b></span></div></article><article className="sop-panel"><div className="sop-panel-head"><div><h2>Document quality desk</h2><p>Proposed pre-check before submission</p></div><Pill tone="violet">ASSISTED CHECKS</Pill></div><div className="sop-doc-check"><FileCheck2 size={24}/><b>Document readiness checklist</b><span>File type and size validation</span><span>Blur and page completeness warnings</span><span>Service-specific missing document hints</span><small>Human review remains required. No automatic eligibility decisions.</small></div></article></div><div className="sop-warning"><LockKeyhole size={17}/><span>Documents should use private storage, short-lived signed access and role checks. Preview mode contains no customer uploads.</span></div></>}
         {screen === "security" && <><div className="sop-metrics compact"><Metric label="Owner access" value="Restricted" detail="Existing owner role model" icon={LockKeyhole} tone="green"/><Metric label="Audit coverage" value="Review" detail="Confirm event coverage first" icon={Activity}/><Metric label="Backup readiness" value="Verify" detail="Test restore, not just backup" icon={ShieldCheck} tone="amber"/></div><div className="sop-grid-two"><article className="sop-panel"><div className="sop-panel-head"><div><h2>Security checklist</h2><p>Controls to validate before rollout</p></div><Pill tone="amber">REVIEW REQUIRED</Pill></div><div className="sop-checks">{["Owner-only access and least privilege","Payment webhook signature verification","Audit events for sensitive changes","Private document storage and access expiry","Rate limits and suspicious activity alerts","Backup restore test and recovery notes"].map((x,i)=><div key={x}><span className="sop-check-number">{String(i+1).padStart(2,"0")}</span><span>{x}</span><Pill tone="neutral">Validate</Pill></div>)}</div></article><article className="sop-panel"><div className="sop-panel-head"><div><h2>Operational reports</h2><p>Suggested owner-only reporting</p></div></div><div className="sop-report-list"><div><Activity/><span><b>Application turnaround</b><small>Median time by service and stage</small></span><ArrowUpRight/></div><div><CircleDollarSign/><span><b>Payment reconciliation</b><small>Matched, pending and exception totals</small></span><ArrowUpRight/></div><div><Users/><span><b>Staff workload</b><small>Open cases and ageing by assignee</small></span><ArrowUpRight/></div><div><ShieldCheck/><span><b>Security activity</b><small>Administrative actions and alerts</small></span><ArrowUpRight/></div></div></article></div><div className="sop-warning"><ShieldCheck size={17}/><span>Security and backup indicators remain unverified until tested against the actual configured policies, logs and recovery procedures.</span></div></>}
+        {screen === "intelligence" && <>
+          <div className="sop-metrics compact">
+            <Metric label="Alert categories" value="06" detail="Rules proposed for owner review" icon={BellRing} tone="amber"/>
+            <Metric label="Duplicate checks" value="Ready" detail="Warn before creating a new case" icon={ClipboardCheck}/>
+            <Metric label="Customer follow-ups" value="Planned" detail="Consent-based reminders" icon={MessageSquareText} tone="violet"/>
+          </div>
+          <div className="sop-grid-two">
+            <article className="sop-panel">
+              <div className="sop-panel-head"><div><h2>Smart attention inbox</h2><p>One queue for exceptions that need a human decision</p></div><Pill tone="amber">RULE-BASED CONCEPT</Pill></div>
+              <div className="sop-intel-list">
+                <div><span className="sop-intel-icon amber"><TimerReset/></span><span><b>Ageing and overdue cases</b><small>Highlight cases beyond the selected service target; never change status automatically</small></span><Pill tone="amber">Priority</Pill></div>
+                <div><span className="sop-intel-icon violet"><CopyIcon/></span><span><b>Possible duplicate applications</b><small>Compare safe matching fields and ask the owner to review before linking</small></span><Pill tone="violet">Review</Pill></div>
+                <div><span className="sop-intel-icon cyan"><FileCheck2/></span><span><b>Missing or unreadable documents</b><small>Show a service-specific checklist and file-quality warning</small></span><Pill tone="cyan">Check</Pill></div>
+                <div><span className="sop-intel-icon green"><CircleDollarSign/></span><span><b>Payment exceptions</b><small>Flag gateway mismatch, pending confirmation and duplicate webhook events</small></span><Pill tone="green">Finance</Pill></div>
+                <div><span className="sop-intel-icon amber"><MessageSquareText/></span><span><b>Customer waiting for response</b><small>Surface unanswered enquiries and unresolved grievance follow-ups</small></span><Pill tone="amber">Follow up</Pill></div>
+                <div><span className="sop-intel-icon cyan"><CalendarClock/></span><span><b>Appointments and expiry reminders</b><small>Optional reminders for customer-agreed dates and policy renewals</small></span><Pill tone="cyan">Scheduled</Pill></div>
+              </div>
+            </article>
+            <article className="sop-panel">
+              <div className="sop-panel-head"><div><h2>Customer communication guardrails</h2><p>Helpful reminders without spamming customers</p></div><Pill tone="green">OWNER CONTROLLED</Pill></div>
+              <div className="sop-guardrails">
+                <div><CheckCircle2/><span><b>Preview before sending</b><small>Owner reviews message content and recipient</small></span></div>
+                <div><CheckCircle2/><span><b>Consent-aware channels</b><small>Use WhatsApp or email only where the customer has provided the channel</small></span></div>
+                <div><CheckCircle2/><span><b>Delivery history</b><small>Keep sent, failed and retried events visible</small></span></div>
+                <div><CheckCircle2/><span><b>Quiet hours and opt-out</b><small>Respect customer preferences and avoid repeated reminders</small></span></div>
+              </div>
+              <div className="sop-warning"><LockKeyhole size={16}/><span>Automated messaging is not connected in this preview. No messages are sent.</span></div>
+            </article>
+          </div>
+          <article className="sop-panel"><div className="sop-panel-head"><div><h2>Suggested intelligent checks</h2><p>Assistive warnings only; never make eligibility or government-approval decisions</p></div></div><div className="sop-feature-row"><div><ClipboardCheck/><span><b>Form completeness</b><small>Required fields and document checklist before submission.</small></span></div><div><ShieldCheck/><span><b>Risk signals</b><small>Repeated failed attempts and unusual admin activity.</small></span></div><div><ListChecks/><span><b>Service guidance</b><small>Department-specific steps and verified official links.</small></span></div></div></article>
+        </>}
+        {screen === "team" && <>
+          <div className="sop-metrics compact">
+            <Metric label="Work allocation" value="Balanced" detail="Illustrative team view" icon={Users}/>
+            <Metric label="SLA timers" value="Configurable" detail="Per service and case type" icon={TimerReset} tone="amber"/>
+            <Metric label="Escalation levels" value="03" detail="Reminder, priority, owner review" icon={TrendingUp} tone="violet"/>
+          </div>
+          <div className="sop-grid-two">
+            <article className="sop-panel"><div className="sop-panel-head"><div><h2>Team workload board</h2><p>Illustrative roles only — not real staff accounts</p></div><Pill tone="demo">MOCK TEAM</Pill></div>
+              <div className="sop-team-list">
+                <div><span className="sop-team-avatar">OW</span><span><b>Owner / Administrator</b><small>Approvals · payments · escalations</small></span><strong>Owner</strong></div>
+                <div><span className="sop-team-avatar">AP</span><span><b>Application desk</b><small>New cases · document checks · status updates</small></span><strong>Case handler</strong></div>
+                <div><span className="sop-team-avatar">CS</span><span><b>Customer support</b><small>Enquiries · grievance follow-up · reminders</small></span><strong>Support</strong></div>
+                <div><span className="sop-team-avatar">FN</span><span><b>Finance review</b><small>Gateway reconciliation · receipts · exceptions</small></span><strong>Finance</strong></div>
+              </div>
+              <small className="sop-muted">Create named staff access only after explicit owner approval, with least-privilege permissions and no public self-registration.</small>
+            </article>
+            <article className="sop-panel"><div className="sop-panel-head"><div><h2>Service-level timers</h2><p>Targets should be set by the owner, not assumed</p></div><Pill tone="amber">CONFIGURABLE</Pill></div>
+              <div className="sop-sla-list">
+                <div><span>New enquiry acknowledgement</span><b>Set target</b></div>
+                <div><span>Document review</span><b>Set target</b></div>
+                <div><span>Customer follow-up</span><b>Set target</b></div>
+                <div><span>Grievance response</span><b>Set target</b></div>
+                <div><span>Payment exception review</span><b>Set target</b></div>
+              </div>
+              <div className="sop-warning"><CircleAlert size={16}/><span>Targets measure internal service handling only; they do not represent government department processing times.</span></div>
+            </article>
+          </div>
+          <article className="sop-panel"><div className="sop-panel-head"><div><h2>Recommended permission model</h2><p>Keep sensitive actions restricted</p></div></div><div className="sop-permission-grid"><span><b>Owner</b><small>Full administration and final approvals</small></span><span><b>Case handler</b><small>Assigned applications and permitted status updates</small></span><span><b>Support</b><small>Customer communication and grievance notes</small></span><span><b>Finance reviewer</b><small>Read payments and submit reconciliation exceptions</small></span></div></article>
+        </>}
+        {screen === "insights" && <>
+          <div className="sop-metrics compact">
+            <Metric label="Service performance" value="Track" detail="Turnaround by service and stage" icon={ChartNoAxesCombined}/>
+            <Metric label="Payment health" value="Match" detail="Gateway and ledger exceptions" icon={CircleDollarSign} tone="green"/>
+            <Metric label="Customer experience" value="Measure" detail="Feedback and response time" icon={Users} tone="violet"/>
+          </div>
+          <div className="sop-grid-two">
+            <article className="sop-panel"><div className="sop-panel-head"><div><h2>Owner decision dashboard</h2><p>Useful reports to guide daily operations</p></div><Pill tone="cyan">REPORT IDEAS</Pill></div>
+              <div className="sop-report-list">
+                <div><ChartNoAxesCombined/><span><b>Service demand trends</b><small>Applications by service, department and week</small></span><TrendingUp/></div>
+                <div><TimerReset/><span><b>Turnaround and ageing</b><small>Median handling time, bottlenecks and overdue cases</small></span><ArrowUpRight/></div>
+                <div><CircleDollarSign/><span><b>Daily payment book</b><small>Collected, pending, refunded and unmatched amounts</small></span><ArrowUpRight/></div>
+                <div><MessageSquareText/><span><b>Customer experience</b><small>Response times, feedback and repeat enquiries</small></span><ArrowUpRight/></div>
+                <div><Users/><span><b>Workload and capacity</b><small>Open work by staff role and service category</small></span><ArrowUpRight/></div>
+              </div>
+            </article>
+            <article className="sop-panel"><div className="sop-panel-head"><div><h2>Business safeguards</h2><p>Keep the reporting useful and trustworthy</p></div><Pill tone="green">RECOMMENDED</Pill></div>
+              <div className="sop-guardrails">
+                <div><CheckCircle2/><span><b>No invented totals</b><small>Show verified database totals and clear empty states.</small></span></div>
+                <div><CheckCircle2/><span><b>Export with access control</b><small>Restrict personal data and record who exported it.</small></span></div>
+                <div><CheckCircle2/><span><b>Separate service fees from official fees</b><small>Clearly label any amount and its source.</small></span></div>
+                <div><CheckCircle2/><span><b>Audit every sensitive action</b><small>Record actor, time, reason and before/after values.</small></span></div>
+              </div>
+            </article>
+          </div>
+          <div className="sop-footnote"><ShieldCheck size={15}/> Reports should be calculated from verified records; preview contains no live figures and exports no files.</div>
+        </>}
         <footer className="sop-footer"><span>BABA'S CYBER CAFE · SMART OPERATIONS PREVIEW</span><span>Design concept · No production actions</span></footer>
       </section>
     </div>
   </main>;
 }
+function CopyIcon() { return <FileSearch/>; }
 function ApplicationTable({ rows, onAction }: { rows: typeof demoApplications; onAction: (message: string) => void }) {
   return <div className="sop-table-wrap"><table><thead><tr><th>Tracking reference</th><th>Customer</th><th>Service</th><th>Status</th><th>Updated</th><th/></tr></thead><tbody>{rows.map(a=><tr key={a.id}><td><b>{a.id}</b></td><td>{a.name}{a.priority==="High"&&<small className="sop-priority">HIGH PRIORITY</small>}</td><td>{a.service}</td><td><Pill tone={a.status==="Completed"?"green":a.status==="Documents required"?"amber":a.status==="Under review"?"cyan":"neutral"}>{a.status}</Pill></td><td>{a.age}</td><td><button className="sop-icon-btn" aria-label={`View ${a.id}`} onClick={()=>onAction("Application detail preview: proposed timeline, remarks, assigned staff and secure documents. No real record opened.")}><MoreHorizontal size={17}/></button></td></tr>)}</tbody></table></div>;
 }
