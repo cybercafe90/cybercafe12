@@ -60,6 +60,7 @@ type Payment = {
   amount: number | string;
   currency?: string;
   status: "pending" | "claimed" | "paid" | "needs_review";
+  razorpay_order_id?: string | null;
   razorpay_payment_id?: string | null;
   payment_provider?: string | null;
   paid_at?: string | null;
@@ -268,8 +269,17 @@ function AdminPayments() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState("");
   const [tab, setTab] = useState<"applications"|"audit">("applications");
+  const [query, setQuery] = useState("");
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [create, setCreate] = useState({fullName:"", mobile:"", email:"", serviceName:"", categorySlug:"", amount:""});
-  const visibleApps = selectedApplicationId ? apps.filter((app) => app.id === selectedApplicationId) : apps;
+  const visibleApps = apps.filter(app => {
+    if (selectedApplicationId && app.id !== selectedApplicationId) return false;
+    const needle = query.trim().toLowerCase();
+    return !needle || [app.full_name, app.tracking_id, app.mobile, app.email, app.service_name, app.status, app.payment?.razorpay_payment_id].some(value => String(value ?? "").toLowerCase().includes(needle));
+  });
+  const paidCount = apps.filter(app => app.payment?.status === "paid").length;
+  const pendingCount = apps.filter(app => !app.payment || app.payment.status === "pending").length;
+  const totalPaid = apps.filter(app => app.payment?.status === "paid").reduce((sum, app) => sum + Number(app.payment?.amount ?? 0), 0);
 
   const api = useCallback(async <T,>(body: object) => callFunction<T>("admin-payments", body, token), [token]);
   const load = useCallback(async () => {
@@ -277,6 +287,7 @@ function AdminPayments() {
     setApps(result.applications); setAudit(result.audit);
     setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)])));
     setCustomerEmails(Object.fromEntries(result.applications.map(item=>[item.id,item.email ?? ""])));
+    setLastSynced(new Date());
   }, [api]);
 
   useEffect(() => {
@@ -292,13 +303,19 @@ function AdminPayments() {
   }, []);
   useEffect(() => {
     if (!token) return;
-    void api<{applications:AdminApplication[];audit:Audit[]}>({action:"list"}).then(result=>{
-      setApps(result.applications); setAudit(result.audit);
-      setAmounts(Object.fromEntries(result.applications.map(item=>[item.id,String(item.payment?.amount ?? 0)])));
-      setCustomerEmails(Object.fromEntries(result.applications.map(item=>[item.id,item.email ?? ""])));
-      setReady(true);
-    }).catch(reason=>{setError(reason instanceof Error?reason.message:"Owner access could not be verified.");setReady(true);});
+    void load().then(()=>setReady(true)).catch(reason=>{setError(reason instanceof Error?reason.message:"Owner access could not be verified.");setReady(true);});
     if (supabase) void supabase.from("service_categories").select("slug,name").eq("is_active",true).order("sort_order").then(({data})=>setCategories(data??[]));
+  }, [token, load]);
+
+  // Keep the owner dashboard fresh without overwriting in-progress fee/email edits.
+  useEffect(() => {
+    if (!token) return;
+    const timer = window.setInterval(() => {
+      void api<{applications:AdminApplication[];audit:Audit[]}>({action:"list"})
+        .then(result => { setApps(result.applications); setAudit(result.audit); setLastSynced(new Date()); })
+        .catch(() => undefined);
+    }, 12000);
+    return () => window.clearInterval(timer);
   }, [token, api]);
 
   const run = async (key:string, body:object) => {
@@ -323,8 +340,22 @@ function AdminPayments() {
   if (!ready) return <main className="payment-page"><div className="payment-shell"><p>Verifying owner access…</p></div></main>;
   return (
     <main className="payment-page payment-admin-page"><div className="payment-shell payment-admin-shell">
-      <div className="payment-heading"><span className="eyebrow">OWNER CONTROL CENTRE · RAZORPAY AUTOMATION</span><h1>Payment management</h1><p>Assign application fees, email secure payment links and monitor automatic Razorpay confirmations.</p>{selectedApplicationId && <p>Showing the selected application only.</p>}{isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts and sending emails are disabled.</p>}<Link to="/admin">← Back to main admin</Link></div>
+      <div className="payment-heading payment-command-heading">
+        <span className="eyebrow">BABA'S CYBER CAFE · OPERATIONS INTELLIGENCE</span>
+        <h1>Payment command centre</h1>
+        <p>Monitor every application, payment confirmation and customer fee from one owner-only workspace.</p>
+        <div className="payment-live-line"><i/> LIVE SYNC · {lastSynced ? `Last updated ${lastSynced.toLocaleTimeString("en-IN")}` : "Connecting"} <span>Auto-refresh every 12 seconds</span></div>
+        <Link to="/admin">← Main admin workspace</Link>
+        {selectedApplicationId && <p>Filtered to the selected application.</p>}
+        {isPaymentPreview && <p className="payment-alert payment-alert-info">Safe preview: existing records are read-only. Creating applications, changing amounts and sending emails are disabled.</p>}
+      </div>
       {error && <p className="payment-alert payment-alert-error">{error}</p>}{notice && <p className="payment-alert payment-alert-info">{notice}</p>}
+      <div className="payment-command-metrics">
+        <article><span>APPLICATIONS</span><strong>{apps.length}</strong><small>Latest records loaded</small></article>
+        <article><span>PAYMENTS VERIFIED</span><strong>{paidCount}</strong><small>Razorpay-confirmed payments</small></article>
+        <article><span>AWAITING PAYMENT</span><strong>{pendingCount}</strong><small>Pending or unassigned</small></article>
+        <article><span>VERIFIED COLLECTION</span><strong>{money(totalPaid)}</strong><small>Paid records in this view</small></article>
+      </div>
       <form className="payment-create-form" onSubmit={createApplication}>
         <h2>New payment application</h2>
         <div className="payment-admin-fields">
@@ -337,27 +368,48 @@ function AdminPayments() {
         </div>
         <button className="button button-dark" disabled={busy==="create"}>{busy==="create"?"Creating…":"Create application & send payment email"}</button>
       </form>
-      <div className="payment-admin-tabs"><button className={tab==="applications"?"is-active":""} onClick={()=>setTab("applications")} type="button">Applications ({apps.length})</button><button className={tab==="audit"?"is-active":""} onClick={()=>setTab("audit")} type="button">Payment activity ({audit.length})</button><button className="payment-refresh" type="button" onClick={()=>void load()}>Refresh</button></div>
+      <div className="payment-admin-toolbar">
+        <div className="payment-admin-tabs"><button className={tab==="applications"?"is-active":""} onClick={()=>setTab("applications")} type="button">Applications ({apps.length})</button><button className={tab==="audit"?"is-active":""} onClick={()=>setTab("audit")} type="button">Payment activity ({audit.length})</button></div>
+        <label className="payment-search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search customer, tracking ID, service or payment ID"/></label>
+        <button className="button button-outline payment-refresh" type="button" onClick={()=>void load()} disabled={!!busy}>↻ Refresh now</button>
+      </div>
       {tab==="applications" ? (
         <div className="payment-admin-list">
           {visibleApps.map(app=>(
             <article className="payment-admin-card" key={app.id}>
-              <div className="payment-admin-card-head"><div><b>{app.full_name}</b><span>{app.tracking_id} · {app.service_name}</span><small>{app.mobile} · {app.email || "No email saved"} · {dateTime(app.created_at)}</small></div><PaymentStatus status={app.payment?.status??"pending"}/></div>
-              <div className="payment-admin-controls">
-                <label>Customer email<input type="email" required value={customerEmails[app.id]??""} onChange={e=>setCustomerEmails({...customerEmails,[app.id]:e.target.value})} placeholder="customer@example.com"/></label>
-                <label>Assigned amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={amounts[app.id]??"0"} onChange={e=>setAmounts({...amounts,[app.id]:e.target.value})}/></label>
-                <button className="button button-outline" disabled={!!busy || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(customerEmails[app.id]??"")} onClick={()=>void run(app.id,{action:"set_amount",applicationId:app.id,amount:Number(amounts[app.id]||0),email:customerEmails[app.id]})}>Save fee &amp; email Razorpay payment link</button>
+              <div className="payment-admin-card-head">
+                <div><b>{app.full_name}</b><span>{app.tracking_id} · {app.service_name}</span><small>{app.mobile} · {app.email || "No email saved"} · Received {dateTime(app.created_at)}</small></div>
+                <div className="payment-card-badges"><span className="application-status-chip">{app.status || "Received"}</span><PaymentStatus status={app.payment?.status??"pending"}/></div>
               </div>
-              {app.payment?.status==="paid" ? <p className="payment-admin-meta">Razorpay payment ID: <b>{app.payment.razorpay_payment_id || "Verified"}</b> · Paid at {dateTime(app.payment.paid_at)}</p> :
-                <p className="payment-admin-meta">{Number(app.payment?.amount??0)>0 ? "Awaiting automatic Razorpay payment confirmation." : "Assign an amount to start the payment process."}</p>}
+              <div className="payment-card-details">
+                <div><small>APPLICATION STATUS</small><b>{app.status || "Received"}</b></div>
+                <div><small>PAYMENT STATUS</small><PaymentStatus status={app.payment?.status??"pending"}/></div>
+                <div><small>ASSIGNED FEE</small><b>{money(app.payment?.amount ?? 0)}</b></div>
+                <div><small>PAYMENT PROVIDER</small><b>{app.payment?.payment_provider || "Not paid"}</b></div>
+              </div>
+              <div className="payment-admin-controls">
+                <label>Customer email<input type="email" required value={customerEmails[app.id]??""} onChange={e=>setCustomerEmails({...customerEmails,[app.id]:e.target.value})} placeholder="customer@example.com" disabled={app.payment?.status==="paid"}/></label>
+                <label>Assigned amount (₹)<input type="number" min="0" max="10000000" step="0.01" value={amounts[app.id]??"0"} onChange={e=>setAmounts({...amounts,[app.id]:e.target.value})} disabled={app.payment?.status==="paid"}/></label>
+                <button className="button button-outline" disabled={!!busy || app.payment?.status==="paid" || !/^[^ @]+@[^ @]+[.][^ @]+$/.test(customerEmails[app.id]??"")} onClick={()=>void run(app.id,{action:"set_amount",applicationId:app.id,amount:Number(amounts[app.id]||0),email:customerEmails[app.id]})}>{app.payment?.status==="paid"?"Verified payment locked":"Save fee & email payment link"}</button>
+              </div>
+              {app.payment?.status==="paid" ? (
+                <div className="payment-verified-details">
+                  <div><small>RAZORPAY PAYMENT ID</small><b>{app.payment.razorpay_payment_id || "Verified · ID unavailable"}</b></div>
+                  <div><small>RAZORPAY ORDER ID</small><b>{app.payment.razorpay_order_id || "—"}</b></div>
+                  <div><small>PAID AT</small><b>{dateTime(app.payment.paid_at)}</b></div>
+                  <p><strong>Verified transaction.</strong> This financial record is locked against accidental fee edits. Keep it for reconciliation and audit history.</p>
+                </div>
+              ) : (
+                <p className="payment-admin-meta">{Number(app.payment?.amount??0)>0 ? "Awaiting automatic Razorpay payment confirmation." : "Assign an amount to start the payment process."}</p>
+              )}
             </article>
           ))}
-          {visibleApps.length===0 && <p className="payment-empty">No payment application was found. Return to the admin dashboard and open the payment action from its application row.</p>}
+          {visibleApps.length===0 && <p className="payment-empty">No matching application. Try another tracking ID, customer name or payment reference.</p>}
         </div>
       ) : (
         <div className="payment-alert-list">{audit.map(event=><article className="payment-alert-card" key={event.id}><b>{event.action.replaceAll("_"," ")}</b><small>{dateTime(event.created_at)} · Payment record {event.payment_id}</small><pre>{JSON.stringify(event.metadata,null,2)}</pre></article>)}</div>
       )}
-      <p className="payment-footnote">Payment status is updated from verified Razorpay checkout responses and Razorpay webhook events. Manual UTR and bank-alert reconciliation are not part of this portal.</p>
+      <p className="payment-footnote">Payment status is updated from verified Razorpay checkout responses and Razorpay webhook events. Verified paid transactions cannot be overwritten from this screen; retain them for accounting and audit integrity. Application deletion remains available from the main owner dashboard with confirmation.</p>
     </div></main>
   );
 }
