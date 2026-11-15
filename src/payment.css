@@ -116,3 +116,11 @@
 .payment-standalone .payment-panel,.payment-standalone .payment-result { box-shadow:0 22px 70px rgba(0,0,0,.28); }
 .payment-admin-controls label { min-width:min(100%,240px); }
 @media(max-width:700px){.payment-standalone{padding:8px 0}.payment-standalone .payment-shell{padding-left:14px;padding-right:14px}}
+
+.payment-preview-demo{margin-top:18px;padding:20px;border:1px solid rgba(201,164,92,.48);border-radius:16px;background:linear-gradient(135deg,rgba(201,164,92,.12),rgba(255,255,255,.035));display:grid;gap:10px}
+.payment-preview-demo .eyebrow{color:#c9a45c;font-size:11px;letter-spacing:1.8px;font-weight:800}
+.payment-preview-demo p,.payment-preview-demo small{margin:0;line-height:1.6}
+.payment-preview-demo small{color:#777;font-size:12px}
+.payment-preview-methods{display:grid;gap:8px}
+.payment-preview-methods span{padding:12px;border-radius:9px;background:rgba(201,164,92,.1);font-size:13px;font-weight:650}
+.payment-standalone .payment-preview-demo{color:#28251e;background:#fffaf0}
