@@ -48,6 +48,7 @@ export default function PrintPortal() {
     setKind(next);
     setFile(null);
     setNotice("");
+    setShowReview(false);
     setPages("all");
   }
   function onFile(event: ChangeEvent<HTMLInputElement>) {
@@ -231,6 +232,7 @@ export default function PrintPortal() {
                 <label className="print-field"><span>Full name</span><input value={resumeName} onChange={e => setResumeName(e.target.value)} placeholder="Enter your full name"/></label>
                 <label className="print-field"><span>Career goal / applying for</span><input value={resumeRole} onChange={e => setResumeRole(e.target.value)} placeholder="e.g. Office assistant"/></label>
                 <label className="print-field"><span>Skills, education and experience</span><textarea value={resumeSkills} onChange={e => setResumeSkills(e.target.value)} placeholder="Add your education, skills and work experience..." rows={5}/></label>
+                <small className="print-hint">Resume creation and formatting: ₹40 per resume. Printing, if requested, is charged separately at ₹5 per A4 page.</small>
                 <button type="button" className="print-continue" onClick={downloadResumePdf}>Create resume PDF <ArrowRight size={17}/></button>
               </div>
               <div className="print-resume-preview">
