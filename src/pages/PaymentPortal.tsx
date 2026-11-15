@@ -37,6 +37,7 @@ type Payment = {
   currency?: string;
   status: "pending" | "claimed" | "paid" | "needs_review";
   razorpay_payment_id?: string | null;
+  payment_provider?: string | null;
   paid_at?: string | null;
   expires_at?: string | null;
 };
@@ -198,8 +199,8 @@ function CustomerPayment() {
             </div>
             {record.payment.status === "paid" ? (
               <div className="payment-success">
-                <div className="payment-success-icon">✓</div><span className="eyebrow">RAZORPAY PAYMENT VERIFIED</span><h2>Payment received</h2><strong>{money(record.payment.amount)}</strong>
-                <div className="payment-detail-grid"><div><small>Razorpay payment ID</small><b>{record.payment.razorpay_payment_id || "Verified by Razorpay"}</b></div><div><small>Paid at</small><b>{dateTime(record.payment.paid_at)}</b></div></div>
+                <div className="payment-success-icon">✓</div><span className="eyebrow">{record.payment.payment_provider === "razorpay" ? "RAZORPAY PAYMENT VERIFIED" : "PAYMENT STATUS RECORDED"}</span><h2>{record.payment.payment_provider === "razorpay" ? "Payment received" : "Payment already marked as paid"}</h2><strong>{money(record.payment.amount)}</strong>
+                <div className="payment-detail-grid"><div><small>{record.payment.payment_provider === "razorpay" ? "Razorpay payment ID" : "Payment reference"}</small><b>{record.payment.razorpay_payment_id || "Not available for this earlier payment"}</b></div><div><small>Paid at</small><b>{dateTime(record.payment.paid_at)}</b></div></div>
                 <button className="button button-dark" onClick={() => window.print()}>Download / print receipt</button>
               </div>
             ) : Number(record.payment.amount) <= 0 ? (
