@@ -1800,3 +1800,76 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .phone-input { gap: 6px; }
   .phone-prefix { min-width: 48px; }
 }
+
+
+/* Preview: BABA'S CYBER CAFE owner operations command centre */
+.admin-page {
+  max-width: 1540px;
+  padding: 38px clamp(16px,3.5vw,54px) 90px;
+  color: #e8eef9;
+  background:
+    radial-gradient(ellipse at 92% 0%,rgba(0,242,255,.11),transparent 30%),
+    radial-gradient(ellipse at 5% 18%,rgba(201,164,92,.10),transparent 27%),
+    #080d19;
+  border: 1px solid rgba(0,242,255,.13);
+  border-radius: 24px;
+  box-shadow: 0 28px 90px rgba(0,0,0,.24);
+}
+.admin-page .admin-head { padding: 8px 0 24px; border-bottom:1px solid rgba(0,242,255,.16); }
+.admin-page .admin-head h1,.admin-page .admin-section-head h2 { color:#f4f8ff; }
+.admin-page .admin-head p,.admin-page .admin-section-head p { color:#9cacc3; }
+.admin-page .eyebrow { color:#00eaff; letter-spacing:.18em; }
+.admin-page .admin-section {
+  margin:22px 0;
+  padding:clamp(16px,2.2vw,26px);
+  border:1px solid rgba(0,242,255,.17);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(17,29,49,.96),rgba(10,17,31,.96));
+  box-shadow:0 16px 45px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);
+}
+.admin-page .metric-grid { gap:12px; }
+.admin-page .metric-grid > div {
+  min-height:112px;
+  padding:20px;
+  border:1px solid rgba(0,242,255,.19);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(19,39,61,.98),rgba(12,22,39,.98));
+  box-shadow:inset 0 0 26px rgba(0,242,255,.025);
+}
+.admin-page .metric-grid span { color:#a9bad0; }
+.admin-page .metric-grid strong { color:#00efff; font-variant-numeric:tabular-nums; }
+.admin-page .metric-grid small { color:#7f93ad; }
+.admin-page .table-wrap { overflow-x:auto; border:1px solid rgba(0,242,255,.14); border-radius:13px; background:rgba(5,11,21,.65); }
+.admin-page table { min-width:760px; border-collapse:separate; border-spacing:0; }
+.admin-page th { padding:14px 13px; color:#00efff; background:rgba(0,242,255,.075); border-bottom:1px solid rgba(0,242,255,.2); font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+.admin-page td { padding:14px 13px; color:#dce7f5; border-bottom:1px solid rgba(148,163,184,.12); }
+.admin-page td small { display:block; margin-top:5px; color:#8294ac; }
+.admin-page tbody tr:hover td { background:rgba(0,242,255,.045); }
+.admin-page .admin-filters,.admin-page .admin-pagination { color:#91a4bd; }
+.admin-page .field input,.admin-page .field select,.admin-page .field textarea,.admin-page .search-box input {
+  border:1px solid rgba(0,242,255,.2);
+  border-radius:10px;
+  color:#edf6ff;
+  background:#091322;
+}
+.admin-page .field span { color:#b7c7db; }
+.admin-page .button-dark { border:1px solid #00eaff; border-radius:10px; color:#06101d; background:linear-gradient(110deg,#00eaff,#7df6ff); box-shadow:0 8px 24px rgba(0,234,255,.12); }
+.admin-page .button-outline { border:1px solid rgba(0,242,255,.35); border-radius:10px; color:#bafaff; background:rgba(0,242,255,.055); }
+.admin-page .text-button,.admin-page .text-link { color:#00eaff; }
+.admin-page .status-tag { border:1px solid rgba(0,242,255,.22); border-radius:999px; }
+.admin-page .status-completed,.admin-page .status-approved { color:#4adea0; background:rgba(34,197,94,.1); }
+.admin-page .status-rejected { color:#fda4af; background:rgba(244,63,94,.1); }
+.admin-page .modal-backdrop { background:rgba(2,6,14,.82); backdrop-filter:blur(12px); }
+.admin-page .admin-modal,.admin-page .modal-backdrop > div { color:#edf6ff; border:1px solid rgba(0,242,255,.25); border-radius:18px; background:#101b2d; }
+.admin-page .settings-form,.admin-page .form-panel { color:#dce7f5; }
+.admin-page .notice { border-radius:12px; }
+@media(max-width:700px) {
+ .admin-page { margin:0 8px; padding:24px 12px 55px; border-radius:16px; }
+ .admin-page .admin-section { padding:14px; border-radius:14px; }
+ .admin-page .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .admin-page .metric-grid > div { min-height:94px; padding:13px; }
+}
+@media(prefers-reduced-motion:no-preference) {
+ .admin-page .admin-section,.admin-page .metric-grid > div { transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease; }
+ .admin-page .metric-grid > div:hover { transform:translateY(-3px); border-color:rgba(0,242,255,.42); box-shadow:0 15px 35px rgba(0,0,0,.24),0 0 24px rgba(0,242,255,.06); }
+}
