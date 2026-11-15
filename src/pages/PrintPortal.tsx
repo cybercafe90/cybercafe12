@@ -25,6 +25,7 @@ export default function PrintPortal() {
   const [resumeSkills, setResumeSkills] = useState("");
   const [photoSize, setPhotoSize] = useState("35 × 45 mm");
   const [photoLayout, setPhotoLayout] = useState("8");
+  const [photoDataUrl, setPhotoDataUrl] = useState("");
   const [studioNotice, setStudioNotice] = useState("");
 
   const accept = kind === "document" || kind === "resume" ? ".pdf,application/pdf" : "image/jpeg,image/png,.jpg,.jpeg,.png,.pdf";
@@ -59,6 +60,7 @@ export default function PrintPortal() {
             <h1>Printing, made <em>simple.</em></h1>
             <p>Send your documents from your phone. Choose your print preferences and collect your finished pages at BABA'S CYBER CAFE.</p>
             <div className="print-trust"><span><ShieldCheck size={15}/> Private by design</span><span><Clock3 size={15}/> Shop-assisted service</span></div>
+            <div className="print-quick-actions"><button type="button" onClick={() => { setStudioMode("resume"); document.getElementById("personal-document-studio")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}> <FileText size={16}/> Create a resume <ArrowRight size={15}/></button><button type="button" onClick={() => { setStudioMode("photo"); document.getElementById("personal-document-studio")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}><Camera size={16}/> Make passport photos <ArrowRight size={15}/></button></div>
           </div>
           <div className="print-hero-art" aria-hidden="true"><div className="paper-stack"><div className="paper paper-back"></div><div className="paper paper-front"><span></span><span></span><span></span><b>PRINT<br/>READY</b></div><div className="paper-seal"><Printer size={25}/></div></div></div>
         </div>
@@ -108,7 +110,7 @@ export default function PrintPortal() {
           </section>
         </div>
 
-        <section className="print-studio">
+        <section className="print-studio" id="personal-document-studio">
           <div className="print-studio-heading">
             <span className="print-eyebrow">YOUR PERSONAL DOCUMENT STUDIO</span>
             <h2>Create it here. Get it shop-approved.</h2>
@@ -141,15 +143,15 @@ export default function PrintPortal() {
           ) : (
             <div className="print-studio-grid">
               <div className="print-studio-form">
-                <label className="print-field"><span>Choose your photo</span><input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { setFile(e.target.files?.[0] ?? null); setStudioNotice(""); }}/></label>
+                <label className="print-field"><span>Choose your photo</span><input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" onChange={e => { const selected = e.target.files?.[0] ?? null; setFile(selected); setStudioNotice(""); if (selected) { const reader = new FileReader(); reader.onload = () => setPhotoDataUrl(String(reader.result ?? "")); reader.readAsDataURL(selected); } else { setPhotoDataUrl(""); } }}/></label>
                 <label className="print-field"><span>Photo size</span><select value={photoSize} onChange={e => setPhotoSize(e.target.value)}><option>35 × 45 mm</option><option>2 × 2 inches</option><option>Custom size</option></select></label>
                 <label className="print-field"><span>Photos per sheet</span><select value={photoLayout} onChange={e => setPhotoLayout(e.target.value)}><option value="6">6 photos</option><option value="8">8 photos</option><option value="12">12 photos</option></select></label>
                 <button type="button" className="print-continue" onClick={() => setStudioNotice(file ? "Photo selected. Final cropping, exact-size layout and print approval will be completed by the shop before printing." : "Please select a JPG or PNG photo first.")}>Prepare photo layout <ArrowRight size={17}/></button>
               </div>
               <div className="print-photo-preview">
                 <span className="print-eyebrow">PHOTO SHEET PREVIEW</span>
-                <div className="print-photo-sheet">{Array.from({length: Number(photoLayout)}, (_, i) => <div key={i} className="print-photo-placeholder"><UserRound size={22}/></div>)}</div>
-                <small>{photoSize} · {photoLayout} photos · A4 sheet concept</small>
+                <div className="print-photo-sheet">{Array.from({length: Number(photoLayout)}, (_, i) => <div key={i} className="print-photo-placeholder">{photoDataUrl ? <img src={photoDataUrl} alt={`Passport photo preview ${i + 1}`}/> : <UserRound size={22}/>}</div>)}</div>
+                <small>{photoSize} · {photoLayout} photos · {photoDataUrl ? "Your photo preview" : "Live sheet preview"} · A4 concept</small>
               </div>
             </div>
           )}
