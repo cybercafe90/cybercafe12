@@ -1,3 +1,10 @@
 name = "babacybercafe"
 compatibility_date = "2026-11-02"
 pages_build_output_dir = "./dist"
+
+# D1 binding for the isolated preview branch.
+# The Pages Function rejects requests outside preview/d1-print-operations.
+[[d1_databases]]
+binding = "DB"
+database_name = "baba-print-preview-orders"
+database_id = "f56bfe6a-0ffc-4d56-b412-4a318c9816ef"
