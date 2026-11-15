@@ -17,6 +17,12 @@ export default function PrintPortal() {
   const [colour, setColour] = useState<"mono" | "colour">("mono");
   const [sides, setSides] = useState<"single" | "manual-duplex">("single");
   const [pages, setPages] = useState("all");
+  const [pageCount, setPageCount] = useState(1);
+  const [idSides, setIdSides] = useState<"both" | "front">("both");
+  const [photoPrintSize, setPhotoPrintSize] = useState<"35x45" | "2x2" | "custom">("35x45");
+  const [printPhotoWidth, setPrintPhotoWidth] = useState(35);
+  const [printPhotoHeight, setPrintPhotoHeight] = useState(45);
+  const [showReview, setShowReview] = useState(false);
   const [photoCount, setPhotoCount] = useState("8");
   const [notice, setNotice] = useState("");
   const [studioMode, setStudioMode] = useState<"resume" | "photo">("resume");
@@ -49,8 +55,46 @@ export default function PrintPortal() {
     setFile(selected);
     setNotice("");
   }
+  const selectedPageCount = useMemo(() => {
+    if (!pages.trim() || pages.trim().toLowerCase() === "all") return pageCount;
+    const selected = new Set<number>();
+    for (const part of pages.split(",")) {
+      const match = part.trim().match(/^(\\d+)(?:\\s*-\\s*(\\d+))?$/);
+      if (!match) return 0;
+      const start = Number(match[1]);
+      const end = Number(match[2] || match[1]);
+      if (start < 1 || end < start || end > pageCount || end - start > 500) return 0;
+      for (let n = start; n <= end; n++) selected.add(n);
+    }
+    return selected.size;
+  }, [pages, pageCount]);
+
+  const estimate = useMemo(() => {
+    if (kind === "document" || kind === "resume") {
+      const rate = sides === "manual-duplex" ? (colour === "mono" ? 9 : 15) : (colour === "mono" ? 5 : 9);
+      const sheets = sides === "manual-duplex" ? Math.ceil(selectedPageCount / 2) : selectedPageCount;
+      return { amount: selectedPageCount > 0 ? sheets * rate * copies : 0, detail: selectedPageCount + " page(s) · " + copies + " cop" + (copies === 1 ? "y" : "ies") + " · " + (sides === "manual-duplex" ? "two-sided" : "single-sided") + " · " + (colour === "mono" ? "B&W" : "colour") };
+    }
+    if (kind === "id") return { amount: 10 * copies, detail: (idSides === "both" ? "Front + back" : "Front only") + " · " + copies + " cop" + (copies === 1 ? "y" : "ies") };
+    const base = Number(photoCount) === 6 ? 30 : Number(photoCount) === 12 ? 60 : 40;
+    const w = photoPrintSize === "2x2" ? 50.8 : photoPrintSize === "custom" ? printPhotoWidth : 35;
+    const h = photoPrintSize === "2x2" ? 50.8 : photoPrintSize === "custom" ? printPhotoHeight : 45;
+    const valid = Number.isFinite(w) && Number.isFinite(h) && w >= 15 && h >= 15 && w <= 80 && h <= 100;
+    return { amount: valid ? Math.ceil(base * (w * h) / (35 * 45)) : 0, detail: photoCount + " photos · " + w + " × " + h + " mm · per sheet", valid };
+  }, [kind, sides, colour, selectedPageCount, copies, idSides, photoCount, photoPrintSize, printPhotoWidth, printPhotoHeight]);
+
   function submitPreview() {
-    setNotice("Preview only: your file has not been uploaded, charged or sent to a printer. Live ordering will be enabled only after approval and system testing.");
+    setNotice("");
+    if (!file || !allowed) return;
+    if ((kind === "document" || kind === "resume") && selectedPageCount < 1) {
+      setNotice("Check the page count and selection. Use “all” or valid page numbers such as 1-3, 5.");
+      return;
+    }
+    if (kind === "photo" && "valid" in estimate && !estimate.valid) {
+      setNotice("Custom photo dimensions must be 15–80 mm wide and 15–100 mm high.");
+      return;
+    }
+    setShowReview(true);
   }
 
   function openPrintDocument(title: string, body: string, pageCss: string) {
@@ -148,22 +192,26 @@ export default function PrintPortal() {
           <section className="print-panel print-options-panel">
             <div className="print-panel-title"><span className="print-eyebrow">03 / PRINT PREFERENCES</span><h2>Set your preferences</h2><p>Choose how you want your pages prepared.</p></div>
             {kind === "document" || kind === "resume" ? <>
-              <label className="print-field"><span>Page selection</span><input value={pages} onChange={e => setPages(e.target.value)} placeholder="All pages or e.g. 1-3, 5"/></label>
+              <label className="print-field"><span>Total pages in your PDF</span><input type="number" min="1" max="500" value={pageCount} onChange={e => setPageCount(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}/></label>
+              <label className="print-field"><span>Page selection</span><input value={pages} onChange={e => setPages(e.target.value)} placeholder="all or e.g. 1-3, 5"/></label>
               <label className="print-field"><span>Number of copies</span><div className="print-number"><button type="button" onClick={() => setCopies(v => Math.max(1, v - 1))} aria-label="Decrease copies">−</button><b>{copies}</b><button type="button" onClick={() => setCopies(v => Math.min(50, v + 1))} aria-label="Increase copies">+</button></div></label>
               <div className="print-field"><span>Print colour</span><div className="print-choice-row"><button type="button" className={colour === "mono" ? "is-active" : ""} onClick={() => setColour("mono")}><span className="colour-dot mono-dot"></span>Black &amp; white</button><button type="button" className={colour === "colour" ? "is-active" : ""} onClick={() => setColour("colour")}><span className="colour-dot colour-dot-full"></span>Colour</button></div></div>
               <div className="print-field"><span>Paper sides</span><div className="print-choice-row"><button type="button" className={sides === "single" ? "is-active" : ""} onClick={() => setSides("single")}>Single-sided</button><button type="button" className={sides === "manual-duplex" ? "is-active" : ""} onClick={() => setSides("manual-duplex")}>Two-sided*</button></div><small className="print-hint">*Two-sided jobs require manual paper handling on the current shop printer.</small></div>
             </> : kind === "photo" ? <>
               <div className="print-field"><span>Passport photo layout</span><div className="print-choice-row">{["6","8","12"].map(n => <button key={n} type="button" className={photoCount === n ? "is-active" : ""} onClick={() => setPhotoCount(n)}>{n} photos</button>)}</div></div>
+              <label className="print-field"><span>Photo size</span><select value={photoPrintSize} onChange={e => setPhotoPrintSize(e.target.value as "35x45" | "2x2" | "custom")}><option value="35x45">35 × 45 mm</option><option value="2x2">2 × 2 inches</option><option value="custom">Custom size</option></select></label>
+              {photoPrintSize === "custom" && <div className="print-choice-row"><label className="print-field"><span>Width (mm)</span><input type="number" min="15" max="80" value={printPhotoWidth} onChange={e => setPrintPhotoWidth(Number(e.target.value))}/></label><label className="print-field"><span>Height (mm)</span><input type="number" min="15" max="100" value={printPhotoHeight} onChange={e => setPrintPhotoHeight(Number(e.target.value))}/></label></div>}
               <div className="print-privacy-note"><FileImage size={17}/><span>Final layout will use 35 × 45 mm photo sizing on A4 with cut guides, subject to image review.</span></div>
             </> : <>
-              <div className="print-field"><span>Document sides</span><div className="print-choice-row"><button type="button" className="is-active">Front + back</button><button type="button">Front only</button></div></div>
+              <div className="print-field"><span>Document sides</span><div className="print-choice-row"><button type="button" className={idSides === "both" ? "is-active" : ""} onClick={() => setIdSides("both")}>Front + back</button><button type="button" className={idSides === "front" ? "is-active" : ""} onClick={() => setIdSides("front")}>Front only</button></div></div>
               <div className="print-privacy-note"><IdCard size={17}/><span>We'll arrange the ID images at a suitable card size on an A4 sheet after checking the uploaded file.</span></div>
             </>}
             <div className="print-routing-note">{kind === "photo" || kind === "resume" ? <><ShieldCheck size={16}/><span><b>Admin approval required</b> — externally prepared photos and resumes are reviewed before printing.</span></> : <><CheckCircle2 size={16}/><span><b>Fast copy workflow</b> — standard B&amp;W and colour copies can enter the automatic queue after verified payment.</span></>}</div>
-            <div className="print-preview-total"><div><small>ESTIMATED TOTAL</small><b>Price shown after configuration</b></div><Wallet size={21}/></div>
-            <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed}>Review print request <ArrowRight size={17}/></button>
+            <div className="print-preview-total"><div><small>ESTIMATED TOTAL</small><b>{estimate.amount > 0 ? "₹" + estimate.amount.toFixed(2) : "Check your configuration"}</b><small>{estimate.detail}</small></div><Wallet size={21}/></div>
+            <button type="button" className="print-continue" onClick={submitPreview} disabled={!file || !allowed || estimate.amount <= 0}>Review print request <ArrowRight size={17}/></button>
             {notice && <p className="print-preview-notice" role="status">{notice}</p>}
-            <small className="print-no-charge">Preview mode · No payment · No print job created</small>
+            {showReview && <div className="print-review-card"><span className="print-eyebrow">ORDER SUMMARY · CHECK BEFORE PAYMENT</span><h3>Review print request</h3><p><b>Service:</b> {kinds.find(item => item.id === kind)?.title}</p><p><b>File:</b> {file?.name}</p><p><b>Configuration:</b> {estimate.detail}</p><div className="print-review-total"><span>Estimated total</span><strong>₹{estimate.amount.toFixed(2)}</strong></div><p className="print-review-note">{kind === "photo" ? "Photo orders require shop/admin approval before printing." : kind === "resume" ? "Resume print orders require shop review. Resume formatting is ₹40, separate from printing." : "Payment must be verified before the print job enters the shop queue."}</p><p className="print-review-note">Razorpay checkout will be connected only after the print-order endpoint, signature verification and webhook flow are verified. This preview has not initiated payment.</p><button type="button" className="print-remove-file" onClick={() => setShowReview(false)}>Back to edit request</button></div>}
+            <small className="print-no-charge">Estimate only · No payment collected · No print job created</small>
           </section>
         </div>
 
