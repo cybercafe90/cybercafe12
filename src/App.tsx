@@ -4226,7 +4226,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/preview"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -4272,6 +4272,7 @@ function RoutedApp() {
         : "Independent digital application and document assistance from BABA'S CYBER CAFE in Srinagar, Jammu & Kashmir.";
   }, [location.pathname]);
   useEffect(() => {
+    if (location.pathname.startsWith("/preview/")) return;
     if (!supabase) return;
     let cancelled = false;
     void supabase.auth.getSession().then(({ data }) => {
