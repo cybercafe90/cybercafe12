@@ -53,3 +53,69 @@
 .print-footer{border-top:1px solid var(--line);padding:18px 0 5px;display:flex;justify-content:space-between;font-size:10px;color:#85867e;letter-spacing:.04em}.print-footer a{color:#8e6c34;font-weight:700}
 @media(max-width:850px){.print-kind-grid{grid-template-columns:repeat(2,1fr)}.print-hero-art{right:5%;opacity:.35}.print-work-grid{grid-template-columns:1fr}.print-how{align-items:flex-start;flex-direction:column}.print-how-steps{width:100%;justify-content:space-between;gap:6px}.print-how-steps i{width:12px}}
 @media(max-width:560px){.print-hero-inner{padding:18px 18px 42px;min-height:300px}.print-brandline{font-size:9px;gap:7px}.print-brandmark{width:31px;height:31px}.preview-pill{font-size:8px;padding:6px 8px}.print-hero-copy{padding-top:52px;max-width:95%}.print-hero h1{font-size:43px}.print-hero-copy>p{font-size:12px;max-width:340px}.print-hero-art{right:-40px;top:95px;transform:scale(.8)}.print-trust{gap:13px;font-size:9px;flex-wrap:wrap}.print-content{padding:30px 16px 24px}.print-step-heading h2{font-size:20px}.print-kind-grid{gap:8px}.print-kind{padding:12px 9px;gap:8px}.print-kind-icon{width:33px;height:33px;flex-basis:33px}.print-kind-copy b{font-size:10px}.print-kind-copy small{font-size:9px}.print-panel{padding:17px}.print-panel-title h2{font-size:20px}.print-how-steps{gap:4px}.print-how-steps small{font-size:8px;white-space:normal}.print-how-steps i{width:7px}.print-footer{font-size:9px;gap:12px;flex-wrap:wrap}}
+
+
+/* FUTURE PRINT STUDIO — animated visual upgrade */
+.print-portal{--ink:#eaf4f7;--muted:#9aabb4;--gold:#e7bd70;--line:#263a49;--cream:#07111c;background:#07111c;color:#eaf4f7;overflow:hidden}
+.print-hero{background:radial-gradient(ellipse at 76% 40%,#123b51 0%,#0a1c2a 35%,#050b13 76%);isolation:isolate}
+.print-hero:before{content:"";position:absolute;inset:0;z-index:-1;opacity:.24;background-image:linear-gradient(#43d9ed18 1px,transparent 1px),linear-gradient(90deg,#43d9ed18 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,transparent,#000 48%,#000)}
+.print-hero:after{width:650px;height:650px;right:-150px;top:-350px;border-color:#49d9ee55;box-shadow:0 0 50px #12c9e822,0 0 0 65px #ffffff08,0 0 0 130px #ffffff04;animation:print-orbit 18s linear infinite}
+.print-hero-inner{min-height:390px;padding-top:28px;padding-bottom:70px}
+.print-brandline{letter-spacing:.16em;color:#e9f9fc}
+.print-brandmark{border-color:#39d6e8;color:#6cecff;box-shadow:0 0 22px #28d9ed35,inset 0 0 14px #28d9ed18;animation:print-pulse 3s ease-in-out infinite}
+.preview-pill{border-color:#42d9e77a;color:#8af2ff;background:#27d9ed0b;box-shadow:0 0 20px #20d6e51c}
+.print-eyebrow{color:#5be5f4}
+.print-hero h1{font-size:clamp(42px,6.4vw,72px);text-shadow:0 5px 35px #0008;animation:print-rise .8s both}
+.print-hero h1 em{color:#f0c77e;text-shadow:0 0 28px #f2c77940}
+.print-hero-copy>p{color:#b6cbd3;font-size:15px}
+.print-trust{color:#d1e6eb}.print-trust svg{color:#5be5f4}
+.print-hero-art{right:13%;top:60px;width:270px;height:250px;filter:drop-shadow(0 20px 45px #00cde533);animation:print-float 5s ease-in-out infinite}
+.paper-stack{transform:rotate(7deg) perspective(600px) rotateY(-12deg)}
+.paper{background:linear-gradient(145deg,#f8ffff,#cbdde1);box-shadow:0 22px 65px #0009,0 0 35px #2ed9ec2b}
+.paper-back{background:#7ea8b3}
+.paper-front{color:#152b35}.paper-front span{background:#b9cbd0}.paper-front b{color:#13889b}
+.paper-seal{background:#55e4ef;color:#06202a;border-color:#0a1b26;box-shadow:0 0 28px #38dce9a8}
+.print-content{position:relative;padding-top:48px}
+.print-content:before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,#36d6e677,transparent)}
+.print-step-heading h2,.print-panel-title h2,.print-how h2{color:#edf7f8}
+.step-counter{color:#6f9aa7}
+.print-kind{background:linear-gradient(145deg,#102432,#0b1924);border-color:#294354;color:#e8f5f7;box-shadow:0 8px 26px #0002;transition:transform .25s,border-color .25s,box-shadow .25s}
+.print-kind:hover{border-color:#43d9e8;box-shadow:0 12px 32px #00bcd426;transform:translateY(-5px)}
+.print-kind.is-selected{border-color:#4addeb;background:linear-gradient(145deg,#123342,#0d202c);box-shadow:0 0 0 1px #4addeb inset,0 0 28px #1bd6e51c}
+.print-kind-icon{background:#153746;color:#61e8f3}
+.print-kind-copy small{color:#9bb2ba}.print-kind-check{color:#66e9f3}
+.print-panel{background:linear-gradient(145deg,#10212d,#0a1721);border-color:#29404e;box-shadow:0 18px 48px #0003}
+.print-panel-title p{color:#9bb2ba}
+.print-dropzone{background:linear-gradient(145deg,#0b1b27,#0d202c);border-color:#426070;color:#eaf6f8;transition:border-color .2s,box-shadow .2s,transform .2s}
+.print-dropzone:hover{border-color:#54e4f0;box-shadow:0 0 30px #1bd6e51c;transform:translateY(-2px)}
+.print-upload-icon{background:#143846;color:#64e8f3;box-shadow:0 0 24px #27d7e51e}
+.print-dropzone small{color:#9cb2bb}
+.print-dropzone.has-file{background:#0e2827;border-color:#6bc99c;color:#eaf8ef}
+.print-dropzone.has-file .print-upload-icon{background:#174638;color:#8de6b2}
+.print-privacy-note{background:#0b1a24;color:#a9c0c7;border:1px solid #203b49}
+.print-privacy-note b{color:#e3f1f3}.print-privacy-note svg{color:#60e3ee}
+.print-field>span{color:#d5e6e9}
+.print-field input,.print-number,.print-choice-row button{background:#0a1822;border-color:#2c4553;color:#d8e9ec}
+.print-field input{color:#f1fbfc}.print-field input::placeholder{color:#77909b}
+.print-number button{color:#d7edf0}.print-choice-row button{color:#a9c0c7}
+.print-choice-row button.is-active{border-color:#4bdce9;background:#12303a;color:#e8fcff;box-shadow:0 0 0 1px #4bdce9 inset,0 0 18px #25d5e51a}
+.print-hint{color:#8ca6af}
+.print-preview-total{border-color:#29404e;color:#64e6ef}
+.print-preview-total b{color:#e4f2f4}
+.print-continue{background:linear-gradient(100deg,#18aebf,#167b98);color:#04151c;box-shadow:0 8px 24px #12bcd333;transition:transform .2s,box-shadow .2s}
+.print-continue:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px #12bcd355}
+.print-continue:disabled{background:#263c47;color:#829da5}
+.print-preview-notice{background:#102b35;border-left-color:#5be5f4;color:#c8e8ed}
+.print-no-charge{color:#78929c}
+.print-how{border-color:#29404e}.print-how-steps b{color:#5be5f4}.print-how-steps small{color:#a4bbc2}.print-how-steps i{background:#31505d}
+.print-footer{border-color:#29404e;color:#89a3ad}.print-footer a{color:#70e8f2}
+@keyframes print-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-13px) rotate(1.5deg)}}
+@keyframes print-orbit{to{transform:rotate(360deg)}}
+@keyframes print-pulse{0%,100%{box-shadow:0 0 12px #28d9ed22,inset 0 0 10px #28d9ed10}50%{box-shadow:0 0 28px #28d9ed66,inset 0 0 18px #28d9ed25}}
+@keyframes print-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.print-kind,.print-panel,.print-how{animation:print-rise .65s both}
+.print-kind:nth-child(2){animation-delay:.08s}.print-kind:nth-child(3){animation-delay:.16s}.print-kind:nth-child(4){animation-delay:.24s}
+.print-work-grid .print-panel:nth-child(2){animation-delay:.12s}
+@media(max-width:850px){.print-hero-art{right:2%;opacity:.55}}
+@media(max-width:560px){.print-hero-inner{min-height:320px}.print-hero-art{right:-55px;top:105px;opacity:.3}.print-hero-copy{max-width:100%}.print-hero h1{font-size:44px}.print-brandline{letter-spacing:.1em}.print-content{padding-top:34px}.print-kind{background:linear-gradient(145deg,#102432,#0b1924)}}
+@media(prefers-reduced-motion:reduce){.print-portal *,.print-portal *:before,.print-portal *:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
