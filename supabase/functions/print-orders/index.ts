@@ -19,7 +19,7 @@ function cors(request: Request): HeadersInit {
   const origin = request.headers.get('origin') || ''
   const allowed = ['https://babacybercafe.in','https://www.babacybercafe.in']
   let ok = allowed.includes(origin)
-  try { const u = new URL(origin); ok ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch {}
+  try { const u = new URL(origin); ok ||= u.protocol === 'https:' && (u.hostname === 'babacybercafe.pages.dev' || u.hostname.endsWith('.babacybercafe.pages.dev')) } catch { /* Invalid URL: keep the origin disallowed. */ }
   return { 'Access-Control-Allow-Origin': ok ? origin : 'https://babacybercafe.in', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' }
 }
 function response(request: Request, body: unknown, status=200, extra: Record<string,string>={}) {
