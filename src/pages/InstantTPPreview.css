@@ -5,3 +5,31 @@
 @media(max-width:900px){.tp-customer-layout{grid-template-columns:1fr}.tp-status-panel{position:static}.tp-admin-layout{grid-template-columns:1fr}.tp-admin-sidebar{order:2}.tp-admin-workflow{grid-template-columns:1fr}}
 @media(max-width:600px){.tp-preview{padding:14px 12px 22px}.tp-preview-top{align-items:flex-start}.tp-preview-label{font-size:7px;padding:7px}.tp-brand{font-size:12px}.tp-brand-mark{width:36px;height:36px}.tp-hero{margin:28px auto 22px}.tp-hero h1{font-size:36px}.tp-hero-seal{width:76px;height:76px}.tp-hero-seal svg{width:24px}.tp-hero-seal small{font-size:5px}.tp-view-switch button{flex:1;justify-content:center;padding:10px 6px;font-size:10px}.tp-panel{padding:16px}.tp-section-head{align-items:flex-start;flex-direction:column}.tp-section-head h2{font-size:23px}.tp-admin-details{grid-template-columns:repeat(2,minmax(0,1fr))}.tp-admin-heading{flex-direction:column}.tp-admin-request{align-items:flex-start;flex-direction:column}.tp-upload-policy{flex-wrap:wrap}.tp-upload-policy input{max-width:100%}}
 @media(prefers-reduced-motion:reduce){.tp-success-orbit,.tp-success-check{animation:none}.tp-primary{transition:none}}
+
+
+/* BABA'S CYBER CAFE — black, electric blue & vivid pink preview palette */
+.tp-preview{--tp-bg:#070910;--tp-panel:#101522;--tp-panel2:#151d2d;--tp-line:#29354b;--tp-pink:#ff4f9a;--tp-blue:#4da3ff;--tp-gold:var(--tp-pink);background:radial-gradient(ellipse at 8% 0%,#ff4f9a20,transparent 34%),radial-gradient(ellipse at 90% 8%,#4da3ff22,transparent 36%),var(--tp-bg)}
+.tp-preview-top{border-color:#29354b}.tp-brand-mark{border-color:#ff4f9a;color:#ff75b1;background:#ff4f9a12}
+.tp-preview-label,.tp-eyebrow{color:#69b5ff}.tp-preview-label{border-color:#4da3ff66;background:#4da3ff10}
+.tp-hero h1 em,.tp-success-animation h2 em{color:#ff65a8}
+.tp-hero-seal{border-color:#4da3ff;color:#72baff;box-shadow:0 0 28px #4da3ff18}
+.tp-view-switch button.active{background:linear-gradient(105deg,#ff4f9a,#4da3ff);color:#080a12;border-color:transparent}
+.tp-panel{background:linear-gradient(145deg,#141b2b,#0e1320);border-color:#34415a}
+.tp-chip-gold,.tp-demo-tag{background:#ff4f9a12;color:#ff8abb;border-color:#ff4f9a66}
+.tp-chip-blue{background:#4da3ff15;color:#8cc6ff;border-color:#4da3ff66}
+.tp-vehicle-icon,.tp-admin-avatar{background:#4da3ff18;color:#70b8ff}
+.tp-upi-placeholder{border-color:#4da3ff88;color:#7ebeff;background:#4da3ff0d}
+.tp-utr-form input:focus,.tp-admin-note-label input:focus,.tp-admin-note-label textarea:focus{border-color:#ff65a8;box-shadow:0 0 0 3px #ff4f9a18}
+.tp-primary{background:linear-gradient(105deg,#ff4f9a,#4da3ff);color:#080a12;box-shadow:0 8px 24px #4da3ff20}
+.tp-utr-confirm{border-color:#ff4f9a66;background:#ff4f9a0d}.tp-utr-confirm b,.tp-utr-confirm button{color:#ff83b8}
+.tp-status-step.current>span{color:#ff83b8;border-color:#ff4f9a;background:#ff4f9a18}
+.tp-status-step.done>span{color:#83c4ff;border-color:#4da3ff;background:#4da3ff18}
+.tp-policy-wait{border-color:#4da3ff55;background:#4da3ff12;color:#8cc6ff}
+.tp-admin-sidebar,.tp-admin-main{background:#101625;border-color:#34415a}
+.tp-admin-stat-grid div,.tp-admin-details>div,.tp-admin-workflow article,.tp-admin-request{background:#151e30;border-color:#2e3b54}
+.tp-admin-stat-grid b,.tp-text-amber{color:#ff78b2}
+.tp-admin-nav .selected{background:#ff4f9a18;color:#ff8abb}
+.tp-admin-side-note,.tp-audit-note{background:#101f32;border-color:#4da3ff55;color:#9acbff}
+.tp-upload-policy{border-color:#ff4f9a66;background:#ff4f9a0d;color:#ff83b8}
+.tp-preview-footer span{color:#ff70ad}
+@media(prefers-reduced-motion:reduce){.tp-primary{transition:none}}
