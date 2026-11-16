@@ -489,7 +489,7 @@ function HomePage() {
         <div className="tp-home-promo-copy">
           <span className="cyber-eyebrow">MOTOR INSURANCE · DIGITAL SERVICE DESK</span>
           <h2 id="tp-home-title">Third-Party Motor Insurance <em>made simpler.</em></h2>
-          <p>Choose your vehicle, view an indicative premium, pay manually through UPI, submit your UTR and track payment verification and policy processing in one place.</p>
+          <p>Submit your vehicle details, receive the exact premium after our team confirms the insurer quote, pay manually through UPI, submit your UTR and track payment verification and policy processing in one place.</p>
           <div className="tp-home-feature-row"><span><Check size={13}/> Manual UPI payment</span><span><Check size={13}/> UTR verification</span><span><Check size={13}/> Policy PDF delivery</span></div>
         </div>
         <div className="tp-home-promo-action"><span className="tp-home-promo-tag"><i/> SERVICE PREVIEW</span><Link className="cyber-button cyber-button-primary" to="/instant-tp-preview">Explore TP Insurance <ArrowUpRight size={16}/></Link><small>Payment is verified by our admin before the policy is issued.</small></div>
