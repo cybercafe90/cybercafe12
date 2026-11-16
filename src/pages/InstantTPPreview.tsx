@@ -119,7 +119,7 @@ export default function InstantTPPreview() {
     finally { setBusy(false); }
   }
 
-  useEffect(() => { if (view === "admin" && adminToken) void loadAdmin(""); }, [view, adminToken]);
+
 
   function choose(item: AdminItem) {
     setSelected(item);
@@ -179,7 +179,7 @@ export default function InstantTPPreview() {
       </section>
       <nav className="tp-view-switch" aria-label="Portal views">
         <button className={view === "customer" ? "active" : ""} onClick={() => { setView("customer"); setError(""); }}><WalletCards size={16}/> Customer portal</button>
-        <button className={view === "admin" ? "active" : ""} onClick={() => { setView("admin"); setError(""); }}><LockKeyhole size={16}/> Owner admin portal</button>
+        <button className={view === "admin" ? "active" : ""} onClick={() => { setView("admin"); setError(""); if (adminToken) void loadAdmin(""); }}><LockKeyhole size={16}/> Owner admin portal</button>
       </nav>
       {error && <div className="tp-alert tp-alert-error" role="alert">{error}</div>}
       {notice && <div className="tp-alert tp-alert-success" role="status"><CheckCircle2 size={17}/>{notice}</div>}
