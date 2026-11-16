@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.feedback-admin]
 verify_jwt = true
+
+[functions.instant-tp-portal]
+verify_jwt = false
