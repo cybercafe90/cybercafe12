@@ -77,6 +77,28 @@ export default function InstantTPPreview() {
     finally { setBusy(false); }
   }
 
+  // Keep the customer's tracking panel in sync after the owner saves the insurer quote.
+  // This makes the payable amount and manual UPI instructions appear without requiring
+  // the customer to re-enter their tracking ID and mobile number.
+  useEffect(() => {
+    if (view !== "customer" || !application?.trackingId || !application.mobile) return;
+    let active = true;
+    const refreshApplication = async () => {
+      try {
+        const result = await callFunction<{ application: Application }>("instant-tp-portal", {
+          action: "customer_lookup",
+          trackingId: application.trackingId,
+          mobile: application.mobile,
+        });
+        if (active) setApplication(result.application);
+      } catch {
+        // A temporary network failure should not interrupt the customer's current view.
+      }
+    };
+    const timer = window.setInterval(() => { void refreshApplication(); }, 10000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [view, application?.trackingId, application?.mobile]);
+
   async function submitUtr(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
@@ -190,7 +212,7 @@ export default function InstantTPPreview() {
               <h2>{application.customerName}</h2>
               <div className="tp-utr-confirm"><span>TRACKING REFERENCE</span><b>{application.trackingId}</b><button type="button" onClick={()=>void navigator.clipboard?.writeText(application!.trackingId)}><Copy size={15}/></button></div>
               <div className="tp-vehicle-card"><div className="tp-vehicle-icon"><ShieldCheck size={24}/></div><div><b>{application.vehicleMakeModel}</b><small>{application.vehicleRegistration} · {application.vehicleType.replaceAll("_"," ")}</small></div></div>
-              {application.quotedAmount ? <div className="tp-payable"><small>ADMIN-APPROVED PAYABLE AMOUNT</small><strong>{money(Number(application.quotedAmount))}</strong><span>{application.insurerName ?? "Insurer quote"}</span></div> : <div className="tp-policy-wait"><Clock3/><span><b>Quote pending</b><small>Our insurance desk will set your payable amount after reviewing the vehicle.</small></span></div>}
+              {application.quotedAmount ? <div className="tp-payable"><small>ADMIN-APPROVED PAYABLE AMOUNT</small><strong>{money(Number(application.quotedAmount))}</strong><span>{application.insurerName ?? "Insurer quote"}</span></div> : <div className="tp-policy-wait"><Clock3/><span><b>Quote pending</b><small>Our insurance desk is confirming the insurer's exact premium. Keep this page open — the amount and UPI payment instructions will appear here automatically once the quote is saved.</small></span></div>}
               {application.quotedAmount && application.paymentStatus !== "paid" && <div className="tp-upi-live-card">
                 <div className="tp-upi-live-top"><WalletCards size={22}/><span><b>Pay BABA'S CYBER CAFE</b><small>Manual UPI · Verify amount before paying</small></span></div>
                 <div className="tp-upi-id-row"><div><small>BUSINESS UPI ID</small><b>{UPI_ID}</b></div><button type="button" onClick={()=>{void navigator.clipboard?.writeText(UPI_ID);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}}><Copy size={15}/>{copied?"Copied":"Copy"}</button></div>
