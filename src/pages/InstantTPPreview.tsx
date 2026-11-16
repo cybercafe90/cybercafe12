@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
   BadgeCheck, Check, CheckCircle2, Clock3, Copy, FileCheck2,
-  FileText, LockKeyhole, ShieldCheck, UploadCloud, WalletCards,
+  FileText, LockKeyhole, ShieldCheck, UploadCloud, WalletCards, ArrowRight,
 } from "lucide-react";
 import "./InstantTPPreview.css";
 
