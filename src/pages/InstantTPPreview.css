@@ -33,3 +33,57 @@
 .tp-upload-policy{border-color:#ff4f9a66;background:#ff4f9a0d;color:#ff83b8}
 .tp-preview-footer span{color:#ff70ad}
 @media(prefers-reduced-motion:reduce){.tp-primary{transition:none}}
+
+
+/* Connected instant TP portal */
+.tp-alert{max-width:1440px;margin:0 auto 14px;padding:13px 16px;border-radius:10px;display:flex;align-items:center;gap:9px;font-size:12px}
+.tp-alert-error{background:#351a27;border:1px solid #a83c68;color:#ffd2e3}
+.tp-alert-success{background:#112b2a;border:1px solid #287b78;color:#b8fff2}
+.tp-created-ref{display:flex;gap:13px;align-items:flex-start;padding:14px;margin:18px 0;background:#102c2b;border:1px solid #287b78;border-radius:11px;color:#aef5e8}
+.tp-created-ref span,.tp-created-ref b,.tp-created-ref strong,.tp-created-ref small{display:block}
+.tp-created-ref b{font-size:12px}.tp-created-ref strong{font-size:19px;letter-spacing:1px;margin:5px 0;color:#fff}.tp-created-ref small{font-size:10px;color:#a9c8c7}
+.tp-divider{height:1px;background:var(--tp-line);margin:25px 0}
+.tp-payable{display:grid;gap:5px;margin:18px 0;padding:17px;border-radius:12px;background:linear-gradient(120deg,#24152a,#10263b);border:1px solid #a34d87}
+.tp-payable small{font-size:9px;letter-spacing:1.4px;color:#e5a6d0}.tp-payable strong{font-size:28px;color:#fff}.tp-payable span{font-size:11px;color:#9fcfff}
+.tp-upi-live-card{margin:17px 0;padding:15px;border-radius:12px;background:linear-gradient(145deg,#171c2a,#10151d);border:1px solid #3d5c83}
+.tp-upi-live-top{display:flex;align-items:center;gap:10px;color:#7ebcff}.tp-upi-live-top span b,.tp-upi-live-top span small{display:block}.tp-upi-live-top b{font-size:12px;color:#fff}.tp-upi-live-top small{font-size:9px;color:#9da8b7;margin-top:4px}
+.tp-upi-id-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0;padding:12px;border:1px solid #35445b;border-radius:9px;background:#090e17}
+.tp-upi-id-row small,.tp-upi-id-row b{display:block}.tp-upi-id-row small{font-size:8px;letter-spacing:1.2px;color:#8ba4c1}.tp-upi-id-row b{font-size:12px;word-break:break-all;color:#fff;margin-top:4px}
+.tp-upi-id-row button{display:flex;align-items:center;gap:5px;border:1px solid #4d77a7;background:#1c3450;color:#d6eaff;border-radius:7px;padding:8px;font-size:10px;cursor:pointer}
+.tp-upi-open-app{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:8px;background:linear-gradient(100deg,#e94e9a,#398df1);color:#fff;text-decoration:none;font-size:11px;font-weight:700}
+.tp-micro-note{font-size:10px;line-height:1.6;color:#98a3b2;margin:5px 0}
+.tp-customer-layout{grid-template-columns:minmax(0,1fr) minmax(320px,.9fr)}
+.tp-utr-form label{display:grid;gap:7px}
+.tp-utr-form input,.tp-utr-form select,.tp-admin-card input,.tp-admin-card textarea,.tp-admin-toolbar input{width:100%;min-width:0;background:#0b111b;border:1px solid #35445a;color:#f7f8fb;border-radius:8px;padding:12px;outline:none;font-size:12px}
+.tp-utr-form input:focus,.tp-utr-form select:focus,.tp-admin-card input:focus,.tp-admin-card textarea:focus{border-color:#ff5aa7;box-shadow:0 0 0 3px #ff5aa71a}
+.tp-primary,.tp-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:9px;padding:12px 15px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none}
+.tp-primary{color:#fff;background:linear-gradient(105deg,#e94799,#347fe5)}
+.tp-secondary{color:#d8eaff;background:#172d46;border:1px solid #3e6896}
+.tp-primary:disabled,.tp-secondary:disabled{opacity:.45;cursor:not-allowed}
+.tp-download{width:100%;margin-top:14px}
+.tp-admin-toolbar{display:flex;gap:9px;margin:15px 0}
+.tp-admin-toolbar input{flex:1}
+.tp-admin-records{display:grid;gap:7px;max-height:340px;overflow:auto;margin-bottom:16px}
+.tp-admin-record{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;padding:12px;border-radius:9px;border:1px solid var(--tp-line);background:#101722;color:#fff;cursor:pointer}
+.tp-admin-record.selected{border-color:#ed58a4;background:#26182b}
+.tp-admin-record b,.tp-admin-record small{display:block}.tp-admin-record b{font-size:11px}.tp-admin-record small{font-size:9px;color:#9da9b8;margin-top:4px}
+.tp-record-status{font-size:9px;color:#8fc8ff;text-transform:uppercase}
+.tp-admin-workflow{display:grid;gap:12px}
+.tp-admin-card{display:grid;gap:10px;padding:16px;border:1px solid var(--tp-line);border-radius:12px;background:#111824}
+.tp-admin-card h3{font-size:13px;margin:0;color:#f8f8fb}.tp-admin-card p{font-size:11px;color:#a9b4c2;margin:0}
+.tp-admin-card label{display:grid;gap:6px;font-size:10px;color:#dce3ed;font-weight:600}
+.tp-upload-policy{display:flex!important;align-items:center;gap:10px;padding:12px;border:1px dashed #4e6b91;border-radius:9px;color:#acd4ff!important}
+.tp-upload-policy input{font-size:10px}
+.tp-warning{font-size:9px;line-height:1.6;color:#f2bd80}
+.tp-admin-side-note a{display:inline-flex;align-items:center;color:#ff86bd;margin-top:6px;text-decoration:none}
+.tp-preview{--tp-bg:#070910;--tp-panel:#101522;--tp-panel2:#171d2c;--tp-line:#293449;--tp-gold:#ff5aa7;--tp-muted:#9ba9bc;--tp-white:#f6f8ff;background:radial-gradient(ellipse at 85% 0%,#172d50 0,transparent 35%),radial-gradient(ellipse at 5% 25%,#35172f 0,transparent 30%),var(--tp-bg)}
+.tp-preview-label,.tp-eyebrow{color:#ff75b6}
+.tp-brand-mark{border-color:#477fbb;color:#ff68ad}
+.tp-view-switch button.active{background:linear-gradient(100deg,#e94799,#347fe5);color:#fff;border-color:transparent}
+.tp-hero h1 em,.tp-success-animation h2 em{color:#69b5ff}
+.tp-hero-seal{border-color:#477fbb;color:#ff68ad}
+.tp-chip-gold{background:#301a31;color:#ffadd1;border-color:#91436e}
+.tp-chip-blue{background:#142d49;color:#a9d7ff;border-color:#376a9c}
+.tp-vehicle-icon{background:#172d48;color:#78baff}
+@media(max-width:850px){.tp-customer-layout,.tp-admin-layout{grid-template-columns:1fr}.tp-admin-toolbar{flex-wrap:wrap}.tp-admin-toolbar input{flex-basis:100%}}
+@media(max-width:560px){.tp-preview{padding:14px 12px 22px}.tp-preview-top{align-items:flex-start;flex-direction:column}.tp-preview-label{font-size:8px}.tp-hero{margin:25px auto 20px}.tp-hero-seal{width:82px;height:82px}.tp-hero-seal small{display:none}.tp-view-switch{display:grid;grid-template-columns:1fr 1fr}.tp-view-switch button{justify-content:center;padding:10px 6px;font-size:10px}.tp-section-head,.tp-admin-heading{align-items:flex-start;flex-direction:column}.tp-admin-record{align-items:flex-start;flex-direction:column}}
