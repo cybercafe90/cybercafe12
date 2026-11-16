@@ -1756,6 +1756,12 @@ function CustomerDashboard() {
         <p>Keep your tracking reference private. Your registered mobile number is required to look up the request.</p>
         <Link className="button button-dark" to="/track">Open tracking portal <ArrowRight size={16} /></Link>
       </div>
+      <section className="signin-panel" aria-labelledby="customer-tp-insurance-title">
+        <span className="eyebrow">MOTOR INSURANCE · MANUAL UPI</span>
+        <h2 id="customer-tp-insurance-title">Instant Third-Party Motor Insurance</h2>
+        <p>Start a motor insurance request, receive your exact payable premium after our admin confirms the insurer quote, then pay by UPI and track verification and policy delivery.</p>
+        <Link className="button button-dark" to="/instant-tp-preview">Open Third-Party Insurance <ArrowRight size={16} /></Link>
+      </section>
     </main>
   );
 }
