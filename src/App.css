@@ -1922,3 +1922,37 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
   .neon-back-button { width:100%; justify-content:center; }
 }
 @media(prefers-reduced-motion:reduce) { .neon-directory-card { transition:none; } .neon-directory-card:hover { transform:none; } }
+
+/* Instant TP motor insurance homepage feature card */
+.tp-home-promo{max-width:1440px;margin:26px auto 34px;padding:clamp(22px,3vw,36px);position:relative;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;border:1px solid #80683b;border-radius:20px;background:radial-gradient(ellipse at 5% 50%,#6c52251f,transparent 42%),linear-gradient(115deg,#111820,#151714 68%,#211b10);box-shadow:0 18px 48px #0002}
+.tp-home-promo-icon{width:76px;height:76px;display:grid;place-items:center;position:relative;border:1px solid #9b7a3f;border-radius:18px;color:#e0c27c;background:linear-gradient(145deg,#332a1a,#171b1c)}
+.tp-home-promo-icon svg+svg{position:absolute;right:7px;bottom:7px;background:#1b241f;border-radius:50%;padding:2px}
+.tp-home-promo-copy,.tp-home-promo-action{position:relative;z-index:1}
+.tp-home-promo-copy h2{font:500 clamp(23px,3vw,34px)/1.15 'Playfair Display',Georgia,serif;margin:9px 0;color:#f5f2eb}.tp-home-promo-copy h2 em{color:#d7b66e}
+.tp-home-promo-copy p{max-width:720px;color:#aeb6be;font-size:12px;line-height:1.8;margin:0}
+.tp-home-feature-row{display:flex;flex-wrap:wrap;gap:9px 17px;margin-top:15px}.tp-home-feature-row span{display:flex;align-items:center;gap:5px;color:#d7c99f;font-size:10px}.tp-home-feature-row svg{color:#8ed1a7}
+.tp-home-promo-action{min-width:205px;display:grid;gap:10px}.tp-home-promo-tag{font-size:8px;letter-spacing:1.6px;color:#e4c77f;font-weight:700}.tp-home-promo-tag i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#7ed39a;margin-right:7px;box-shadow:0 0 10px #7ed39a}
+.tp-home-promo-action small{font-size:9px;line-height:1.5;color:#9ba5af}
+.tp-upi-live-card{margin:14px 0;padding:14px;border:1px solid #79623a;border-radius:12px;background:linear-gradient(135deg,#d7b66e12,#111a1b)}
+.tp-upi-live-top{display:flex;align-items:center;gap:10px}.tp-upi-mark{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#e2c47c;background:#382e1d}
+.tp-upi-live-top span:nth-child(2){flex:1}.tp-upi-live-top b,.tp-upi-live-top small{display:block}.tp-upi-live-top b{font-size:11px;color:#f4f0e7}.tp-upi-live-top small{font-size:9px;color:#a5afb8;margin-top:4px}
+.tp-upi-id-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:13px 0;padding:11px;background:#0b1015;border:1px solid #3c4145;border-radius:9px}
+.tp-upi-id-row small,.tp-upi-id-row b{display:block}.tp-upi-id-row small{font-size:8px;letter-spacing:1.2px;color:#a8b0b7}.tp-upi-id-row b{font-size:12px;color:#f2dfb3;overflow-wrap:anywhere;margin-top:5px}
+.tp-upi-id-row button,.tp-upi-open-app{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #78623a;background:#312818;color:#edcf88;border-radius:7px;padding:9px 11px;font-size:9px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.tp-upi-open-app{width:100%;min-height:40px;background:linear-gradient(100deg,#d9bd7c,#b58b43);color:#18140d;border:0}
+.tp-upi-disclaimer{display:block;color:#9da6af;font-size:8px;line-height:1.6;margin-top:10px}
+@media(max-width:760px){.tp-home-promo{grid-template-columns:auto minmax(0,1fr);gap:16px;margin:22px 14px 28px;padding:19px}.tp-home-promo-icon{width:58px;height:58px}.tp-home-promo-copy h2{font-size:24px}.tp-home-promo-action{grid-column:1/-1;min-width:0}.tp-home-promo-action .cyber-button{width:100%;justify-content:center}.tp-home-feature-row{gap:8px 12px}}
+@media(max-width:420px){.tp-home-promo{grid-template-columns:1fr}.tp-home-promo-icon{width:54px;height:54px}.tp-home-promo-action{grid-column:auto}}
+
+
+/* Instant TP homepage feature — black base with pink/blue identity */
+.tp-home-promo{border-color:#ff4f9a88;background:radial-gradient(ellipse at 4% 50%,#ff4f9a20,transparent 42%),radial-gradient(ellipse at 96% 10%,#4da3ff20,transparent 42%),linear-gradient(115deg,#090d18,#10182a 68%,#171020);box-shadow:0 18px 48px #0006,0 0 28px #4da3ff0d}
+.tp-home-promo-icon{border-color:#4da3ff;color:#ff70ad;background:linear-gradient(145deg,#242039,#111b2d)}
+.tp-home-promo-copy h2 em{color:#ff68a8}
+.tp-home-feature-row span{color:#a9d1ff}.tp-home-feature-row svg{color:#ff70ad}
+.tp-home-promo-tag{color:#78bdff}
+.tp-upi-live-card{border-color:#4da3ff66;background:linear-gradient(135deg,#4da3ff12,#ff4f9a0b,#101625)}
+.tp-upi-mark{color:#ff75b0;background:#ff4f9a18}
+.tp-upi-id-row{background:#080d18;border-color:#34415a}.tp-upi-id-row b{color:#8fc8ff}
+.tp-upi-id-row button{border-color:#ff4f9a88;background:#ff4f9a16;color:#ff8abb}
+.tp-upi-open-app{background:linear-gradient(105deg,#ff4f9a,#4da3ff);color:#080a12}

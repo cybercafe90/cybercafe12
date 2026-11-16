@@ -67,6 +67,7 @@ const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
 const ChallanPortal = lazy(() => import("./pages/ChallanPortal"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
+const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
@@ -483,6 +484,16 @@ function HomePage() {
         </div>
       </section>
 
+      <section className="tp-home-promo" aria-labelledby="tp-home-title">
+        <div className="tp-home-promo-icon"><CarFront size={30}/><ShieldCheck size={16}/></div>
+        <div className="tp-home-promo-copy">
+          <span className="cyber-eyebrow">MOTOR INSURANCE · DIGITAL SERVICE DESK</span>
+          <h2 id="tp-home-title">Third-Party Motor Insurance <em>made simpler.</em></h2>
+          <p>Choose your vehicle, view an indicative premium, pay manually through UPI, submit your UTR and track payment verification and policy processing in one place.</p>
+          <div className="tp-home-feature-row"><span><Check size={13}/> Manual UPI payment</span><span><Check size={13}/> UTR verification</span><span><Check size={13}/> Policy PDF delivery</span></div>
+        </div>
+        <div className="tp-home-promo-action"><span className="tp-home-promo-tag"><i/> SERVICE PREVIEW</span><Link className="cyber-button cyber-button-primary" to="/instant-tp-preview">Explore TP Insurance <ArrowUpRight size={16}/></Link><small>Payment is verified by our admin before the policy is issued.</small></div>
+      </section>
       <DepartmentServiceExplorer />
 
       <section className="cyber-concierge">
@@ -4295,6 +4306,7 @@ function RoutedApp() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
+        <Route path="/instant-tp-preview" element={<InstantTPPreview />} />
         <Route path="/print" element={<PrintPortal />} />
         <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
