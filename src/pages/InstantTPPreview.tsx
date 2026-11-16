@@ -11,6 +11,7 @@ type PolicyState = "processing" | "issued";
 export default function InstantTPPreview() {
   const [view, setView] = useState<"customer" | "admin">("customer");
   const [utr, setUtr] = useState("612345678901");
+  const [upiCopied, setUpiCopied] = useState(false);
   const [submittedUtr, setSubmittedUtr] = useState("");
   const [paymentState, setPaymentState] = useState<PaymentState>("not_submitted");
   const [policyState, setPolicyState] = useState<PolicyState>("processing");
@@ -72,7 +73,7 @@ export default function InstantTPPreview() {
             <div className="tp-payment-instructions">
               <b>Pay using the business UPI details</b>
               <p>Scan the QR code or use the UPI ID displayed by BABA'S CYBER CAFE. After completing payment, enter the 12-digit UTR below.</p>
-              <div className="tp-upi-placeholder"><WalletCards size={26}/><span><b>UPI payment instructions</b><small>Business QR / UPI ID will appear here</small></span><span className="tp-secure"><LockKeyhole size={13}/> Secure</span></div>
+              <div className="tp-upi-live-card">  <div className="tp-upi-live-top"><span className="tp-upi-mark"><WalletCards size={22}/></span><span><b>Pay BABA'S CYBER CAFE</b><small>Manual UPI payment · Verify before proceeding</small></span><span className="tp-secure"><LockKeyhole size={13}/> UPI</span></div>  <div className="tp-upi-id-row"><div><small>BUSINESS UPI ID</small><b>mohammadzamanbaba@okicici</b></div><button type="button" onClick={() => { void navigator.clipboard?.writeText("mohammadzamanbaba@okicici"); setUpiCopied(true); window.setTimeout(() => setUpiCopied(false), 2200); }} aria-label="Copy business UPI ID"><Copy size={15}/>{upiCopied ? "Copied" : "Copy"}</button></div>  <a className="tp-upi-open-app" href="upi://pay?pa=mohammadzamanbaba%40okicici&pn=BABAS%20CYBER%20CAFE&cu=INR"><WalletCards size={16}/> Open UPI app <ArrowRight size={15}/></a>  <small className="tp-upi-disclaimer">Enter the exact amount shown on your application in your UPI app. Do not treat this screen as proof of payment.</small></div>
             </div>
             <form className="tp-utr-form" onSubmit={submitUtr}>
               <label htmlFor="tp-utr">12-digit UTR / transaction reference</label>
