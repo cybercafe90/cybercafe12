@@ -269,6 +269,7 @@ function Header() {
           <NavLink to="/about" onClick={close}>About</NavLink>
           <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
           <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
+          <Link className="owner-entry-link" to="/admin/login" onClick={close}><LockKeyhole size={14}/> Owner Login</Link>
         </nav>
       </header>
     </>
@@ -1744,24 +1745,30 @@ function StatusTag({ status }: { status: string }) {
 }
 
 function CustomerDashboard() {
+  const destinations = [
+    { number: "01", title: "Apply for a service", copy: "Choose a department, tell us what you need and receive a reference number.", action: "Start application", to: "/apply", icon: <FileCheck2 size={21}/> },
+    { number: "02", title: "Track an application", copy: "Check progress and customer-visible updates using your reference and registered mobile.", action: "Track request", to: "/track", icon: <Search size={21}/> },
+    { number: "03", title: "Motor insurance", copy: "Request a third-party policy quote and follow payment verification and policy delivery.", action: "Open insurance", to: "/instant-tp-preview", icon: <ShieldCheck size={21}/> },
+    { number: "04", title: "Print documents", copy: "Send documents for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={21}/> },
+  ];
   return (
-    <main className="content-page narrow-page">
-      <PageIntro
-        eyebrow="CUSTOMER PORTAL"
-        title="Track your application securely."
-        copy="Email OTP sign-in has been removed. Use your tracking reference and registered mobile number to view the latest status and customer-visible updates."
-      />
-      <div className="signin-panel">
-        <h2>Continue to application tracking</h2>
-        <p>Keep your tracking reference private. Your registered mobile number is required to look up the request.</p>
-        <Link className="button button-dark" to="/track">Open tracking portal <ArrowRight size={16} /></Link>
+    <main className="content-page customer-hub-page">
+      <div className="customer-hub-intro">
+        <span className="eyebrow">BABA'S CYBER CAFE · CUSTOMER PORTAL</span>
+        <h1>Your services, <em>made simple.</em></h1>
+        <p>Choose what you need. We will guide you through each step and keep your application reference handy.</p>
       </div>
-      <section className="signin-panel" aria-labelledby="customer-tp-insurance-title">
-        <span className="eyebrow">MOTOR INSURANCE · MANUAL UPI</span>
-        <h2 id="customer-tp-insurance-title">Instant Third-Party Motor Insurance</h2>
-        <p>Start a motor insurance request, receive your exact payable premium after our admin confirms the insurer quote, then pay by UPI and track verification and policy delivery.</p>
-        <Link className="button button-dark" to="/instant-tp-preview">Open Third-Party Insurance <ArrowRight size={16} /></Link>
+      <section className="customer-hub-grid" aria-label="Customer services">
+        {destinations.map((item) => (
+          <article className="customer-hub-card" key={item.number}>
+            <div className="customer-hub-card-top"><span>{item.number}</span><i>{item.icon}</i></div>
+            <h2>{item.title}</h2>
+            <p>{item.copy}</p>
+            <Link to={item.to}>{item.action} <ArrowRight size={16}/></Link>
+          </article>
+        ))}
       </section>
+      <div className="customer-hub-help"><span><ShieldCheck size={18}/></span><div><b>Need a little help?</b><p>Call our Srinagar service desk at +91 7006865909 or email support@babacybercafe.in. Never share passwords, PINs or OTPs.</p></div></div>
     </main>
   );
 }
