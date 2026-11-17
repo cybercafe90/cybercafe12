@@ -4328,6 +4328,7 @@ function RoutedApp() {
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/instant-tp-preview" element={<InstantTPPreview />} />
+        <Route path="/instant-tp-admin" element={<InstantTPPreview adminOnly />} />
         <Route path="/print" element={<PrintPortal />} />
         <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />

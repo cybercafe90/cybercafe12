@@ -22,8 +22,8 @@ const UPI_ID = "mohammadzamanbaba@okicici";
 const UPI_LINK = "upi://pay?pa=mohammadzamanbaba%40okicici&pn=BABAS%20CYBER%20CAFE&cu=INR";
 const money = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(value);
 
-export default function InstantTPPreview() {
-  const [view, setView] = useState<"customer" | "admin">("customer");
+export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: boolean }) {
+  const [adminAuthorized, setAdminAuthorized] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -81,7 +81,7 @@ export default function InstantTPPreview() {
   // This makes the payable amount and manual UPI instructions appear without requiring
   // the customer to re-enter their tracking ID and mobile number.
   useEffect(() => {
-    if (view !== "customer" || !application?.trackingId || !application.mobile) return;
+    if (adminOnly || !application?.trackingId || !application.mobile) return;
     let active = true;
     const refreshApplication = async () => {
       try {
@@ -97,7 +97,7 @@ export default function InstantTPPreview() {
     };
     const timer = window.setInterval(() => { void refreshApplication(); }, 10000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [view, application?.trackingId, application?.mobile]);
+  }, [adminOnly, application?.trackingId, application?.mobile]);
 
   async function submitUtr(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
@@ -113,13 +113,14 @@ export default function InstantTPPreview() {
     setBusy(true); setError("");
     try {
       const result = await callFunction<{ items: AdminItem[] }>("instant-tp-portal", { action: "admin_list", search }, adminToken);
+      setAdminAuthorized(true);
       setItems(result.items);
       if (selected) setSelected(result.items.find((item) => item.id === selected.id) ?? null);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Admin records could not be loaded."); }
+    } catch (reason) { setAdminAuthorized(false); setItems([]); setSelected(null); setError(reason instanceof Error ? reason.message : "Admin records could not be loaded."); }
     finally { setBusy(false); }
   }
 
-  useEffect(() => { if (view === "admin" && adminToken) void loadAdmin(""); }, [view, adminToken]);
+  useEffect(() => { if (adminOnly && adminToken) void loadAdmin(""); else if (adminOnly) setAdminAuthorized(false); }, [adminOnly, adminToken]);
 
   function choose(item: AdminItem) {
     setSelected(item);
@@ -171,19 +172,16 @@ export default function InstantTPPreview() {
     <main className="tp-preview">
       <header className="tp-preview-top">
         <div className="tp-brand"><span className="tp-brand-mark"><ShieldCheck size={22}/></span><span>BABA'S <small>CYBER CAFE · MOTOR INSURANCE</small></span></div>
-        <span className="tp-preview-label">CONNECTED FUNCTIONAL PREVIEW</span>
+        <span className="tp-preview-label">{adminOnly ? "PRIVATE OWNER WORKSPACE" : "CUSTOMER INSURANCE PORTAL"}</span>
       </header>
       <section className="tp-hero">
         <div><span className="tp-eyebrow">INSTANT THIRD-PARTY MOTOR INSURANCE</span><h1>Payment and policy,<br/><em>clearly tracked.</em></h1><p>Apply, receive a verified quote, pay manually by UPI, submit your UTR and track the policy until the issued PDF is ready.</p></div>
         <div className="tp-hero-seal"><ShieldCheck size={35}/><b>TRUST</b><small>YOUR TRUST, OUR SERVICE</small></div>
       </section>
-      <nav className="tp-view-switch" aria-label="Portal views">
-        <button className={view === "customer" ? "active" : ""} onClick={() => { setView("customer"); setError(""); }}><WalletCards size={16}/> Customer portal</button>
-        <button className={view === "admin" ? "active" : ""} onClick={() => { setView("admin"); setError(""); }}><LockKeyhole size={16}/> Owner admin portal</button>
-      </nav>
+      {!adminOnly && <div className="tp-customer-trust-note"><ShieldCheck size={15}/> Secure customer portal · Your application is private</div>}
       {error && <div className="tp-alert tp-alert-error" role="alert">{error}</div>}
       {notice && <div className="tp-alert tp-alert-success" role="status"><CheckCircle2 size={17}/>{notice}</div>}
-      {view === "customer" ? (
+      {!adminOnly ? (
         <div className="tp-customer-layout">
           <section className="tp-panel">
             <div className="tp-section-head"><div><span className="tp-eyebrow">NEW CUSTOMER APPLICATION</span><h2>Start your insurance request</h2></div><span className="tp-chip tp-chip-blue">No online gateway</span></div>
@@ -229,6 +227,8 @@ export default function InstantTPPreview() {
             <div className="tp-help-note">Need help? <b>+91 7006865909</b></div>
           </aside>
         </div>
+      ) : !adminAuthorized ? (
+        <section className="tp-panel tp-owner-lock"><LockKeyhole size={28}/><h2>Owner sign-in required</h2><p>This workspace is private. Sign in with the authorised owner account to manage insurance applications, verify UTRs and issue policy PDFs.</p><Link className="tp-primary" to="/admin/login">Open secure owner login <ArrowRight size={15}/></Link><Link to="/instant-tp-preview">Return to customer portal</Link></section>
       ) : (
         <div className="tp-admin-layout">
           <aside className="tp-admin-sidebar">
@@ -249,7 +249,7 @@ export default function InstantTPPreview() {
           </section>
         </div>
       )}
-      <footer className="tp-preview-footer">BABA'S CYBER CAFE <span>·</span> Your Trust, Our Service <span>·</span> Connected preview — no payment gateway</footer>
+      <footer className="tp-preview-footer">BABA'S CYBER CAFE <span>·</span> Your Trust, Our Service <span>·</span> {adminOnly ? "Private owner workspace" : "Customer portal"}</footer>
     </main>
   );
 }
