@@ -130,7 +130,9 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
   }, [adminToken, adminSearch, selectedId]);
 
   useEffect(() => {
-    if (adminOnly && adminToken) void loadAdmin("");
+    if (adminOnly && adminToken) {
+      void Promise.resolve().then(() => loadAdmin(""));
+    }
   }, [adminOnly, adminToken, loadAdmin]);
 
   function choose(item: AdminItem) {
