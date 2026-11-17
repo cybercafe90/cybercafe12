@@ -20,3 +20,13 @@
 .customer-hub-help b{color:#30332c!important;font-size:13px}
 .customer-hub-help p{margin:4px 0 0;color:#70736b!important;font-size:11px;line-height:1.65}
 @media(max-width:700px){.customer-hub-page{padding:30px 16px 48px}.customer-hub-grid{grid-template-columns:1fr;gap:12px}.customer-hub-card{min-height:190px;padding:19px}.customer-hub-intro{margin-bottom:22px}.owner-entry-link{padding:10px 12px}}
+
+/* Clear one-tap document upload for the owner. */
+.admin-document-dropzone{display:flex;min-height:142px;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;border:1.5px dashed #b9a57f;border-radius:13px;background:#fbf8f0;color:#856b42;text-align:center;cursor:pointer;transition:background .18s,border-color .18s}
+.admin-document-dropzone:hover{border-color:#94713c;background:#f6f0e3}
+.admin-document-dropzone strong{max-width:100%;overflow-wrap:anywhere;color:#34352e;font-size:13px}
+.admin-document-dropzone small{color:#77776d;font-size:11px}
+.admin-document-dropzone input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;clip-path:inset(50%)}
+.admin-document-dropzone:focus-within{outline:3px solid rgba(148,113,60,.25);outline-offset:3px}
+.admin-document-dropzone.is-uploading{opacity:.7;cursor:wait}
+.admin-document-hint{display:block;margin-top:7px;color:#77776d;font-size:11px;line-height:1.6}
