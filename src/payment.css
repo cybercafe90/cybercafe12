@@ -283,3 +283,12 @@
 @media(prefers-reduced-motion:reduce) {
  .payment-admin-page .payment-live-line i { animation:none; }
 }
+
+.payment-kyc-next-step{display:grid;gap:9px;margin:20px 0;padding:19px;border:1px solid #e6d8b9;border-radius:13px;background:#fbf7ed;text-align:left}
+.payment-kyc-next-step .eyebrow{color:#8b7045}
+.payment-kyc-next-step h3{margin:0;color:#2d2c25;font:500 21px var(--serif)}
+.payment-kyc-next-step p{margin:0;color:#68685f;font-size:12px;line-height:1.7}
+.payment-kyc-whatsapp{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:fit-content;max-width:100%;padding:12px 17px;border-radius:8px;background:#176b45;color:#fff!important;font-size:12px;font-weight:750;text-decoration:none}
+.payment-kyc-whatsapp:hover{background:#125638}
+@media(max-width:700px){.payment-kyc-whatsapp{width:100%}}
+@media print{.payment-kyc-next-step{display:none}}
