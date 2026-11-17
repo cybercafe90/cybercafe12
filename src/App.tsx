@@ -2233,6 +2233,7 @@ function AdminPage() {
   const [serviceCategory, setServiceCategory] = useState(categories[0].slug);
   const [featureService, setFeatureService] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [documentFileName, setDocumentFileName] = useState("");
   const [adminServices, setAdminServices] = useState<ServiceRecord[]>([]);
   const [serviceSearch, setServiceSearch] = useState("");
   const [servicePage, setServicePage] = useState(1);
@@ -3624,20 +3625,26 @@ function AdminPage() {
                       rows={3}
                     />
                   </label>
-                  <label className="field">
-                    <span>
-                      Upload approved customer document (PDF, JPG, PNG · max 10
-                      MB)
-                    </span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png"
-                      disabled={uploading}
-                      onChange={(event) =>
-                        void uploadDocument(event.target.files?.[0])
-                      }
-                    />
-                  </label>
+                  <div className="field">
+                    <span>Share an approved customer document</span>
+                    <label className={`admin-document-dropzone${uploading ? " is-uploading" : ""}`}>
+                      <UploadCloud size={24}/>
+                      <strong>{uploading ? "Uploading securely…" : documentFileName || "Tap to choose a document"}</strong>
+                      <small>PDF, JPG or PNG · maximum 10 MB · stored privately</small>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/png"
+                        disabled={uploading}
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          setDocumentFileName(file?.name ?? "");
+                          void uploadDocument(file);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <small className="admin-document-hint">The customer can view this file in tracking only when the application is Approved or Completed.</small>
+                  </div>
                   <div className="modal-actions">
                     <button
                       type="button"
