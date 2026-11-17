@@ -87,3 +87,6 @@
 .tp-vehicle-icon{background:#172d48;color:#78baff}
 @media(max-width:850px){.tp-customer-layout,.tp-admin-layout{grid-template-columns:1fr}.tp-admin-toolbar{flex-wrap:wrap}.tp-admin-toolbar input{flex-basis:100%}}
 @media(max-width:560px){.tp-preview{padding:14px 12px 22px}.tp-preview-top{align-items:flex-start;flex-direction:column}.tp-preview-label{font-size:8px}.tp-hero{margin:25px auto 20px}.tp-hero-seal{width:82px;height:82px}.tp-hero-seal small{display:none}.tp-view-switch{display:grid;grid-template-columns:1fr 1fr}.tp-view-switch button{justify-content:center;padding:10px 6px;font-size:10px}.tp-section-head,.tp-admin-heading{align-items:flex-start;flex-direction:column}.tp-admin-record{align-items:flex-start;flex-direction:column}}
+
+.tp-footer-owner-link{display:inline-flex;align-items:center;gap:5px;color:#ff86bd;text-decoration:none;font-weight:700;transition:color .2s}
+.tp-footer-owner-link:hover{color:#78baff;text-decoration:underline}
