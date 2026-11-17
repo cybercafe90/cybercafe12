@@ -227,6 +227,12 @@ function CustomerPayment() {
               <div className="payment-success">
                 <div className="payment-success-icon">✓</div><span className="eyebrow">{record.payment.payment_provider === "razorpay" ? "RAZORPAY PAYMENT VERIFIED" : "PAYMENT STATUS RECORDED"}</span><h2>{record.payment.payment_provider === "razorpay" ? "Payment received" : "Payment already marked as paid"}</h2><strong>{money(record.payment.amount)}</strong>
                 <div className="payment-detail-grid"><div><small>{record.payment.payment_provider === "razorpay" ? "Razorpay payment ID" : "Payment reference"}</small><b>{record.payment.razorpay_payment_id || "Not available for this earlier payment"}</b></div><div><small>Paid at</small><b>{dateTime(record.payment.paid_at)}</b></div></div>
+                <div className="payment-kyc-next-step">
+                  <span className="eyebrow">NEXT STEP · KYC DOCUMENTS</span>
+                  <h3>Complete your KYC on WhatsApp</h3>
+                  <p>Your payment is verified. Continue to our official WhatsApp support and send clear photos of your Aadhaar card front and back. Please do not share your Aadhaar number in the message itself.</p>
+                  <a className="payment-kyc-whatsapp" href={`https://wa.me/917006865909?text=${encodeURIComponent("Hello BABA'S CYBER CAFE, my payment is completed. Application reference: " + record.application.tracking_id + ". Service: " + record.application.service_name + ". Please guide me through KYC. I will share clear front and back images of my Aadhaar card in this chat.")}`} target="_blank" rel="noreferrer">Open WhatsApp for KYC <ArrowRight size={16}/></a>
+                </div>
                 <button className="button button-dark" onClick={() => window.print()}>Download / print receipt</button>
               </div>
             ) : Number(record.payment.amount) <= 0 ? (
