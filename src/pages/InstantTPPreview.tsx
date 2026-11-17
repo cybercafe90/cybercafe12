@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, BadgeCheck, CheckCircle2, Clock3, Copy, Download, FileCheck2, FileText, LockKeyhole, RefreshCw, ShieldCheck, UploadCloud, WalletCards } from "lucide-react";
 import { callFunction, supabase } from "../lib/supabase";
@@ -50,7 +50,15 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
     void supabase.auth.getSession().then(({ data }) => {
       if (active) setAdminToken(data.session?.access_token ?? "");
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setAdminToken(session?.access_token ?? ""));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextToken = session?.access_token ?? "";
+      setAdminToken(nextToken);
+      if (!nextToken) {
+        setAdminAuthorized(false);
+        setItems([]);
+        setSelected(null);
+      }
+    });
     return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
@@ -108,19 +116,22 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
     finally { setBusy(false); }
   }
 
-  async function loadAdmin(search = adminSearch) {
+  const selectedId = selected?.id;
+  const loadAdmin = useCallback(async (search = adminSearch) => {
     if (!adminToken) { setError("Please sign in using the owner account first."); return; }
     setBusy(true); setError("");
     try {
       const result = await callFunction<{ items: AdminItem[] }>("instant-tp-portal", { action: "admin_list", search }, adminToken);
       setAdminAuthorized(true);
       setItems(result.items);
-      if (selected) setSelected(result.items.find((item) => item.id === selected.id) ?? null);
+      setSelected(result.items.find((item) => item.id === selectedId) ?? null);
     } catch (reason) { setAdminAuthorized(false); setItems([]); setSelected(null); setError(reason instanceof Error ? reason.message : "Admin records could not be loaded."); }
     finally { setBusy(false); }
-  }
+  }, [adminToken, adminSearch, selectedId]);
 
-  useEffect(() => { if (adminOnly && adminToken) void loadAdmin(""); else if (adminOnly) setAdminAuthorized(false); }, [adminOnly, adminToken]);
+  useEffect(() => {
+    if (adminOnly && adminToken) void loadAdmin("");
+  }, [adminOnly, adminToken, loadAdmin]);
 
   function choose(item: AdminItem) {
     setSelected(item);
