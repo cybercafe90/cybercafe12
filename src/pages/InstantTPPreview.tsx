@@ -249,7 +249,7 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
           </section>
         </div>
       )}
-      <footer className="tp-preview-footer">BABA'S CYBER CAFE <span>·</span> Your Trust, Our Service <span>·</span> {adminOnly ? "Private owner workspace" : "Customer portal"}</footer>
+      <footer className="tp-preview-footer">BABA'S CYBER CAFE <span>·</span> Your Trust, Our Service <span>·</span> {adminOnly ? "Private owner workspace" : "Customer portal"} {!adminOnly && <><span>·</span><Link className="tp-footer-owner-link" to="/admin/login"><LockKeyhole size={12}/> Main owner portal</Link></>}</footer>
     </main>
   );
 }
