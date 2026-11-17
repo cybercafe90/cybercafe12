@@ -30,3 +30,75 @@
 .admin-document-dropzone:focus-within{outline:3px solid rgba(148,113,60,.25);outline-offset:3px}
 .admin-document-dropzone.is-uploading{opacity:.7;cursor:wait}
 .admin-document-hint{display:block;margin-top:7px;color:#77776d;font-size:11px;line-height:1.6}
+
+
+/* Customer Portal refresh: pink, electric blue, black and white. */
+.site-shell .customer-hub-page {
+  color:#FFFFFF!important;
+  background:transparent!important;
+}
+.site-shell .customer-hub-intro .eyebrow {
+  color:#F05AA6!important;
+}
+.site-shell .customer-hub-intro h1 {
+  color:#FFFFFF!important;
+}
+.site-shell .customer-hub-intro h1 em {
+  color:#398BFF!important;
+}
+.site-shell .customer-hub-intro p {
+  color:#DCE5F4!important;
+}
+.site-shell .customer-hub-card {
+  color:#090B12!important;
+  border:1px solid rgba(57,139,255,.28);
+  background:linear-gradient(145deg,#FFFFFF 0%,#F4F7FF 100%);
+  box-shadow:0 12px 32px rgba(0,0,0,.22);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.site-shell .customer-hub-card:hover {
+  transform:translateY(-3px);
+  border-color:#F05AA6;
+  box-shadow:0 16px 36px rgba(240,90,166,.12);
+}
+.site-shell .customer-hub-card-top {
+  color:#398BFF;
+}
+.site-shell .customer-hub-card-top i {
+  color:#F05AA6;
+  border:1px solid rgba(240,90,166,.28);
+  background:rgba(240,90,166,.08);
+}
+.site-shell .customer-hub-card h2 {
+  color:#090B12!important;
+}
+.site-shell .customer-hub-card p {
+  color:#465268!important;
+}
+.site-shell .customer-hub-card>a {
+  color:#1768D2!important;
+}
+.site-shell .customer-hub-card>a svg {
+  color:#F05AA6;
+}
+.site-shell .customer-hub-help {
+  color:#FFFFFF!important;
+  border:1px solid rgba(57,139,255,.3);
+  background:linear-gradient(120deg,#111725,#17243B);
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+.site-shell .customer-hub-help>span {
+  color:#FFFFFF;
+  border:1px solid rgba(240,90,166,.35);
+  background:rgba(240,90,166,.14);
+}
+.site-shell .customer-hub-help b {
+  color:#FFFFFF!important;
+}
+.site-shell .customer-hub-help p {
+  color:#C7D4E8!important;
+}
+@media(prefers-reduced-motion:reduce) {
+  .site-shell .customer-hub-card { transition:none; }
+  .site-shell .customer-hub-card:hover { transform:none; }
+}
