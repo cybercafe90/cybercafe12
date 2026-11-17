@@ -74,6 +74,7 @@ const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssist
 const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
 import "./cyber-theme.css";
+import "./portal-experience.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
