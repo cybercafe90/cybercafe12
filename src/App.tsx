@@ -75,6 +75,7 @@ const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"))
 import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
+import "./brand-identity.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -249,7 +250,7 @@ function Header() {
           onClick={close}
           aria-label="Baba's Cyber Cafe home"
         >
-          <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
+          <span className="brand-mark"><img src="/logo-mark.svg" alt="" /></span>
           <span className="brand-name">
             BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
           </span>
@@ -284,7 +285,7 @@ function Footer() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link to="/" className="brand">
-            <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
+            <span className="brand-mark"><img src="/logo-mark.svg" alt="" /></span>
             <span className="brand-name">
               BABA'S <small>CYBER CAFE</small>
             </span>
@@ -1747,29 +1748,38 @@ function StatusTag({ status }: { status: string }) {
 
 function CustomerDashboard() {
   const destinations = [
-    { number: "01", title: "Apply for a service", copy: "Choose a department, tell us what you need and receive a reference number.", action: "Start application", to: "/apply", icon: <FileCheck2 size={21}/> },
-    { number: "02", title: "Track an application", copy: "Check progress and customer-visible updates using your reference and registered mobile.", action: "Track request", to: "/track", icon: <Search size={21}/> },
-    { number: "03", title: "Motor insurance", copy: "Request a third-party policy quote and follow payment verification and policy delivery.", action: "Open insurance", to: "/instant-tp-preview", icon: <ShieldCheck size={21}/> },
-    { number: "04", title: "Print documents", copy: "Send documents for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={21}/> },
+    { number: "01", title: "Apply for a service", copy: "Start a department request and receive a private tracking reference.", action: "Start application", to: "/apply", icon: <FileCheck2 size={21}/>, tone: "cyan" },
+    { number: "02", title: "Track an application", copy: "See verified status, customer-visible remarks, payment information and approved documents.", action: "Track request", to: "/track", icon: <Search size={21}/>, tone: "violet" },
+    { number: "03", title: "Instant third-party insurance", copy: "Submit vehicle details, receive the confirmed quote, pay after approval and follow policy issuance.", action: "Open insurance centre", to: "/instant-tp-preview", icon: <ShieldCheck size={21}/>, tone: "green" },
+    { number: "04", title: "Print documents", copy: "Send files securely for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={21}/>, tone: "blue" },
   ];
   return (
-    <main className="content-page customer-hub-page">
-      <div className="customer-hub-intro">
-        <span className="eyebrow">BABA'S CYBER CAFE · CUSTOMER PORTAL</span>
-        <h1>Your services, <em>made simple.</em></h1>
-        <p>Choose what you need. We will guide you through each step and keep your application reference handy.</p>
-      </div>
-      <section className="customer-hub-grid" aria-label="Customer services">
+    <main className="content-page customer-hub-page smart-customer-hub">
+      <section className="smart-hub-hero">
+        <div><span className="eyebrow">BABA'S CYBER CAFE · CUSTOMER COMMAND CENTRE</span>
+          <h1>Your services.<br/><em>One simple dashboard.</em></h1>
+          <p>Apply, track progress, review payment updates and access approved documents from one place.</p>
+          <div className="smart-hub-actions"><Link className="button button-dark" to="/apply">Start an application <ArrowRight size={16}/></Link><Link className="button button-outline" to="/track">Track a reference <Search size={16}/></Link></div>
+        </div>
+        <div className="smart-hub-shield"><img src="/logo-mark.svg" alt="BABA'S CYBER CAFE logo"/><span>YOUR TRUST · OUR SERVICE</span><small>SECURE CUSTOMER ACCESS</small></div>
+      </section>
+      <section className="smart-hub-quick" aria-label="Quick customer actions">
+        <Link to="/track"><span><Search size={18}/></span><b>Track application</b><small>Reference + mobile</small></Link>
+        <Link to="/pay"><span><WalletCards size={18}/></span><b>Make a payment</b><small>View assigned amount</small></Link>
+        <Link to="/instant-tp-preview"><span><CarFront size={18}/></span><b>Motor insurance</b><small>Third-party policy</small></Link>
+      </section>
+      <div className="smart-hub-section-title"><div><span className="eyebrow">YOUR SERVICE DESK</span><h2>What would you like to do?</h2></div><span className="smart-hub-private"><ShieldCheck size={15}/> Private reference-based access</span></div>
+      <section className="customer-hub-grid smart-hub-grid" aria-label="Customer services">
         {destinations.map((item) => (
-          <article className="customer-hub-card" key={item.number}>
+          <article className={`customer-hub-card smart-hub-card tone-${item.tone}`} key={item.number}>
             <div className="customer-hub-card-top"><span>{item.number}</span><i>{item.icon}</i></div>
-            <h2>{item.title}</h2>
-            <p>{item.copy}</p>
+            <h2>{item.title}</h2><p>{item.copy}</p>
             <Link to={item.to}>{item.action} <ArrowRight size={16}/></Link>
           </article>
         ))}
       </section>
-      <div className="customer-hub-help"><span><ShieldCheck size={18}/></span><div><b>Need a little help?</b><p>Call our Srinagar service desk at +91 7006865909 or email support@babacybercafe.in. Never share passwords, PINs or OTPs.</p></div></div>
+      <div className="smart-hub-security"><ShieldCheck size={20}/><div><b>Your privacy comes first</b><p>Use your tracking reference and registered mobile number to verify an application. Payment is marked complete only after the actual bank credit is checked. Never share passwords, PINs or OTPs.</p></div></div>
+      <div className="customer-hub-help"><span><MessageCircle size={18}/></span><div><b>Need assistance?</b><p>WhatsApp or call +91 7006865909 · support@babacybercafe.in</p></div><a href="https://wa.me/917006865909" target="_blank" rel="noreferrer">Chat with us <ArrowUpRight size={14}/></a></div>
     </main>
   );
 }
