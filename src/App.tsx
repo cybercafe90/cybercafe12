@@ -75,6 +75,7 @@ const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"))
 import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
+import "./customer-dashboard.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -1747,21 +1748,44 @@ function StatusTag({ status }: { status: string }) {
 
 function CustomerDashboard() {
   const destinations = [
-    { number: "01", title: "Apply for a service", copy: "Choose a department, tell us what you need and receive a reference number.", action: "Start application", to: "/apply", icon: <FileCheck2 size={21}/> },
-    { number: "02", title: "Track an application", copy: "Check progress and customer-visible updates using your reference and registered mobile.", action: "Track request", to: "/track", icon: <Search size={21}/> },
-    { number: "03", title: "Motor insurance", copy: "Request a third-party policy quote and follow payment verification and policy delivery.", action: "Open insurance", to: "/instant-tp-preview", icon: <ShieldCheck size={21}/> },
-    { number: "04", title: "Print documents", copy: "Send documents for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={21}/> },
+    { number: "01", title: "Start a service application", copy: "Browse departments, review requirements and send a new service request.", action: "Start application", to: "/apply", icon: <FileCheck2 size={22}/> },
+    { number: "02", title: "Advanced application tracking", copy: "Use your tracking reference and registered mobile number to see the latest status, remarks and available documents.", action: "Track an application", to: "/track", icon: <Activity size={22}/> },
+    { number: "03", title: "Instant insurance centre", copy: "Request motor insurance assistance, review your quotation and follow payment and policy delivery.", action: "Open insurance centre", to: "/insurance", icon: <ShieldCheck size={22}/> },
+    { number: "04", title: "Third-party insurance", copy: "A dedicated journey for vehicle details, insurer quotation, manual UPI payment and policy PDF delivery.", action: "Get third-party cover", to: "/instant-tp-preview", icon: <CarFront size={22}/> },
+    { number: "05", title: "Print documents", copy: "Send documents for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={22}/> },
+    { number: "06", title: "Help & grievances", copy: "Contact the service desk or submit a grievance for follow-up.", action: "Get support", to: "/grievance", icon: <MessageCircle size={22}/> },
   ];
   return (
-    <main className="content-page customer-hub-page">
-      <div className="customer-hub-intro">
-        <span className="eyebrow">BABA'S CYBER CAFE · CUSTOMER PORTAL</span>
-        <h1>Your services, <em>made simple.</em></h1>
-        <p>Choose what you need. We will guide you through each step and keep your application reference handy.</p>
+    <main className="content-page customer-hub-page customer-dashboard-refresh">
+      <section className="customer-dashboard-hero">
+        <div className="customer-dashboard-hero-copy">
+          <span className="eyebrow"><i/> BABA'S CYBER CAFE · CUSTOMER WORKSPACE</span>
+          <h1>Your services.<br/><em>One simple dashboard.</em></h1>
+          <p>Start a request, follow its progress and access insurance assistance from one secure, easy-to-use place.</p>
+          <div className="customer-dashboard-hero-actions">
+            <Link className="button button-dark" to="/apply">Start an application <ArrowRight size={16}/></Link>
+            <Link className="button button-outline" to="/track">Track a request <Activity size={16}/></Link>
+          </div>
+        </div>
+        <div className="customer-dashboard-hero-art" aria-hidden="true">
+          <div className="customer-dashboard-orbit customer-dashboard-orbit-one"/>
+          <div className="customer-dashboard-orbit customer-dashboard-orbit-two"/>
+          <div className="customer-dashboard-shield"><ShieldCheck size={58}/><span>YOUR TRUST<br/>OUR SERVICE</span></div>
+          <span className="customer-dashboard-float customer-dashboard-float-top"><LockKeyhole size={15}/> PRIVATE LOOKUP</span>
+          <span className="customer-dashboard-float customer-dashboard-float-bottom"><Zap size={15}/> SIMPLE · CLEAR · CONNECTED</span>
+        </div>
+      </section>
+      <section className="customer-dashboard-assurance" aria-label="Customer portal benefits">
+        <div><span><LockKeyhole size={17}/></span><b>Private reference lookup</b><small>No public account registration required</small></div>
+        <div><span><Activity size={17}/></span><b>Clear progress updates</b><small>Check your request at every stage</small></div>
+        <div><span><ShieldCheck size={17}/></span><b>Human-reviewed insurance</b><small>Quotation before payment</small></div>
+      </section>
+      <div className="customer-dashboard-section-heading">
+        <div><span className="eyebrow">YOUR SERVICE DESK</span><h2>What would you like to do?</h2><p>Choose a service to continue. Your application reference keeps each request connected.</p></div>
       </div>
       <section className="customer-hub-grid" aria-label="Customer services">
         {destinations.map((item) => (
-          <article className="customer-hub-card" key={item.number}>
+          <article className="customer-hub-card customer-dashboard-service-card" key={item.number}>
             <div className="customer-hub-card-top"><span>{item.number}</span><i>{item.icon}</i></div>
             <h2>{item.title}</h2>
             <p>{item.copy}</p>
@@ -1769,7 +1793,7 @@ function CustomerDashboard() {
           </article>
         ))}
       </section>
-      <div className="customer-hub-help"><span><ShieldCheck size={18}/></span><div><b>Need a little help?</b><p>Call our Srinagar service desk at +91 7006865909 or email support@babacybercafe.in. Never share passwords, PINs or OTPs.</p></div></div>
+      <div className="customer-hub-help"><span><ShieldCheck size={18}/></span><div><b>Need a little help?</b><p>Call our Srinagar service desk at +91 7006865909 or email support@babacybercafe.in. Never share passwords, PINs or OTPs.</p></div><a href="https://wa.me/917006865909" target="_blank" rel="noreferrer">WhatsApp us <ArrowUpRight size={14}/></a></div>
     </main>
   );
 }
