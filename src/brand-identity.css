@@ -1,0 +1,12 @@
+/* BABA'S CYBER CAFE — unified logo-led brand identity */
+:root{--ink:#edfaff;--ink-soft:#c8e5ef;--paper:#0b1020;--white:#121a30;--muted:#9ab4c4;--line:rgba(36,221,238,.22);--gold:#20d9e8;--gold-light:#54f3ff;--gold-wash:rgba(32,217,232,.10);--green:#20e8a1;--bg-void:#0b1020;--bg-surface:#111a30;--bg-surface-elevated:#17213a;--border-cyan-subtle:rgba(36,221,238,.24);--border-cyan-active:#20d9e8;--accent-cyan:#20d9e8;--accent-violet:#bd68ff;--accent-green:#20e8a1;--text-heading:#f6fdff;--text-muted:#a9c1cf;--input-bg:#0d162a;--surface-glass:rgba(17,26,48,.92)}
+.portal-theme{--bg-void:#0b1020;--bg-surface:#111a30;--bg-surface-elevated:#17213a;--border-cyan-subtle:rgba(36,221,238,.24);--border-cyan-active:#20d9e8;--accent-cyan:#20d9e8;--accent-violet:#bd68ff;--accent-green:#20e8a1;--text-heading:#f6fdff;--text-muted:#a9c1cf;--input-bg:#0d162a;--surface-glass:rgba(17,26,48,.92);--ink:#edfaff;--ink-soft:#c8e5ef;--paper:#0b1020;--white:#121a30;--muted:#9ab4c4;--line:rgba(36,221,238,.22);--gold:#20d9e8;--gold-light:#54f3ff;--gold-wash:rgba(32,217,232,.10);--green:#20e8a1}
+.brand-mark{display:grid!important;place-items:center;width:48px!important;height:48px!important;padding:3px;overflow:hidden;border:1px solid rgba(32,217,232,.55)!important;border-radius:13px!important;background:#0b1020!important;box-shadow:0 0 18px rgba(32,217,232,.13)}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.brand-name{color:#eafcff!important}.brand-name small{color:#a9c1cf!important}
+.portal-theme .brand-mark{border-color:rgba(32,217,232,.55)!important}.portal-theme .brand-name,.portal-theme .brand-name small{color:#eafcff!important}
+.portal-theme .nav-button{color:#04121a!important;background:#20d9e8!important;border-color:#20d9e8!important}.portal-theme .nav-button:hover{color:#04121a!important;background:#54f3ff!important;border-color:#54f3ff!important}
+.portal-theme .button-primary,.portal-theme .cyber-button-primary{color:#04121a!important;background:#20d9e8!important;border-color:#20d9e8!important}
+.portal-theme .button-primary:hover,.portal-theme .cyber-button-primary:hover{background:#54f3ff!important;border-color:#54f3ff!important}
+.portal-theme .site-footer h3,.portal-theme .site-footer a:hover{color:#20d9e8}
+@media(prefers-reduced-motion:reduce){.brand-mark{box-shadow:none}}
