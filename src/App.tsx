@@ -794,7 +794,7 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
   );
 
   return (
-    <main className="content-page">
+    <main className={fixedCategory ? "content-page department-services-page" : "content-page"}>
       <PageIntro
         eyebrow={activeCategory ? "SERVICE DEPARTMENT" : "SERVICE DIRECTORY"}
         title={activeCategory?.name ?? "Find the right assistance."}
