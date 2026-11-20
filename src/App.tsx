@@ -1747,23 +1747,34 @@ function StatusTag({ status }: { status: string }) {
 }
 
 function CustomerDashboard() {
+  const departments = useCategoryList().filter((item) => item.slug !== "all");
   const destinations = [
-    { number: "01", title: "Start a service application", copy: "Browse departments, review requirements and send a new service request.", action: "Start application", to: "/apply", icon: <FileCheck2 size={22}/> },
-    { number: "02", title: "Advanced application tracking", copy: "Use your tracking reference and registered mobile number to see the latest status, remarks and available documents.", action: "Track an application", to: "/track", icon: <Activity size={22}/> },
-    { number: "03", title: "Instant insurance centre", copy: "Request motor insurance assistance, review your quotation and follow payment and policy delivery.", action: "Open insurance centre", to: "/insurance", icon: <ShieldCheck size={22}/> },
-    { number: "04", title: "Third-party insurance", copy: "A dedicated journey for vehicle details, insurer quotation, manual UPI payment and policy PDF delivery.", action: "Get third-party cover", to: "/instant-tp-preview", icon: <CarFront size={22}/> },
-    { number: "05", title: "Print documents", copy: "Send documents for printing and follow your print order.", action: "Open print service", to: "/print", icon: <Printer size={22}/> },
-    { number: "06", title: "Help & grievances", copy: "Contact the service desk or submit a grievance for follow-up.", action: "Get support", to: "/grievance", icon: <MessageCircle size={22}/> },
+    { number: "01", title: "Track an application", copy: "Check the latest status, remarks and available documents using your reference.", action: "Track request", to: "/track", icon: <Activity size={22}/> },
+    { number: "02", title: "Instant insurance centre", copy: "Request motor insurance assistance and review the quotation before payment.", action: "Open insurance", to: "/insurance", icon: <ShieldCheck size={22}/> },
+    { number: "03", title: "Third-party motor insurance", copy: "Start a dedicated vehicle insurance enquiry and follow the policy process.", action: "Get insurance help", to: "/instant-tp-preview", icon: <CarFront size={22}/> },
+    { number: "04", title: "Print documents", copy: "Send files for printing and follow your print request.", action: "Open print service", to: "/print", icon: <Printer size={22}/> },
+    { number: "05", title: "Help & grievances", copy: "Contact the service desk or submit a grievance for follow-up.", action: "Get support", to: "/grievance", icon: <MessageCircle size={22}/> },
   ];
+  const iconForDepartment = (slug: string) => {
+    if (slug === "insurance") return <ShieldCheck size={22}/>;
+    if (slug === "revenue") return <Landmark size={22}/>;
+    if (slug === "rto") return <CarFront size={22}/>;
+    if (slug === "smc") return <Building2 size={22}/>;
+    if (slug === "labour" || slug === "employment") return <BriefcaseBusiness size={22}/>;
+    if (slug === "handloom") return <BookOpen size={22}/>;
+    if (slug === "health") return <HeartHandshake size={22}/>;
+    if (slug === "travel") return <Ticket size={22}/>;
+    return <Globe2 size={22}/>;
+  };
   return (
     <main className="content-page customer-hub-page customer-dashboard-refresh">
       <section className="customer-dashboard-hero">
         <div className="customer-dashboard-hero-copy">
           <span className="eyebrow"><i/> BABA'S CYBER CAFE · CUSTOMER WORKSPACE</span>
-          <h1>Your services.<br/><em>One simple dashboard.</em></h1>
-          <p>Start a request, follow its progress and access insurance assistance from one secure, easy-to-use place.</p>
+          <h1>Every department.<br/><em>One simple dashboard.</em></h1>
+          <p>Explore the services available at BABA'S CYBER CAFE, start an enquiry and follow your application from one convenient place.</p>
           <div className="customer-dashboard-hero-actions">
-            <Link className="button button-dark" to="/apply">Start an application <ArrowRight size={16}/></Link>
+            <Link className="button button-dark" to="/services">Browse all services <ArrowRight size={16}/></Link>
             <Link className="button button-outline" to="/track">Track a request <Activity size={16}/></Link>
           </div>
         </div>
@@ -1776,22 +1787,41 @@ function CustomerDashboard() {
         </div>
       </section>
       <section className="customer-dashboard-assurance" aria-label="Customer portal benefits">
-        <div><span><LockKeyhole size={17}/></span><b>Private reference lookup</b><small>No public account registration required</small></div>
-        <div><span><Activity size={17}/></span><b>Clear progress updates</b><small>Check your request at every stage</small></div>
-        <div><span><ShieldCheck size={17}/></span><b>Human-reviewed insurance</b><small>Quotation before payment</small></div>
+        <div><span><LockKeyhole size={17}/></span><b>Private reference lookup</b><small>Use your application reference to check progress</small></div>
+        <div><span><Activity size={17}/></span><b>Clear progress updates</b><small>Follow the latest status and remarks</small></div>
+        <div><span><ShieldCheck size={17}/></span><b>Insurance assistance</b><small>Review your quotation before making payment</small></div>
       </section>
-      <div className="customer-dashboard-section-heading">
-        <div><span className="eyebrow">YOUR SERVICE DESK</span><h2>What would you like to do?</h2><p>Choose a service to continue. Your application reference keeps each request connected.</p></div>
-      </div>
-      <section className="customer-hub-grid" aria-label="Customer services">
-        {destinations.map((item) => (
-          <article className="customer-hub-card customer-dashboard-service-card" key={item.number}>
-            <div className="customer-hub-card-top"><span>{item.number}</span><i>{item.icon}</i></div>
-            <h2>{item.title}</h2>
-            <p>{item.copy}</p>
-            <Link to={item.to}>{item.action} <ArrowRight size={16}/></Link>
-          </article>
-        ))}
+      <section className="customer-dashboard-departments" aria-labelledby="customer-departments-title">
+        <div className="customer-dashboard-section-heading">
+          <div><span className="eyebrow">DEPARTMENTS & SERVICES</span><h2 id="customer-departments-title">Explore what we can help with</h2><p>Choose a department to see its available services and start the relevant enquiry.</p></div>
+          <Link className="customer-dashboard-all-services" to="/services">View all services <ArrowUpRight size={15}/></Link>
+        </div>
+        <div className="customer-dashboard-department-grid">
+          {departments.map((department, index) => (
+            <Link className="customer-dashboard-department-card" to={`/services/${department.slug}`} key={department.slug}>
+              <span className="customer-dashboard-department-icon">{iconForDepartment(department.slug)}</span>
+              <span className="customer-dashboard-department-number">{String(index + 1).padStart(2, "0")}</span>
+              <h3>{department.name}</h3>
+              <p>{department.description}</p>
+              <span className="customer-dashboard-department-link">View services <ArrowRight size={15}/></span>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="customer-dashboard-quick-actions" aria-labelledby="customer-quick-actions-title">
+        <div className="customer-dashboard-section-heading">
+          <div><span className="eyebrow">CUSTOMER TOOLS</span><h2 id="customer-quick-actions-title">Quick actions</h2><p>Useful tools for your applications and service requests.</p></div>
+        </div>
+        <section className="customer-hub-grid" aria-label="Customer tools">
+          {destinations.map((item) => (
+            <article className="customer-hub-card customer-dashboard-service-card" key={item.number}>
+              <div className="customer-hub-card-top"><span>{item.number}</span><i>{item.icon}</i></div>
+              <h2>{item.title}</h2>
+              <p>{item.copy}</p>
+              <Link to={item.to}>{item.action} <ArrowRight size={16}/></Link>
+            </article>
+          ))}
+        </section>
       </section>
       <div className="customer-hub-help"><span><ShieldCheck size={18}/></span><div><b>Need a little help?</b><p>Call our Srinagar service desk at +91 7006865909 or email support@babacybercafe.in. Never share passwords, PINs or OTPs.</p></div><a href="https://wa.me/917006865909" target="_blank" rel="noreferrer">WhatsApp us <ArrowUpRight size={14}/></a></div>
     </main>
