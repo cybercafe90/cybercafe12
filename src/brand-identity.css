@@ -10,3 +10,17 @@
 .portal-theme .button-primary:hover,.portal-theme .cyber-button-primary:hover{background:#54f3ff!important;border-color:#54f3ff!important}
 .portal-theme .site-footer h3,.portal-theme .site-footer a:hover{color:#20d9e8}
 @media(prefers-reduced-motion:reduce){.brand-mark{box-shadow:none}}
+/* Apply the same identity to public pages and all shared navigation */
+html,body{background:#0b1020!important;color:#edfaff!important;color-scheme:dark}
+::selection{color:#04121a;background:#20d9e8}
+.site-header{color:#eafcff!important;border-bottom-color:rgba(36,221,238,.24)!important;background:rgba(11,16,32,.96)!important;backdrop-filter:blur(16px)}
+.main-nav>a:not(.nav-button){color:#c8e5ef!important}
+.main-nav>a:not(.nav-button):hover,.main-nav>a.active{color:#20d9e8!important}
+.main-nav>a.active::after{background:#20d9e8!important}
+.topline{color:#a9c1cf!important;background:#070c18!important}
+.topline a{color:#20d9e8!important}
+.site-announcement{color:#d9faff!important;background:#122c3c!important}
+.cyber-home{--cyan-primary:#20d9e8;--neon-green:#20e8a1;--shield-purple:#bd68ff;--bg-void:#0b1020}
+.cyber-home .cyber-network-layer{background:radial-gradient(ellipse at 72% 43%,rgba(32,217,232,.14),transparent 45%),linear-gradient(180deg,#0b1020 0%,#0b1020 60%,#0d1830 100%)}
+.cyber-home .cyber-network-vignette{background:radial-gradient(ellipse at 50% 46%,transparent 25%,rgba(11,16,32,.32) 72%,#0b1020 100%)}
+@media(prefers-reduced-motion:reduce){html:focus-within{scroll-behavior:auto}}
