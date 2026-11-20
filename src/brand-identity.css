@@ -1,0 +1,26 @@
+/* BABA'S CYBER CAFE — unified logo-led brand identity */
+:root{--ink:#edfaff;--ink-soft:#c8e5ef;--paper:#0b1020;--white:#121a30;--muted:#9ab4c4;--line:rgba(36,221,238,.22);--gold:#20d9e8;--gold-light:#54f3ff;--gold-wash:rgba(32,217,232,.10);--green:#20e8a1;--bg-void:#0b1020;--bg-surface:#111a30;--bg-surface-elevated:#17213a;--border-cyan-subtle:rgba(36,221,238,.24);--border-cyan-active:#20d9e8;--accent-cyan:#20d9e8;--accent-violet:#bd68ff;--accent-green:#20e8a1;--text-heading:#f6fdff;--text-muted:#a9c1cf;--input-bg:#0d162a;--surface-glass:rgba(17,26,48,.92)}
+.portal-theme{--bg-void:#0b1020;--bg-surface:#111a30;--bg-surface-elevated:#17213a;--border-cyan-subtle:rgba(36,221,238,.24);--border-cyan-active:#20d9e8;--accent-cyan:#20d9e8;--accent-violet:#bd68ff;--accent-green:#20e8a1;--text-heading:#f6fdff;--text-muted:#a9c1cf;--input-bg:#0d162a;--surface-glass:rgba(17,26,48,.92);--ink:#edfaff;--ink-soft:#c8e5ef;--paper:#0b1020;--white:#121a30;--muted:#9ab4c4;--line:rgba(36,221,238,.22);--gold:#20d9e8;--gold-light:#54f3ff;--gold-wash:rgba(32,217,232,.10);--green:#20e8a1}
+.brand-mark{display:grid!important;place-items:center;width:48px!important;height:48px!important;padding:3px;overflow:hidden;border:1px solid rgba(32,217,232,.55)!important;border-radius:13px!important;background:#0b1020!important;box-shadow:0 0 18px rgba(32,217,232,.13)}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.brand-name{color:#eafcff!important}.brand-name small{color:#a9c1cf!important}
+.portal-theme .brand-mark{border-color:rgba(32,217,232,.55)!important}.portal-theme .brand-name,.portal-theme .brand-name small{color:#eafcff!important}
+.portal-theme .nav-button{color:#04121a!important;background:#20d9e8!important;border-color:#20d9e8!important}.portal-theme .nav-button:hover{color:#04121a!important;background:#54f3ff!important;border-color:#54f3ff!important}
+.portal-theme .button-primary,.portal-theme .cyber-button-primary{color:#04121a!important;background:#20d9e8!important;border-color:#20d9e8!important}
+.portal-theme .button-primary:hover,.portal-theme .cyber-button-primary:hover{background:#54f3ff!important;border-color:#54f3ff!important}
+.portal-theme .site-footer h3,.portal-theme .site-footer a:hover{color:#20d9e8}
+@media(prefers-reduced-motion:reduce){.brand-mark{box-shadow:none}}
+/* Apply the same identity to public pages and all shared navigation */
+html,body{background:#0b1020!important;color:#edfaff!important;color-scheme:dark}
+::selection{color:#04121a;background:#20d9e8}
+.site-header{color:#eafcff!important;border-bottom-color:rgba(36,221,238,.24)!important;background:rgba(11,16,32,.96)!important;backdrop-filter:blur(16px)}
+.main-nav>a:not(.nav-button){color:#c8e5ef!important}
+.main-nav>a:not(.nav-button):hover,.main-nav>a.active{color:#20d9e8!important}
+.main-nav>a.active::after{background:#20d9e8!important}
+.topline{color:#a9c1cf!important;background:#070c18!important}
+.topline a{color:#20d9e8!important}
+.site-announcement{color:#d9faff!important;background:#122c3c!important}
+.cyber-home{--cyan-primary:#20d9e8;--neon-green:#20e8a1;--shield-purple:#bd68ff;--bg-void:#0b1020}
+.cyber-home .cyber-network-layer{background:radial-gradient(ellipse at 72% 43%,rgba(32,217,232,.14),transparent 45%),linear-gradient(180deg,#0b1020 0%,#0b1020 60%,#0d1830 100%)}
+.cyber-home .cyber-network-vignette{background:radial-gradient(ellipse at 50% 46%,transparent 25%,rgba(11,16,32,.32) 72%,#0b1020 100%)}
+@media(prefers-reduced-motion:reduce){html:focus-within{scroll-behavior:auto}}

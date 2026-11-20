@@ -75,6 +75,7 @@ const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"))
 import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
+import "./brand-identity.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -249,7 +250,7 @@ function Header() {
           onClick={close}
           aria-label="Baba's Cyber Cafe home"
         >
-          <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
+          <span className="brand-mark"><img src="/logo-mark.svg" alt="" /></span>
           <span className="brand-name">
             BABA'S <small>CYBER CAFE · SERVICE CENTRE · SRINAGAR</small>
           </span>
@@ -284,7 +285,7 @@ function Footer() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link to="/" className="brand">
-            <span className="brand-mark"><ShieldCheck size={24}/><LockKeyhole className="brand-keyhole" size={10}/></span>
+            <span className="brand-mark"><img src="/logo-mark.svg" alt="" /></span>
             <span className="brand-name">
               BABA'S <small>CYBER CAFE</small>
             </span>

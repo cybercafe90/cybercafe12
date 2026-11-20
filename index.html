@@ -2,7 +2,8 @@
 <html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+    <link rel="apple-touch-icon" href="/logo-mark.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#070b16" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -50,7 +51,7 @@
       .loader-orbit { position: absolute; inset: 2px; border: 1px solid rgba(225,192,126,.58); border-radius: 50%; border-left-color: transparent; border-bottom-color: transparent; animation: cafe-spin 2.8s linear infinite; }
       .loader-orbit::after { content: ""; position: absolute; width: 7px; height: 7px; top: 11px; left: 14px; border-radius: 50%; background: #f0cf86; box-shadow: 0 0 14px #e7c477; }
       .loader-orbit.orbit-inner { inset: 13px; border-color: rgba(103,177,205,.5); border-right-color: transparent; border-top-color: transparent; animation-duration: 3.8s; animation-direction: reverse; }
-      .loader-shield { width: 58px; height: 58px; color: #e7c77e; filter: drop-shadow(0 0 15px rgba(231,199,126,.25)); }
+      .loader-shield { width: 100px; height: 100px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(32,217,232,.25)); }
       .loader-brand { margin: 0; font: 800 17px/1.2 system-ui,sans-serif; letter-spacing: .19em; color: #f8f4e9; }
       .loader-tagline { margin: -9px 0 0; color: #d5b979; font: 600 10px/1.4 system-ui,sans-serif; letter-spacing: .24em; text-transform: uppercase; }
       .loader-message { margin: 5px 0 0; color: #b8c2ce; font: 400 13px/1.5 system-ui,sans-serif; letter-spacing: .04em; }
@@ -108,11 +109,7 @@
       <div class="loader-content">
         <div class="loader-emblem" aria-hidden="true">
           <span class="loader-orbit"></span><span class="loader-orbit orbit-inner"></span>
-          <svg class="loader-shield" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M32 5 53 13v16c0 14-8.8 23.8-21 30C19.8 52.8 11 43 11 29V13L32 5Z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
-            <path d="M23 31.5 29 37l13-14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M32 13v5M18 20l4 2M46 20l-4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
-          </svg>
+          <img class="loader-shield" src="/logo-mark.svg" alt="" />
         </div>
         <p class="loader-brand">BABA'S CYBER CAFE</p>
         <p class="loader-tagline">YOUR TRUST · OUR SERVICE</p>
