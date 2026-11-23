@@ -2063,6 +2063,7 @@ type AdminApplication = {
   full_name: string;
   mobile: string;
   email: string;
+  description: string;
   category_slug: string;
   service_name: string;
   status: ApplicationStatus;
@@ -2879,6 +2880,7 @@ function AdminPage() {
           <p>Manage enquiries, service listings and customer updates.</p>
           {isOwner && (
             <div className="admin-portal-shortcuts">
+              <a className="button button-dark" href="#customer-leads"><UsersRound size={14} /> Customer leads</a>
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/instant-tp-admin"><ShieldCheck size={14} /> Instant third-party insurance desk <ArrowUpRight size={14} /></Link>
@@ -3071,11 +3073,12 @@ function AdminPage() {
             </div>
           </div>
           <AdminFeedbackOverview />
-          <section className="admin-section">
+          <section className="admin-section" id="customer-leads">
             <div className="admin-section-head">
               <div>
-                <span className="eyebrow">CUSTOMER REQUESTS</span>
-                <h2>Application management</h2>
+                <span className="eyebrow">CUSTOMER LEADS DESK</span>
+                <h2>Customer leads &amp; enquiries</h2>
+                <p>Read each customer's request and contact them directly by phone, WhatsApp or email.</p>
               </div>
               <label className="search-box admin-search">
                 <Search size={17} />
@@ -3112,7 +3115,8 @@ function AdminPage() {
                 <thead>
                   <tr>
                     <th>Reference / customer</th>
-                    <th>Service</th>
+                    <th>Contact details</th>
+                    <th>Service / request</th>
                     <th>Received</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -3128,10 +3132,18 @@ function AdminPage() {
                         </small>
                       </td>
                       <td>
+                        <b>{item.mobile}</b>
+                        <small>{item.email || "No email supplied"}</small>
+                        <div className="admin-lead-contact-actions">
+                          <a href={`tel:${item.mobile.replace(/[^+\\d]/g, "")}`} aria-label={`Call ${item.full_name}`}><PhoneCall size={13} /> Call</a>
+                          <a href={`https://wa.me/${item.mobile.replace(/\\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${item.full_name}`}><MessageCircle size={13} /> WhatsApp</a>
+                          {item.email && <a href={`mailto:${item.email}`} aria-label={`Email ${item.full_name}`}><Globe2 size={13} /> Email</a>}
+                        </div>
+                      </td>
+                      <td>
                         {item.service_name}
-                        <small>
-                          {categoryLabel(item.category_slug, adminCategories)}
-                        </small>
+                        <small>{categoryLabel(item.category_slug, adminCategories)}</small>
+                        {item.description && <small className="admin-lead-summary">{item.description}</small>}
                       </td>
                       <td>
                         {new Date(item.created_at).toLocaleDateString("en-IN")}
@@ -3527,9 +3539,18 @@ function AdminPage() {
                   <div>
                     <span className="eyebrow">{active.tracking_id}</span>
                     <h2 id="update-title">Update application</h2>
-                    <p>
-                      {active.full_name} · {active.service_name}
-                    </p>
+                    <p>{active.full_name} · {active.service_name}</p>
+                    <div className="admin-lead-detail">
+                      <p><b>Phone:</b> {active.mobile}</p>
+                      <p><b>Email:</b> {active.email || "Not provided"}</p>
+                      <p><b>Department:</b> {categoryLabel(active.category_slug, adminCategories)}</p>
+                      <p><b>Customer's message:</b> {active.description || "No additional details provided."}</p>
+                      <div className="admin-lead-contact-actions">
+                        <a href={`tel:${active.mobile.replace(/[^+\\d]/g, "")}`}><PhoneCall size={14} /> Call customer</a>
+                        <a href={`https://wa.me/${active.mobile.replace(/\\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp customer</a>
+                        {active.email && <a href={`mailto:${active.email}`}><Globe2 size={14} /> Email customer</a>}
+                      </div>
+                    </div>
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
