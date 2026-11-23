@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -47,8 +47,6 @@ import {
   UsersRound,
   X,
   Zap,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { getServiceRequirement } from "./serviceRequirements";
 import {
@@ -71,10 +69,10 @@ const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
-const CyberNetworkCanvas = lazy(() => import("./components/CyberNetworkCanvas"));
 import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
+import "./performance-mobile.css";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -426,7 +424,6 @@ function HomePage() {
         <div className="cyber-announcement"><BadgeCheck size={15}/>{settings.announcement.text}</div>
       )}
       <section className="cyber-hero">
-        <Suspense fallback={null}><CyberNetworkCanvas /></Suspense>
         <div className="cyber-hero-grid"/>
         <div className="cyber-hero-copy">
           <span className="cyber-eyebrow"><i/> DIGITAL CIVIC INFRASTRUCTURE · SECURE DOCUMENT ASSISTANCE</span>
@@ -513,6 +510,7 @@ function DepartmentServiceExplorer() {
   const categoryList = useCategoryList();
   const navigate = useNavigate();
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [serviceQuery, setServiceQuery] = useState("");
   const [serviceList, setServiceList] = useState<ServiceRecord[]>(seedServices);
   const [loadingServices, setLoadingServices] = useState(Boolean(supabase));
 
@@ -533,11 +531,18 @@ function DepartmentServiceExplorer() {
   const departments = categoryList.filter((item) => item.slug !== "all");
   const selected = departments.find((item) => item.slug === selectedDepartment);
   const selectedServices = serviceList.filter((item) => item.category_slug === selectedDepartment && item.is_active !== false);
+  const matchingServices = serviceList.filter((item) => {
+    if (item.is_active === false) return false;
+    const requirement = getServiceRequirement(item.name);
+    const haystack = [item.name, categoryLabel(item.category_slug, categoryList), item.description, ...requirement.documents, ...(item.required_documents ?? [])].join(" ").toLowerCase();
+    return haystack.includes(serviceQuery.trim().toLowerCase());
+  });
   const uploadPrint = selectedDepartment === "upload-print";
 
-  const openService = (name: string) => {
-    navigate(`/apply?department=${encodeURIComponent(selectedDepartment)}&service=${encodeURIComponent(name)}`);
+  const openServiceFor = (departmentSlug: string, name: string) => {
+    navigate(`/apply?department=${encodeURIComponent(departmentSlug)}&service=${encodeURIComponent(name)}`);
   };
+  const openService = (name: string) => openServiceFor(selectedDepartment, name);
 
   return (
     <section className="neon-directory" id="services">
@@ -550,7 +555,30 @@ function DepartmentServiceExplorer() {
         {selected && <button className="neon-back-button" type="button" onClick={() => setSelectedDepartment("")}><ArrowLeft size={16}/> Back to Departments</button>}
       </div>
 
-      {!selected && (
+      <label className="service-instant-search">
+        <Search size={19} aria-hidden="true"/>
+        <input type="search" value={serviceQuery} onChange={(event) => setServiceQuery(event.target.value)} placeholder="Search services or required documents…" aria-label="Search services and required documents"/>
+        {serviceQuery && <button type="button" onClick={() => setServiceQuery("")} aria-label="Clear search"><X size={17}/></button>}
+      </label>
+
+      {serviceQuery.trim() ? (
+        <div className="neon-card-grid" aria-live="polite">
+          {matchingServices.length ? matchingServices.map((service, index) => {
+            const documents = service.required_documents?.length ? service.required_documents : getServiceRequirement(service.name).documents;
+            return (
+              <button className={`neon-directory-card neon-service-card neon-tone-${index % 6}`} type="button" key={service.id} onClick={() => openServiceFor(service.category_slug, service.name)}>
+                <span className="neon-icon-badge"><FileCheck2 size={22}/></span>
+                <strong>{service.name}</strong>
+                <small>{categoryLabel(service.category_slug, categoryList)}</small>
+                <span className="service-document-preview">Documents: {documents.slice(0, 2).join(" · ")}</span>
+                <span className="neon-card-arrow"><ArrowUpRight size={16}/></span>
+              </button>
+            );
+          }) : <p className="neon-empty-state">No matching service found. Try another keyword or contact our service desk.</p>}
+        </div>
+      ) : null}
+
+      {!selected && !serviceQuery.trim() && (
         <div className="neon-card-grid">
           {departments.map((department, index) => (
             <button className={`neon-directory-card neon-tone-${index % 6}`} type="button" key={department.slug} onClick={() => setSelectedDepartment(department.slug)}>
@@ -569,7 +597,7 @@ function DepartmentServiceExplorer() {
         </div>
       )}
 
-      {selected && !uploadPrint && (
+      {selected && !uploadPrint && !serviceQuery.trim() && (
         <div className="neon-card-grid">
           {selectedServices.length ? selectedServices.map((service, index) => (
             <button className={`neon-directory-card neon-service-card neon-tone-${index % 6}`} type="button" key={service.id} onClick={() => openService(service.name)}>
@@ -583,7 +611,7 @@ function DepartmentServiceExplorer() {
         </div>
       )}
 
-      {uploadPrint && (
+      {uploadPrint && !serviceQuery.trim() && (
         <div className="neon-card-grid">
           <Link className="neon-directory-card neon-tone-4" to="/print">
             <span className="neon-icon-badge"><UploadCloud size={22}/></span>
@@ -599,7 +627,7 @@ function DepartmentServiceExplorer() {
           </Link>
         </div>
       )}
-      {selected && <p className="neon-directory-note">{loadingServices ? "Syncing the latest service list…" : "Service availability and official decisions depend on the relevant authority."}</p>}
+      {selected && !serviceQuery.trim() && <p className="neon-directory-note">{loadingServices ? "Syncing the latest service list…" : "Service availability and official decisions depend on the relevant authority."}</p>}
     </section>
   );
 }
@@ -4168,89 +4196,13 @@ function NotFound() {
 }
 
 
-function SoundControls() {
-  const [enabled, setEnabled] = useState(() => {
-    try {
-      return window.localStorage.getItem("baba-site-sound") !== "off";
-    } catch {
-      return true;
-    }
-  });
-  const enabledRef = useRef(enabled);
-  const audioRef = useRef<AudioContext | null>(null);
-
-  useEffect(() => {
-    enabledRef.current = enabled;
-    try {
-      window.localStorage.setItem("baba-site-sound", enabled ? "on" : "off");
-    } catch {
-      // Sound preference remains available for this page session.
-    }
-  }, [enabled]);
-
-  useEffect(() => {
-    const playTone = (kind: "tap" | "submit") => {
-      if (!enabledRef.current) return;
-      try {
-        const AudioContextClass = window.AudioContext;
-        if (!AudioContextClass) return;
-        const context = audioRef.current ?? new AudioContextClass();
-        audioRef.current = context;
-        if (context.state === "suspended") void context.resume();
-        const now = context.currentTime;
-        const notes = kind === "submit" ? [660, 880] : [520];
-        notes.forEach((frequency, index) => {
-          const oscillator = context.createOscillator();
-          const gain = context.createGain();
-          const start = now + index * 0.085;
-          oscillator.type = "sine";
-          oscillator.frequency.setValueAtTime(frequency, start);
-          gain.gain.setValueAtTime(0.0001, start);
-          gain.gain.exponentialRampToValueAtTime(kind === "submit" ? 0.045 : 0.022, start + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075);
-          oscillator.connect(gain);
-          gain.connect(context.destination);
-          oscillator.start(start);
-          oscillator.stop(start + 0.08);
-        });
-      } catch {
-        // Audio is an enhancement; it must never interrupt a customer action.
-      }
-    };
-    const onClick = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const control = target.closest("a,button,[role='button'],summary,input[type='submit'],input[type='button'],select");
-      if (!control || control.hasAttribute("disabled") || control.getAttribute("aria-disabled") === "true") return;
-      if (control.closest("[data-sound-control]")) return;
-      playTone("tap");
-    };
-    const onSubmit = (event: Event) => {
-      if (event.target instanceof HTMLFormElement) playTone("submit");
-    };
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("submit", onSubmit, true);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      document.removeEventListener("submit", onSubmit, true);
-      void audioRef.current?.close();
-      audioRef.current = null;
-    };
-  }, []);
-
+function MobileQuickBar() {
   return (
-    <button
-      className="sound-control"
-      type="button"
-      data-sound-control
-      aria-label={enabled ? "Turn interface sounds off" : "Turn interface sounds on"}
-      aria-pressed={enabled}
-      title={enabled ? "Sound on · click to mute" : "Sound off · click to enable"}
-      onClick={() => setEnabled((value) => !value)}
-    >
-      {enabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-      <span>{enabled ? "Sound on" : "Sound off"}</span>
-    </button>
+    <nav className="mobile-quick-bar" aria-label="Quick actions">
+      <a href="tel:+917006865909"><PhoneCall size={18}/><span>Call</span></a>
+      <a href="https://wa.me/917006865909" target="_blank" rel="noreferrer"><MessageCircle size={18}/><span>WhatsApp</span></a>
+      <Link to="/track"><Search size={18}/><span>Track Status</span></Link>
+    </nav>
   );
 }
 
@@ -4351,7 +4303,7 @@ function RoutedApp() {
       </Routes>
       </Suspense>
       <Footer />
-      <SoundControls />
+      <MobileQuickBar />
       <Suspense fallback={null}><CustomerChatAssistant /></Suspense>
     </div>
   );

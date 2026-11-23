@@ -1,0 +1,26 @@
+/* Performance-first mobile enhancements */
+.service-instant-search{display:flex;align-items:center;gap:12px;max-width:760px;min-height:54px;margin:24px 0 20px;padding:0 16px;border:1px solid rgba(57,139,255,.42);border-radius:12px;background:#0b1424;color:#8fbaff}
+.service-instant-search:focus-within{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.16)}
+.service-instant-search input{width:100%;min-width:0;min-height:50px;border:0;outline:0;background:transparent;color:#f5f7fb;font:inherit;font-size:15px}
+.service-instant-search input::placeholder{color:#8290a6}
+.service-instant-search button{display:grid;width:34px;height:34px;flex:0 0 auto;place-items:center;border:0;border-radius:8px;background:#182943;color:#d4af37;cursor:pointer}
+.service-document-preview{display:block;max-width:100%;margin-top:7px;color:#b8c6da;font-size:11px;line-height:1.5;text-align:left}
+.mobile-quick-bar{display:none}
+@media(max-width:760px){
+  body{padding-bottom:76px}
+  .mobile-quick-bar{position:fixed;z-index:1000;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:9px max(12px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-right));border-top:1px solid rgba(212,175,55,.34);background:rgba(7,11,22,.97);box-shadow:0 -8px 26px rgba(0,0,0,.28);backdrop-filter:blur(10px)}
+  .mobile-quick-bar a{display:flex;min-height:48px;align-items:center;justify-content:center;gap:7px;border:1px solid rgba(57,139,255,.3);border-radius:10px;color:#eaf1ff;background:#101b2d;font-size:12px;font-weight:700;text-decoration:none}
+  .mobile-quick-bar a:first-child svg{color:#d4af37}
+  .mobile-quick-bar a:nth-child(2) svg{color:#4ade80}
+  .mobile-quick-bar a:last-child{border-color:rgba(212,175,55,.42);color:#f4d27a}
+  .service-instant-search{margin:18px 0 16px}
+  .neon-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:390px){
+  .mobile-quick-bar a{gap:5px;font-size:11px}
+  .mobile-quick-bar svg{width:16px;height:16px}
+  .neon-card-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
