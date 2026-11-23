@@ -25,3 +25,14 @@
 @media (prefers-reduced-motion: reduce) {
   .lead-form-panel * { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Owner-only customer lead desk */
+.admin-lead-contact-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+.admin-lead-contact-actions a { display:inline-flex; align-items:center; gap:5px; min-height:30px; padding:5px 9px; border:1px solid rgba(212,178,104,.35); border-radius:8px; color:#e8cc8b; font-size:12px; font-weight:650; text-decoration:none; white-space:nowrap; }
+.admin-lead-contact-actions a:hover { background:rgba(212,178,104,.12); }
+.admin-lead-summary { display:block; max-width:300px; margin-top:7px; color:var(--muted,#9aa4b5); line-height:1.45; white-space:normal; overflow-wrap:anywhere; }
+.admin-lead-detail { display:grid; gap:6px; margin:14px 0 18px; padding:14px; border:1px solid rgba(212,178,104,.25); border-radius:12px; background:rgba(212,178,104,.055); }
+.admin-lead-detail p { margin:0; overflow-wrap:anywhere; }
+#customer-leads { scroll-margin-top:90px; }
+#customer-leads .admin-section-head p { margin:7px 0 0; max-width:650px; color:var(--muted,#9aa4b5); }
+@media(max-width:700px) { .admin-lead-contact-actions { gap:6px; } .admin-lead-contact-actions a { min-height:36px; } }
