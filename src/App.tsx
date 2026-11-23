@@ -74,6 +74,7 @@ import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
 import FreeEnhancements from "./components/FreeEnhancements";
+import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -266,7 +267,8 @@ function Header() {
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
-          <NavLink to="/about" onClick={close}>About</NavLink>
+          <NavLink to="/about" onClick={close}>About Us</NavLink>
+          <NavLink to="/faq" onClick={close}>FAQ</NavLink>
           <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
           <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
           <Link className="owner-entry-link" to="/admin/login" onClick={close}><LockKeyhole size={14}/> Owner Login</Link>
@@ -297,6 +299,7 @@ function Footer() {
           <Link to="/services/insurance">Insurance services</Link>
           <Link to="/insurance">Request an insurance quotation</Link>
           <Link to="/about">About us</Link>
+          <Link to="/faq">FAQs &amp; Help Centre</Link>
           <Link to="/contact">Contact</Link>
         </div>
         <div>
@@ -501,6 +504,7 @@ function HomePage() {
         <div className="cyber-location-card"><span className="cyber-location-icon"><MapPin size={23}/></span><span className="cyber-eyebrow">OUR SERVICE AREA</span><h3>Srinagar, Jammu &amp; Kashmir</h3><p>For the exact business pin, opening hours and directions, use our verified Google Business Profile.</p><a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open Google Business Profile <ArrowUpRight size={15}/></a></div>
       </section>
       <section className="cyber-social-wrap"><SocialPreviewSection/></section>
+      <VipHomeExperience />
       <FreeEnhancements reviewUrl={settings.social.business_profile} />
       <section className="cyber-contact-band"><div><span className="cyber-eyebrow">NEED A HAND?</span><h2>Start with a clear conversation.</h2></div><Link to="/contact" className="cyber-button cyber-button-primary">Contact BABA'S CYBER CAFE <ArrowRight size={16}/></Link></section>
     </main>
@@ -1058,6 +1062,7 @@ function AboutPage() {
           </Link>
         </div>
       </section>
+      <VipAboutExperience />
     </main>
   );
 }
@@ -4222,6 +4227,7 @@ function RoutedApp() {
     const titles: Record<string, string> = {
       "/": "BABA'S CYBER CAFE | Digital Service Assistance in Srinagar",
       "/about": "About Us | BABA'S CYBER CAFE",
+      "/faq": "FAQs & Customer Help | BABA'S CYBER CAFE",
       "/services": "Service Directory | BABA'S CYBER CAFE",
       "/apply": "New Enquiry | BABA'S CYBER CAFE",
       "/track": "Track Application | BABA'S CYBER CAFE",
@@ -4279,6 +4285,7 @@ function RoutedApp() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/faq" element={<VipFaqPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
