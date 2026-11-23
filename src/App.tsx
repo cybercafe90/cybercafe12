@@ -1191,7 +1191,6 @@ function ApplicationPage() {
       : selectedService;
 
   const serviceRequirement = getServiceRequirement(effectiveSelectedService);
-  const documentChecklist = effectiveSelectedService ? serviceRequirement.documents : [];
   const isVehicleService = Boolean(serviceRequirement.showVehicleField);
 
   async function copyTrackingReference() {
