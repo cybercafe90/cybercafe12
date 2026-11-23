@@ -3135,8 +3135,8 @@ function AdminPage() {
                         <b>{item.mobile}</b>
                         <small>{item.email || "No email supplied"}</small>
                         <div className="admin-lead-contact-actions">
-                          <a href={`tel:${item.mobile.replace(/[^+\\d]/g, "")}`} aria-label={`Call ${item.full_name}`}><PhoneCall size={13} /> Call</a>
-                          <a href={`https://wa.me/${item.mobile.replace(/\\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${item.full_name}`}><MessageCircle size={13} /> WhatsApp</a>
+                          <a href={`tel:${item.mobile.replace(/[^+\d]/g, "")}`} aria-label={`Call ${item.full_name}`}><PhoneCall size={13} /> Call</a>
+                          <a href={`https://wa.me/${item.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${item.full_name}`}><MessageCircle size={13} /> WhatsApp</a>
                           {item.email && <a href={`mailto:${item.email}`} aria-label={`Email ${item.full_name}`}><Globe2 size={13} /> Email</a>}
                         </div>
                       </td>
@@ -3546,8 +3546,8 @@ function AdminPage() {
                       <p><b>Department:</b> {categoryLabel(active.category_slug, adminCategories)}</p>
                       <p><b>Customer's message:</b> {active.description || "No additional details provided."}</p>
                       <div className="admin-lead-contact-actions">
-                        <a href={`tel:${active.mobile.replace(/[^+\\d]/g, "")}`}><PhoneCall size={14} /> Call customer</a>
-                        <a href={`https://wa.me/${active.mobile.replace(/\\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp customer</a>
+                        <a href={`tel:${active.mobile.replace(/[^+\d]/g, "")}`}><PhoneCall size={14} /> Call customer</a>
+                        <a href={`https://wa.me/${active.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp customer</a>
                         {active.email && <a href={`mailto:${active.email}`}><Globe2 size={14} /> Email customer</a>}
                       </div>
                     </div>
