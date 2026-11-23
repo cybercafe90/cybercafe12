@@ -73,6 +73,7 @@ import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
+import "./vip-experience.css";
 import FreeEnhancements from "./components/FreeEnhancements";
 import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
 
