@@ -1,0 +1,76 @@
+
+/* VIP customer experience: refined black, midnight blue and champagne gold */
+.vip-experience,.vip-about-extra{max-width:1200px;margin:0 auto;padding:0 22px;color:#edf3ff}
+.vip-signature-section,.vip-process-section,.vip-commitment-section{padding:64px 0 24px}
+.vip-section-heading{max-width:720px;margin:0 0 26px}
+.vip-section-heading h2,.vip-about-mission h2,.vip-about-journey h2{margin:12px 0;color:#f8fbff;font-size:clamp(29px,4vw,45px);line-height:1.12;letter-spacing:-.035em}
+.vip-section-heading h2 em,.vip-about-mission h2 em,.vip-about-journey h2 em{color:#d7b86c;font-style:normal}
+.vip-section-heading>p,.vip-about-mission>p,.vip-about-journey p{max-width:640px;color:#aab8ce;font-size:15px;line-height:1.8}
+.vip-kicker{display:inline-flex;align-items:center;gap:8px;color:#d8ba72;font-size:10px;font-weight:800;letter-spacing:.17em}
+.vip-signature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.vip-signature-card{position:relative;display:flex;min-height:248px;flex-direction:column;padding:22px;border:1px solid rgba(104,151,220,.23);border-radius:18px;background:linear-gradient(150deg,rgba(17,32,55,.96),rgba(7,13,24,.98));color:inherit;text-decoration:none;overflow:hidden;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.vip-signature-card:before{position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,#d8b66a,transparent);content:""}
+.vip-signature-card:hover{transform:translateY(-5px);border-color:rgba(215,184,108,.58);box-shadow:0 18px 40px rgba(0,0,0,.24)}
+.vip-card-icon{display:grid;width:48px;height:48px;place-items:center;margin-bottom:22px;border:1px solid rgba(215,184,108,.34);border-radius:14px;background:rgba(215,184,108,.08);color:#e2c77f}
+.vip-signature-card>small{color:#82a9e4;font-size:9px;font-weight:800;letter-spacing:.15em}
+.vip-signature-card h3,.vip-process-card h3,.vip-commitment-card h3{margin:9px 0;color:#f4f7ff;font-size:18px}
+.vip-signature-card p,.vip-process-card p,.vip-commitment-card p{margin:0;color:#a9b7cc;font-size:13px;line-height:1.7}
+.vip-card-link{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:18px;color:#e1c477;font-size:12px;font-weight:800}
+.vip-process-section{margin-top:30px;padding:54px 28px;border:1px solid rgba(215,184,108,.18);border-radius:22px;background:radial-gradient(ellipse at 50% 0,rgba(27,68,120,.24),transparent 65%),#091321}
+.vip-centered{margin-right:auto;margin-left:auto;text-align:center}
+.vip-centered>p{margin-right:auto;margin-left:auto}
+.vip-process-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.vip-process-card{padding:20px 18px;border-left:1px solid rgba(215,184,108,.35);background:rgba(255,255,255,.018)}
+.vip-process-card>span{color:#d7b86c;font-size:12px;font-weight:900;letter-spacing:.16em}
+.vip-commitment-section{padding-bottom:52px}
+.vip-commitment-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.vip-commitment-card{padding:22px;border:1px solid rgba(104,151,220,.2);border-radius:16px;background:rgba(12,22,38,.72)}
+.vip-commitment-card>svg{color:#d7b86c}
+.vip-about-banner,.vip-about-cta,.vip-faq-contact{display:flex;align-items:center;gap:22px;justify-content:space-between;padding:28px;border:1px solid rgba(215,184,108,.3);border-radius:20px;background:linear-gradient(105deg,rgba(18,38,65,.98),rgba(9,16,29,.98))}
+.vip-about-banner{margin:14px 0 58px}
+.vip-about-emblem{display:grid;width:62px;height:62px;flex:0 0 auto;place-items:center;border:1px solid rgba(215,184,108,.4);border-radius:18px;color:#e2c77f;background:rgba(215,184,108,.08)}
+.vip-about-banner h2,.vip-about-cta h2,.vip-faq-contact h2{margin:7px 0;color:#fff;font-size:clamp(21px,3vw,29px)}
+.vip-about-banner p,.vip-about-cta p,.vip-faq-contact p{margin:0;color:#aab8ce;font-size:13px;line-height:1.7}
+.vip-gold-button{display:inline-flex;min-height:48px;flex:0 0 auto;align-items:center;justify-content:center;gap:9px;padding:0 18px;border:1px solid rgba(238,210,139,.65);border-radius:11px;background:linear-gradient(135deg,#e2c77f,#b9944b);color:#111827;font-size:12px;font-weight:900;text-decoration:none;box-shadow:0 8px 24px rgba(183,145,66,.16);transition:transform .2s ease,filter .2s ease}
+.vip-gold-button:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.vip-about-extra{padding-bottom:64px}
+.vip-about-mission{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center;padding:46px 0}
+.vip-about-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.vip-about-values article{padding:23px;border:1px solid rgba(104,151,220,.2);border-radius:16px;background:linear-gradient(150deg,#111e32,#091321)}
+.vip-about-values svg,.vip-about-journey li svg{color:#d7b86c}
+.vip-about-values h3{margin:12px 0 7px;color:#f5f7ff}
+.vip-about-values p{margin:0;color:#aab8ce;font-size:13px;line-height:1.7}
+.vip-about-journey{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;margin:22px 0;padding:34px;border:1px solid rgba(215,184,108,.2);border-radius:20px;background:radial-gradient(ellipse at 10% 10%,rgba(29,77,132,.2),transparent 60%),#091321}
+.vip-about-journey ul{display:grid;gap:16px;margin:0;padding:0;list-style:none}
+.vip-about-journey li{display:flex;align-items:flex-start;gap:10px;color:#dce6f5;font-size:14px}
+.vip-about-cta{margin-top:20px}
+.vip-faq-page{max-width:1120px;min-height:70vh;margin:0 auto;padding:58px 22px 70px;color:#eef3ff}
+.vip-faq-hero{padding:38px 34px;border:1px solid rgba(215,184,108,.24);border-radius:22px;background:radial-gradient(ellipse at 80% 0,rgba(37,88,151,.3),transparent 55%),linear-gradient(135deg,#111e32,#080f1c)}
+.vip-faq-hero h1{margin:14px 0 10px;color:#fff;font-size:clamp(36px,6vw,58px);letter-spacing:-.04em}
+.vip-faq-hero h1 em{color:#d7b86c;font-style:normal}
+.vip-faq-hero>p{color:#aab8ce;line-height:1.7}
+.vip-faq-search{display:flex;max-width:620px;min-height:54px;align-items:center;gap:12px;margin-top:24px;padding:0 16px;border:1px solid rgba(130,169,228,.36);border-radius:12px;background:rgba(3,9,18,.72);color:#d7b86c}
+.vip-faq-search input{width:100%;border:0;outline:0;background:transparent;color:#fff;font:inherit}
+.vip-faq-search input::placeholder{color:#8292aa}
+.vip-faq-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:22px;margin:28px 0}
+.vip-faq-filters{display:flex;flex-direction:column;gap:7px}
+.vip-faq-filters button{min-height:42px;padding:9px 12px;border:1px solid rgba(130,169,228,.18);border-radius:9px;background:#0c1728;color:#aebbd0;text-align:left;font:inherit;font-size:12px;cursor:pointer}
+.vip-faq-filters button.is-active{border-color:rgba(215,184,108,.58);background:rgba(215,184,108,.1);color:#f0d58f}
+.vip-faq-list{border:1px solid rgba(104,151,220,.22);border-radius:16px;background:linear-gradient(145deg,#101c2e,#080f1b);overflow:hidden}
+.vip-faq-entry{border-bottom:1px solid rgba(148,163,184,.14)}
+.vip-faq-entry:last-child{border-bottom:0}
+.vip-faq-entry summary{display:flex;min-height:62px;align-items:center;justify-content:space-between;gap:14px;padding:14px 19px;color:#f3f6ff;font-size:14px;font-weight:750;cursor:pointer;list-style:none}
+.vip-faq-entry summary::-webkit-details-marker{display:none}
+.vip-faq-entry summary svg{flex:0 0 auto;color:#d7b86c;transition:transform .2s ease}
+.vip-faq-entry[open] summary svg{transform:rotate(180deg)}
+.vip-faq-entry p{margin:0;padding:0 48px 19px 19px;color:#aebbd0;font-size:13px;line-height:1.8}
+.vip-faq-empty{padding:40px;text-align:center;color:#aab8ce}
+.vip-faq-empty svg{color:#d7b86c}
+.vip-faq-empty h3{color:#fff}
+.vip-faq-contact{margin-top:25px}
+.vip-faq-disclaimer{display:flex;align-items:center;gap:8px;color:#8798b0;font-size:11px;line-height:1.6}
+.vip-faq-disclaimer svg{flex:0 0 auto;color:#d7b86c}
+@media(max-width:900px){.vip-signature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vip-process-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.vip-experience,.vip-about-extra{padding-right:15px;padding-left:15px}.vip-signature-section,.vip-process-section,.vip-commitment-section{padding-top:42px}.vip-signature-grid,.vip-commitment-grid,.vip-about-values{grid-template-columns:1fr}.vip-signature-card{min-height:205px}.vip-process-section{padding:34px 15px}.vip-process-grid{grid-template-columns:1fr 1fr}.vip-process-card{padding:15px 12px}.vip-about-banner,.vip-about-cta,.vip-faq-contact{align-items:flex-start;flex-direction:column;padding:22px}.vip-about-banner{margin-bottom:42px}.vip-about-mission,.vip-about-journey{grid-template-columns:1fr;gap:16px;padding:32px 0}.vip-about-journey{padding:22px}.vip-faq-page{padding:32px 15px 55px}.vip-faq-hero{padding:27px 19px}.vip-faq-layout{grid-template-columns:1fr;gap:13px}.vip-faq-filters{flex-direction:row;flex-wrap:wrap}.vip-faq-filters button{min-height:36px}.vip-faq-entry summary{min-height:58px;padding:13px 14px;font-size:13px}.vip-faq-entry p{padding:0 15px 16px}.vip-gold-button{width:100%}}
+@media(max-width:390px){.vip-process-grid{grid-template-columns:1fr}.vip-signature-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.vip-signature-card,.vip-gold-button,.vip-faq-entry summary svg{transition:none}}
