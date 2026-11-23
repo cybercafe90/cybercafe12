@@ -18,7 +18,7 @@ Deno.serve(async (request) => {
     const validStatuses = ['Application Received', 'Under Review', 'Documents Required', 'Processing', 'Submitted to Department', 'Approved', 'Rejected', 'Completed']
     if (status !== 'all' && !validStatuses.includes(status)) return response(request, { error: 'Invalid status filter.' }, 400)
     const term = typeof body.search === 'string' ? body.search.trim().replace(/[^a-zA-Z0-9 +().-]/g, '').slice(0, 60) : ''
-    let query = admin.from('applications').select('id, tracking_id, full_name, mobile, email, category_slug, service_name, status, created_at', { count: 'exact' }).order('created_at', { ascending: false })
+    let query = admin.from('applications').select('id, tracking_id, full_name, mobile, email, category_slug, service_name, description, status, created_at', { count: 'exact' }).order('created_at', { ascending: false })
     if (status !== 'all') query = query.eq('status', status)
     if (term) {
       const safe = term.replace(/[(),]/g, ' ').trim()

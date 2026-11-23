@@ -74,6 +74,7 @@ import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
 import "./vip-experience.css";
+import "./customer-lead.css";
 import FreeEnhancements from "./components/FreeEnhancements";
 import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
 
@@ -1145,7 +1146,6 @@ function ApplicationPage() {
   const [vehicleReference, setVehicleReference] = useState("");
   const [referenceCopied, setReferenceCopied] = useState(false);
   const [description, setDescription] = useState("");
-  const [documents, setDocuments] = useState("");
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -1191,7 +1191,6 @@ function ApplicationPage() {
       : selectedService;
 
   const serviceRequirement = getServiceRequirement(effectiveSelectedService);
-  const documentChecklist = effectiveSelectedService ? serviceRequirement.documents : [];
   const isVehicleService = Boolean(serviceRequirement.showVehicleField);
 
   async function copyTrackingReference() {
@@ -1238,7 +1237,7 @@ function ApplicationPage() {
           description: vehicleReference.trim()
             ? `${description}\nVehicle Registration No. / DL No.: ${vehicleReference.trim()}`
             : description,
-          requiredDocuments: documents,
+          requiredDocuments: "",
           consent,
         },
       );
@@ -1332,21 +1331,16 @@ function ApplicationPage() {
       />
       {!isSupabaseConfigured && <ConfigurationNote />}
       <div className="form-layout">
-        <form className="form-panel" onSubmit={submit}>
-          <div className="form-section-title">
-            <span>01</span>
-            <div>
-              <h2>Your details</h2>
-              <p>
-                We use these details to respond and verify tracking requests.
-              </p>
-            </div>
+        <form className="form-panel lead-form-panel" onSubmit={submit}>
+          <div className="lead-form-intro">
+            <span className="eyebrow">QUICK CUSTOMER ENQUIRY</span>
+            <h2>How can we help you?</h2>
+            <p>Share a few details. Our team will review your request and contact you on WhatsApp or phone.</p>
+            <span className="lead-form-time"><Clock3 size={14}/> Takes about 1 minute</span>
           </div>
-          <div className="field-grid">
+          <div className="lead-form-grid">
             <label className="field">
-              <span>
-                Full name <i>*</i>
-              </span>
+              <span>Full name <i>*</i></span>
               <input
                 value={fullName}
                 onChange={(event) => setFullName(event.target.value)}
@@ -1354,12 +1348,11 @@ function ApplicationPage() {
                 minLength={2}
                 maxLength={120}
                 autoComplete="name"
+                placeholder="Enter your name"
               />
             </label>
             <label className="field">
-              <span>
-                Mobile number <i>*</i>
-              </span>
+              <span>WhatsApp / mobile number <i>*</i></span>
               <div className="phone-input">
                 <span className="phone-prefix" aria-hidden="true">+91</span>
                 <input
@@ -1381,36 +1374,23 @@ function ApplicationPage() {
                   pattern="[0-9]{10}"
                   maxLength={10}
                   autoComplete="tel-national"
-                  placeholder="7006865909"
+                  placeholder="10-digit mobile number"
                 />
               </div>
             </label>
-            <label className="field field-wide">
-              <span>Email address</span>
+            <label className="field">
+              <span>Email address <small>(Optional)</small></span>
               <input
                 type="email"
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
                 maxLength={254}
                 autoComplete="email"
+                placeholder="name@example.com"
               />
-              <small className="field-helper">Optional — add if you want status updates by email.</small>
             </label>
-          </div>
-          <div className="form-section-title">
-            <span>02</span>
-            <div>
-              <h2>Your service</h2>
-              <p>
-                Choose the closest match. You can describe anything else below.
-              </p>
-            </div>
-          </div>
-          <div className="field-grid">
             <label className="field">
-              <span>
-                Department <i>*</i>
-              </span>
+              <span>Department <i>*</i></span>
               <select
                 value={selectedCategory}
                 onChange={(event) => {
@@ -1419,85 +1399,52 @@ function ApplicationPage() {
                 }}
                 required
               >
-                <option value="">Choose a department</option>
+                <option value="">Choose department</option>
                 {categoryList.map((item) => (
-                  <option key={item.slug} value={item.slug}>
-                    {item.name}
-                  </option>
+                  <option key={item.slug} value={item.slug}>{item.name}</option>
                 ))}
               </select>
             </label>
             <label className="field">
-              <span>
-                Service <i>*</i>
-              </span>
+              <span>Service needed <i>*</i></span>
               <select
                 value={effectiveSelectedService}
                 onChange={(event) => setSelectedService(event.target.value)}
                 required
               >
-                <option value="">Choose a service</option>
+                <option value="">Choose service</option>
                 {options.map((item) => (
-                  <option key={item.id} value={item.name}>
-                    {item.name}
-                  </option>
+                  <option key={item.id} value={item.name}>{item.name}</option>
                 ))}
-                <option value="Other enquiry">Other enquiry</option>
+                <option value="Other enquiry">Other / Not sure</option>
               </select>
             </label>
-            {effectiveSelectedService && (
-              <div className="document-checklist field-wide" aria-live="polite">
-                <strong>Typically Required Documents</strong>
-                <ul>
-                  {documentChecklist.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-                <small>{serviceRequirement.note}</small>
-                <small className="document-safety-reminder">
-                  Please do not enter passwords or OTPs in this form. Share document photos only through our verified WhatsApp number or your private tracking link when requested.
-                </small>
-              </div>
-            )}
             {isVehicleService && (
-              <label className="field field-wide">
-                <span>Vehicle Registration No. / DL No. <small>(Optional)</small></span>
+              <label className="field">
+                <span>Vehicle / DL number <small>(Optional)</small></span>
                 <input
                   value={vehicleReference}
                   onChange={(event) => setVehicleReference(event.target.value.slice(0, 30))}
                   maxLength={30}
                   autoComplete="off"
-                  placeholder="Enter only if relevant to your enquiry"
+                  placeholder="Only if relevant"
                 />
               </label>
             )}
             <label className="field field-wide">
-              <span>
-                Tell us what you need <i>*</i>
-              </span>
+              <span>Briefly tell us what you need <i>*</i></span>
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 required
                 minLength={10}
                 maxLength={2000}
-                rows={4}
-                placeholder="A brief description of the help you are looking for"
+                rows={3}
+                placeholder="Example: I need help applying for a birth certificate…"
               />
-            </label>
-            <label className="field field-wide">
-              <span>Documents you already have</span>
-              <textarea
-                value={documents}
-                onChange={(event) => setDocuments(event.target.value)}
-                maxLength={1000}
-                rows={2}
-                placeholder="List document names only. Do not send sensitive documents here."
-              />
-              <small className="field-helper security-helper">
-                Do not type passwords, OTPs, or Aadhaar numbers here. Our team will request document photos securely via WhatsApp or your private tracking link after reviewing your request.
-              </small>
             </label>
           </div>
-          <label className="consent-check">
+          <label className="consent-check lead-form-consent">
             <input
               type="checkbox"
               checked={consent}
@@ -1505,32 +1452,18 @@ function ApplicationPage() {
               required
             />
             <span>
-              I agree to the{" "}
-              <Link to="/privacy" target="_blank">
-                Privacy Policy
-              </Link>{" "}
-              and consent to BABA'S CYBER CAFE using these details to respond to
-              my enquiry.
+              I agree to the <Link to="/privacy" target="_blank">Privacy Policy</Link> and allow our team to contact me about this enquiry.
             </span>
           </label>
-          {error && (
-            <div className="notice notice-error" role="alert">
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            className="button button-dark form-submit"
-            disabled={busy || !isSupabaseConfigured}
-          >
-            {busy ? "Sending securely…" : "Submit enquiry"}{" "}
-            <ArrowRight size={16} />
+          {error && <div className="notice notice-error" role="alert">{error}</div>}
+          <button type="submit" className="button button-dark form-submit lead-form-submit" disabled={busy || !isSupabaseConfigured}>
+            {busy ? "Sending your request…" : "Request assistance"} <ArrowRight size={16}/>
           </button>
-          <p className="form-footnote">
-            <ShieldCheck size={14} /> Your reference is generated securely after
-            submission. Do not include passwords, PINs or OTPs.
+          <p className="form-footnote lead-form-footnote">
+            <ShieldCheck size={14}/> No public prices. Our team will confirm any applicable amount before payment. Never share OTPs, passwords or bank PINs.
           </p>
         </form>
+
         <aside className="form-aside">
           <span className="eyebrow">WHAT HAPPENS NEXT</span>
           <div className="aside-step">
@@ -2130,6 +2063,7 @@ type AdminApplication = {
   full_name: string;
   mobile: string;
   email: string;
+  description: string;
   category_slug: string;
   service_name: string;
   status: ApplicationStatus;
@@ -2946,6 +2880,7 @@ function AdminPage() {
           <p>Manage enquiries, service listings and customer updates.</p>
           {isOwner && (
             <div className="admin-portal-shortcuts">
+              <a className="button button-dark" href="#customer-leads"><UsersRound size={14} /> Customer leads</a>
               <Link className="button button-outline" to="/grievance/admin">Manage grievances <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/instant-tp-admin"><ShieldCheck size={14} /> Instant third-party insurance desk <ArrowUpRight size={14} /></Link>
@@ -3138,11 +3073,12 @@ function AdminPage() {
             </div>
           </div>
           <AdminFeedbackOverview />
-          <section className="admin-section">
+          <section className="admin-section" id="customer-leads">
             <div className="admin-section-head">
               <div>
-                <span className="eyebrow">CUSTOMER REQUESTS</span>
-                <h2>Application management</h2>
+                <span className="eyebrow">CUSTOMER LEADS DESK</span>
+                <h2>Customer leads &amp; enquiries</h2>
+                <p>Read each customer's request and contact them directly by phone, WhatsApp or email.</p>
               </div>
               <label className="search-box admin-search">
                 <Search size={17} />
@@ -3179,7 +3115,8 @@ function AdminPage() {
                 <thead>
                   <tr>
                     <th>Reference / customer</th>
-                    <th>Service</th>
+                    <th>Contact details</th>
+                    <th>Service / request</th>
                     <th>Received</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -3195,10 +3132,18 @@ function AdminPage() {
                         </small>
                       </td>
                       <td>
+                        <b>{item.mobile}</b>
+                        <small>{item.email || "No email supplied"}</small>
+                        <div className="admin-lead-contact-actions">
+                          <a href={`tel:${item.mobile.replace(/[^+\d]/g, "")}`} aria-label={`Call ${item.full_name}`}><PhoneCall size={13} /> Call</a>
+                          <a href={`https://wa.me/${item.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${item.full_name}`}><MessageCircle size={13} /> WhatsApp</a>
+                          {item.email && <a href={`mailto:${item.email}`} aria-label={`Email ${item.full_name}`}><Globe2 size={13} /> Email</a>}
+                        </div>
+                      </td>
+                      <td>
                         {item.service_name}
-                        <small>
-                          {categoryLabel(item.category_slug, adminCategories)}
-                        </small>
+                        <small>{categoryLabel(item.category_slug, adminCategories)}</small>
+                        {item.description && <small className="admin-lead-summary">{item.description}</small>}
                       </td>
                       <td>
                         {new Date(item.created_at).toLocaleDateString("en-IN")}
@@ -3594,9 +3539,18 @@ function AdminPage() {
                   <div>
                     <span className="eyebrow">{active.tracking_id}</span>
                     <h2 id="update-title">Update application</h2>
-                    <p>
-                      {active.full_name} · {active.service_name}
-                    </p>
+                    <p>{active.full_name} · {active.service_name}</p>
+                    <div className="admin-lead-detail">
+                      <p><b>Phone:</b> {active.mobile}</p>
+                      <p><b>Email:</b> {active.email || "Not provided"}</p>
+                      <p><b>Department:</b> {categoryLabel(active.category_slug, adminCategories)}</p>
+                      <p><b>Customer's message:</b> {active.description || "No additional details provided."}</p>
+                      <div className="admin-lead-contact-actions">
+                        <a href={`tel:${active.mobile.replace(/[^+\d]/g, "")}`}><PhoneCall size={14} /> Call customer</a>
+                        <a href={`https://wa.me/${active.mobile.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp customer</a>
+                        {active.email && <a href={`mailto:${active.email}`}><Globe2 size={14} /> Email customer</a>}
+                      </div>
+                    </div>
                     <Link className="text-button" to={`/admin/payments?application=${active.id}`}>
                       Manage this application's payment <ArrowRight size={14} />
                     </Link>
