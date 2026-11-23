@@ -73,6 +73,7 @@ import "./App.css";
 import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
+import FreeEnhancements from "./components/FreeEnhancements";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -500,6 +501,7 @@ function HomePage() {
         <div className="cyber-location-card"><span className="cyber-location-icon"><MapPin size={23}/></span><span className="cyber-eyebrow">OUR SERVICE AREA</span><h3>Srinagar, Jammu &amp; Kashmir</h3><p>For the exact business pin, opening hours and directions, use our verified Google Business Profile.</p><a href={settings.social.business_profile} target="_blank" rel="noreferrer">Open Google Business Profile <ArrowUpRight size={15}/></a></div>
       </section>
       <section className="cyber-social-wrap"><SocialPreviewSection/></section>
+      <FreeEnhancements reviewUrl={settings.social.business_profile} />
       <section className="cyber-contact-band"><div><span className="cyber-eyebrow">NEED A HAND?</span><h2>Start with a clear conversation.</h2></div><Link to="/contact" className="cyber-button cyber-button-primary">Contact BABA'S CYBER CAFE <ArrowRight size={16}/></Link></section>
     </main>
   );
