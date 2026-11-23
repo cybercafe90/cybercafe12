@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import {
   ArrowRight, ArrowUpRight, BadgeCheck, BriefcaseBusiness, CarFront,
-  CheckCircle2, ChevronDown, Clock3, FileCheck2, FileText, HeartHandshake,
+  CheckCircle2, ChevronDown, Clock3, FileCheck2, HeartHandshake,
   Landmark, LockKeyhole, MessageCircle, Search, ShieldCheck, Sparkles,
-  WalletCards, Zap,
+  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
