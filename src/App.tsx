@@ -3856,7 +3856,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/smart-qr/demo", "/smart-qr/merchant-demo"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/smart-qr/demo", "/smart-qr/merchant-demo", "/smart-qr/platform-preview"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3882,6 +3882,7 @@ function RoutedApp() {
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
       "/smart-qr/demo": "BABA'S SMART QR | Customer Shop Preview",
       "/smart-qr/merchant-demo": "BABA'S SMART QR | Merchant Workspace Preview",
+      "/smart-qr/platform-preview": "BABA'S SMART QR | Platform Development Preview",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
