@@ -68,6 +68,7 @@ const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
 const SmartQrPage = lazy(() => import("./pages/SmartQrPage"));
+const SmartQrDashboard = lazy(() => import("./pages/SmartQrDashboard"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 import "./App.css";
 import "./cyber-theme.css";
@@ -3854,7 +3855,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/smart-qr/demo", "/smart-qr/merchant-demo"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3879,6 +3880,7 @@ function RoutedApp() {
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
       "/smart-qr/demo": "BABA'S SMART QR | Customer Shop Preview",
+      "/smart-qr/merchant-demo": "BABA'S SMART QR | Merchant Workspace Preview",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3932,6 +3934,7 @@ function RoutedApp() {
         <Route path="/print" element={<PrintPortal />} />
         <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/smart-qr/demo" element={<SmartQrPage />} />
+        <Route path="/smart-qr/merchant-demo" element={<SmartQrDashboard />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
