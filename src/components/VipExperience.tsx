@@ -39,6 +39,76 @@ const faqs = [
   { group: "Trust & safety", q: "Does submitting an enquiry guarantee approval?", a: "No. An enquiry or assistance request is not an approval. Eligibility, processing, fees and final decisions are controlled by the relevant department, insurer or service provider." },
 ];
 
+
+const orbitServices = [
+  { icon: ShieldCheck, title: "Motor Insurance", copy: "Third-party and own-damage motor insurance enquiries.", department: "insurance", service: "Motor Insurance" },
+  { icon: Landmark, title: "Revenue Services", copy: "Certificate and land-record application assistance.", department: "revenue", service: "Revenue Department Assistance" },
+  { icon: CarFront, title: "RTO Services", copy: "Driving licence, registration and transport enquiries.", department: "rto", service: "RTO Assistance" },
+  { icon: Building2, title: "SMC Services", copy: "Birth, death and municipal application assistance.", department: "smc", service: "SMC Assistance" },
+  { icon: BriefcaseBusiness, title: "Labour Services", copy: "Labour registration and welfare application guidance.", department: "labour", service: "Labour Department Assistance" },
+  { icon: HeartHandshake, title: "Handloom & Craft", copy: "Weaver, artisan and handicraft documentation support.", department: "handloom", service: "Handloom and Handicrafts Assistance" },
+  { icon: FileCheck2, title: "PAN & ABHA", copy: "Digital identity and public-service application support.", department: "central", service: "PAN / ABHA Assistance" },
+  { icon: BookOpen, title: "Education", copy: "Education-related online application guidance.", department: "education", service: "Education Assistance" },
+  { icon: UsersRound, title: "Employment", copy: "Employment and registration assistance.", department: "employment", service: "Employment Assistance" },
+  { icon: Activity, title: "Health Services", copy: "Health-service application guidance.", department: "health", service: "Health Services Assistance" },
+  { icon: Ticket, title: "Ticketing", copy: "Railway and bus ticketing enquiries.", department: "travel", service: "Ticket Booking Assistance" },
+  { icon: Zap, title: "Other Services", copy: "Ask about other digital and public services.", department: "other", service: "Other Service Enquiry" },
+];
+
+export function VipHeroExperience() {
+  const [active, setActive] = useState(0);
+  const [motion, setMotion] = useState(true);
+  const selected = orbitServices[active];
+  const SelectedIcon = selected.icon;
+  const reduceMotion = () => {
+    const next = !motion;
+    setMotion(next);
+    document.documentElement.classList.toggle("vip-reduced-motion", !next);
+  };
+  return (
+    <section className={motion ? "vip-hero" : "vip-hero vip-motion-off"} id="home">
+      <div className="vip-hero-grid" aria-hidden="true"/>
+      <div className="vip-hero-inner">
+        <div className="vip-hero-copy">
+          <span className="vip-hero-pill"><i/> YOUR TRUST, OUR SERVICE.</span>
+          <h1>YOUR <em>DIGITAL SERVICE PARTNER</em> IN SRINAGAR</h1>
+          <p>Reliable assistance for online applications, insurance, government-service processes and everyday digital needs.</p>
+          <div className="vip-hero-actions">
+            <Link className="vip-hero-primary" to="/services">EXPLORE SERVICES <ArrowRight size={16}/></Link>
+            <a className="vip-hero-secondary" href="https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20assistance%20with%20a%20digital%20service." target="_blank" rel="noreferrer"><MessageCircle size={16}/> TALK ON WHATSAPP</a>
+          </div>
+          <article className="vip-active-service">
+            <div><span className="vip-hero-kicker">VIP DIGITAL CONCIERGE · ACTIVE SERVICE</span><h2>{selected.title}</h2><p>{selected.copy}</p></div>
+            <Link to={`/apply?department=${selected.department}&service=${encodeURIComponent(selected.service)}`}>Enquire <ArrowUpRight size={14}/></Link>
+          </article>
+          <div className="vip-hero-footnote"><ShieldCheck size={15}/> Independent assistance · Clear updates · Customer-first support</div>
+        </div>
+        <div className="vip-orbit-column">
+          <div className="vip-orbit-stage">
+            <div className="vip-orbit-ring vip-ring-one"/><div className="vip-orbit-ring vip-ring-two"/><div className="vip-orbit-ring vip-ring-three"/>
+            <div className="vip-orb-core"><div className="vip-orb-glow"/><div className="vip-orb-emblem"><ShieldCheck size={58}/><span>BCC</span></div><b>BCC AI</b><small>CONCIERGE</small></div>
+            <div className="vip-orbit-nodes">
+              {orbitServices.map(({icon:Icon,title},index)=> {
+                const angle=(index*30)-90;
+                return <button type="button" key={title} className={active===index?"vip-orbit-node is-active":"vip-orbit-node"} style={{"--orbit-angle":`${angle}deg`} as React.CSSProperties} onClick={()=>setActive(index)} aria-label={`View ${title}`} aria-pressed={active===index}><Icon size={18}/></button>;
+              })}
+            </div>
+            <div className="vip-orbit-caption"><span>12 SERVICE NODES</span><span>SRINAGAR · J&amp;K</span></div>
+          </div>
+          <div className="vip-mobile-service-dock"><span>SELECT A DEPARTMENT</span><div>{orbitServices.map(({icon:Icon,title},index)=><button type="button" key={title} className={active===index?"is-active":""} onClick={()=>setActive(index)} aria-label={title}><Icon size={17}/></button>)}</div></div>
+          <button className="vip-motion-toggle" type="button" onClick={reduceMotion}><Sparkles size={14}/> 3D Motion: {motion?"On":"Off"}</button>
+        </div>
+      </div>
+      <div className="vip-hero-trust-strip">
+        <div><Layers size={19}/><span><b>1000+ Services</b><small>Multi-department digital hub</small></span></div>
+        <div><BadgeCheck size={19}/><span><b>Personal Assistance</b><small>Guided document review</small></span></div>
+        <div><Activity size={19}/><span><b>Application Tracking</b><small>Reference-based status lookup</small></span></div>
+        <div><MessageCircle size={19}/><span><b>Customer Support</b><small>WhatsApp and service desk</small></span></div>
+      </div>
+    </section>
+  );
+}
+
 export function VipHomeExperience() {
   return (
     <div className="vip-experience">
@@ -61,7 +131,7 @@ export function VipHomeExperience() {
         </div>
       </section>
 
-      <section className="vip-process-section">
+      <section className="vip-process-section" id="how-it-works">
         <div className="vip-section-heading vip-centered">
           <span className="vip-kicker"><Zap size={14}/> SIMPLE BY DESIGN</span>
           <h2>Your request, <em>step by step.</em></h2>
