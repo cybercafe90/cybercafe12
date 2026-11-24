@@ -82,8 +82,9 @@ export function VipHeroExperience() {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
       camera.position.set(0, 0, 5.4);
-      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      const activeRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer = activeRenderer;
+      activeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
       scene.add(new THREE.AmbientLight(0xffe6ad, 1.7));
       const keyLight = new THREE.PointLight(0xffc94f, 95, 12);
