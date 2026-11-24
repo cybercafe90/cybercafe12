@@ -269,6 +269,7 @@ function Header() {
           <NavLink to="/dashboard" onClick={close}>Customer Login</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
           <NavLink to="/about" onClick={close}>About Us</NavLink>
+          <a href="/#how-it-works" onClick={close}>How It Works</a>
           <NavLink to="/faq" onClick={close}>FAQ</NavLink>
           <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
           <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
