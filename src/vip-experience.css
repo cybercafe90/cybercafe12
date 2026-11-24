@@ -74,3 +74,51 @@
 @media(max-width:700px){.vip-experience,.vip-about-extra{padding-right:15px;padding-left:15px}.vip-signature-section,.vip-process-section,.vip-commitment-section{padding-top:42px}.vip-signature-grid,.vip-commitment-grid,.vip-about-values{grid-template-columns:1fr}.vip-signature-card{min-height:205px}.vip-process-section{padding:34px 15px}.vip-process-grid{grid-template-columns:1fr 1fr}.vip-process-card{padding:15px 12px}.vip-about-banner,.vip-about-cta,.vip-faq-contact{align-items:flex-start;flex-direction:column;padding:22px}.vip-about-banner{margin-bottom:42px}.vip-about-mission,.vip-about-journey{grid-template-columns:1fr;gap:16px;padding:32px 0}.vip-about-journey{padding:22px}.vip-faq-page{padding:32px 15px 55px}.vip-faq-hero{padding:27px 19px}.vip-faq-layout{grid-template-columns:1fr;gap:13px}.vip-faq-filters{flex-direction:row;flex-wrap:wrap}.vip-faq-filters button{min-height:36px}.vip-faq-entry summary{min-height:58px;padding:13px 14px;font-size:13px}.vip-faq-entry p{padding:0 15px 16px}.vip-gold-button{width:100%}}
 @media(max-width:390px){.vip-process-grid{grid-template-columns:1fr}.vip-signature-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.vip-signature-card,.vip-gold-button,.vip-faq-entry summary svg{transition:none}}
+
+
+/* VIP Business Domination preview — consistent champagne-gold accents. */
+.vip-experience,.vip-about-extra,.vip-faq-page { color:#f4f0e7; }
+.vip-section-heading h2,.vip-about-mission h2,.vip-about-journey h2 { color:#fffaf0; }
+.vip-section-heading h2 em,.vip-about-mission h2 em,.vip-about-journey h2 em,
+.vip-kicker { color:#e0c17b; }
+.vip-section-heading>p,.vip-about-mission>p,.vip-about-journey p { color:#c0b9aa; }
+.vip-signature-card {
+  border-color:rgba(214,179,106,.22);
+  background:linear-gradient(150deg,#19160f,#090909);
+}
+.vip-signature-card:before { background:linear-gradient(90deg,transparent,#e0c17b,transparent); }
+.vip-signature-card:hover { border-color:rgba(224,193,123,.62); box-shadow:0 18px 40px rgba(0,0,0,.35); }
+.vip-card-icon { border-color:rgba(224,193,123,.38); color:#f0d493; background:rgba(214,179,106,.09); }
+.vip-signature-card>small { color:#c8ad73; }
+.vip-signature-card h3,.vip-process-card h3,.vip-commitment-card h3 { color:#fffaf0; }
+.vip-signature-card p,.vip-process-card p,.vip-commitment-card p { color:#c0b9aa; }
+.vip-card-link,.vip-process-card>span,.vip-commitment-card>svg,
+.vip-about-values svg,.vip-about-journey li svg { color:#e0c17b; }
+.vip-process-section,.vip-about-journey {
+  border-color:rgba(214,179,106,.2);
+  background:radial-gradient(ellipse at 50% 0,rgba(214,179,106,.1),transparent 65%),#0d0c0a;
+}
+.vip-process-card { border-left-color:rgba(214,179,106,.35); }
+.vip-commitment-card,.vip-about-values article {
+  border-color:rgba(214,179,106,.2);
+  background:linear-gradient(150deg,#19160f,#0b0b0b);
+}
+.vip-about-banner,.vip-about-cta,.vip-faq-contact {
+  border-color:rgba(214,179,106,.32);
+  background:linear-gradient(105deg,#1b1710,#0b0b0b);
+}
+.vip-about-emblem { border-color:rgba(224,193,123,.42); color:#f0d493; background:rgba(214,179,106,.08); }
+.vip-gold-button {
+  border-color:rgba(240,212,147,.75);
+  background:linear-gradient(135deg,#f0d493,#b88e46);
+  color:#17120a;
+  box-shadow:0 8px 24px rgba(183,145,66,.16);
+}
+.vip-faq-hero { border-color:rgba(214,179,106,.25); background:radial-gradient(ellipse at 80% 0,rgba(214,179,106,.12),transparent 55%),linear-gradient(135deg,#19160f,#090909); }
+.vip-faq-hero h1 em { color:#e0c17b; }
+.vip-faq-search { border-color:rgba(214,179,106,.36); color:#e0c17b; background:rgba(3,3,3,.72); }
+.vip-faq-filters button { border-color:rgba(214,179,106,.18); background:#15130f; color:#c7beac; }
+.vip-faq-filters button.is-active { border-color:rgba(214,179,106,.58); background:rgba(214,179,106,.1); color:#f0d493; }
+.vip-faq-list { border-color:rgba(214,179,106,.22); background:linear-gradient(145deg,#17140f,#090909); }
+.vip-faq-entry summary svg,.vip-faq-empty svg,.vip-faq-disclaimer svg { color:#e0c17b; }
+.vip-faq-entry p,.vip-faq-hero>p,.vip-faq-contact p { color:#c0b9aa; }
