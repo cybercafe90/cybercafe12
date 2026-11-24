@@ -23,7 +23,6 @@ import {
   Building2,
   CarFront,
   Check,
-  Copy,
   ChevronDown,
   CircleHelp,
   Clock3,
@@ -398,6 +397,7 @@ function HomePage() {
   const navigate = useNavigate();
   const [quickReference, setQuickReference] = useState("");
   const [selectedService, setSelectedService] = useState("revenue");
+  const [homeServiceQuery, setHomeServiceQuery] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const [trackingMobile, setTrackingMobile] = useState("");
   const [trackingRecord, setTrackingRecord] = useState<TrackedRecord | null>(null);
@@ -452,6 +452,19 @@ function HomePage() {
           <span className="cyber-float-code">01 / 06 &nbsp; · &nbsp; VERIFIED WORKFLOW</span>
         </div>
         <div className="cyber-hero-bottom"><span>01 — LOCAL SERVICE DESK</span><span>ASSISTANCE · DOCUMENTATION · TRACKING</span></div>
+      </section>
+
+      <section className="customer-shortcuts" aria-label="Quick customer actions">
+        <a className="customer-shortcut shortcut-whatsapp" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent("Hi, I need help from BABA'S CYBER CAFE.")}`} target="_blank" rel="noreferrer"><MessageCircle/><span>WhatsApp</span><small>واٹس ایپ</small></a>
+        <a className="customer-shortcut shortcut-call" href={`tel:${settings.contact.phone.replace(/[^+\d]/g, "")}`}><PhoneCall/><span>Call us</span><small>کال کریں</small></a>
+        <a className="customer-shortcut shortcut-docs" href="#services"><FileCheck2/><span>Documents Needed</span><small>ضروری کاغذات</small></a>
+        <Link className="customer-shortcut shortcut-track" to="/track"><Search/><span>Track My Application</span><small>درخواست ٹریک کریں</small></Link>
+      </section>
+      <section className="homepage-service-search" aria-label="Search services">
+        <div><span className="cyber-eyebrow">FIND A SERVICE</span><h2>What do you need help with?</h2><p>Search by service or department name.</p></div>
+        <form onSubmit={(event) => { event.preventDefault(); navigate(`/services?search=${encodeURIComponent(homeServiceQuery.trim())}`); }}>
+          <Search size={20}/><input type="search" value={homeServiceQuery} onChange={(event)=>setHomeServiceQuery(event.target.value)} placeholder="Search PAN, Domicile, Insurance, RTO…" aria-label="Search services"/><button type="submit">Search</button>
+        </form>
       </section>
 
       <section className="cyber-command-wrap">
@@ -747,7 +760,8 @@ function CategoryIcon({ slug }: { slug: string }) {
 
 function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
   const categoryList = useCategoryList();
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [category, setCategory] = useState(fixedCategory ?? "all");
   const [department, setDepartment] = useState("all");
   const [sort, setSort] = useState("featured");
@@ -843,6 +857,7 @@ function ServicesPage({ fixedCategory }: { fixedCategory?: string }) {
           <Link className="button button-gold" to="/insurance">Request an insurance quotation <ArrowUpRight size={14} /></Link>
         </div>
       )}
+      <ServiceGuidancePanel category={activeCategory} />
       <div className="catalog-toolbar">
         <label className="search-box">
           <Search size={18} />
@@ -1018,8 +1033,10 @@ function AboutPage() {
       <section className="about-grid">
         <div className="about-portrait">
           <img
-            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85"
+            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=800&q=72"
             alt="People collaborating at a bright workspace"
+            loading="lazy"
+            decoding="async"
           />
           <span>SRINAGAR · JAMMU &amp; KASHMIR</span>
         </div>
@@ -1123,450 +1140,60 @@ function printApplicationReceipt(details: {
   }, 350);
 }
 
+function ServiceGuidancePanel({ category }: { category?: Category }) {
+  if (!category) return null;
+  const services = seedServices.filter((item) => item.category_slug === category.slug);
+  return (
+    <section className="service-guidance-panel" aria-label={`${category.name} document requirements and FAQs`}>
+      <div className="service-guidance-heading"><span className="cyber-eyebrow">BEFORE YOU APPLY</span><h2>Documents Required <em>درکار کاغذات</em></h2><p>Use this as a starting checklist. The responsible department may ask for additional documents.</p></div>
+      <div className="service-guidance-list">
+        {services.map((service) => {
+          const docs = service.required_documents?.length ? service.required_documents : getServiceRequirement(service.name).documents;
+          const message = `Hi, I need help with ${service.name}. Please confirm the required documents and next steps.`;
+          return <details className="service-guidance-item" key={service.id}>
+            <summary>{service.name}<ChevronDown size={17}/></summary>
+            <ul>{docs.map((doc) => <li key={doc}>{doc}</li>)}</ul>
+            <a className="service-doc-whatsapp" href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> Send documents on WhatsApp</a>
+          </details>;
+        })}
+      </div>
+      <div className="service-guidance-faq"><h3>Quick FAQs</h3>
+        <details><summary>How long does the process take?<ChevronDown size={16}/></summary><p>Processing time depends on the service and the responsible department or provider. We will explain the current process; no timeline or approval is guaranteed.</p></details>
+        <details><summary>What is the approximate fee?<ChevronDown size={16}/></summary><p>Official fees vary by service and applicant. We do not publish rates on this website. Any applicable official fee will be confirmed before you proceed.</p></details>
+        <details><summary>What should I bring?<ChevronDown size={16}/></summary><p>Bring the original identity document and copies of the items listed for your service. Never share passwords, PINs or OTPs.</p></details>
+      </div>
+    </section>
+  );
+}
+
 function ApplicationPage() {
   const settings = useSiteSettings();
-  const categoryList = useCategoryList();
   const [params] = useSearchParams();
-  const [serviceList, setServiceList] = useState(seedServices);
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const rawDepartment = params.get("department") ?? params.get("category") ?? "";
-  const departmentAliases: Record<string, string> = {
-    "rto-transport": "rto",
-    "revenue-department": "revenue",
-    "srinagar-municipal-corporation": "smc",
-    "central-government-services": "central",
-  };
-  const requestedDepartment = departmentAliases[rawDepartment] ?? rawDepartment;
-  const requestedService = params.get("service") ?? "";
-  const [selectedCategory, setSelectedCategory] = useState(requestedDepartment);
-  const [selectedService, setSelectedService] = useState(requestedService);
-  const [vehicleReference, setVehicleReference] = useState("");
-  const [referenceCopied, setReferenceCopied] = useState(false);
-  const [description, setDescription] = useState("");
-  const [documents, setDocuments] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [service, setService] = useState(params.get("service") ?? "");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{
-    trackingId: string;
-    emailSent: boolean;
-    emailWarning?: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!supabase) return;
-    let query = supabase
-      .from("services")
-      .select("*")
-      .eq("is_active", true)
-      .order("name");
-    if (selectedCategory) query = query.eq("category_slug", selectedCategory);
-    let current = true;
-    void query.range(0, 999).then(({ data }) => {
-      if (current && data) setServiceList(data as ServiceRecord[]);
-    });
-    return () => {
-      current = false;
-    };
-  }, [selectedCategory]);
-  const options = serviceList.filter(
-    (item) => !selectedCategory || item.category_slug === selectedCategory,
-  );
-
-  const normalizeService = (value: string) =>
-    value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const requestedServiceMatch = requestedService
-    ? options.find(
-        (item) =>
-          normalizeService(item.name) === normalizeService(requestedService) ||
-          normalizeService(item.name).includes(normalizeService(requestedService)) ||
-          normalizeService(item.id) === normalizeService(requestedService),
-      )
-    : undefined;
-  const effectiveSelectedService =
-    selectedService === requestedService && requestedServiceMatch
-      ? requestedServiceMatch.name
-      : selectedService;
-
-  const serviceRequirement = getServiceRequirement(effectiveSelectedService);
-  const documentChecklist = effectiveSelectedService ? serviceRequirement.documents : [];
-  const isVehicleService = Boolean(serviceRequirement.showVehicleField);
-
-  async function copyTrackingReference() {
-    try {
-      await navigator.clipboard.writeText(result?.trackingId ?? "");
-      setReferenceCopied(true);
-    } catch {
-      setError("Copy was unavailable. Please select and copy the reference manually.");
-    }
-  }
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  const serviceOptions = [...new Set(seedServices.map((item) => item.name))].sort((a,b) => a.localeCompare(b));
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    if (!isSupabaseConfigured) {
-      setError(
-        "Online applications are not configured yet. Please call or WhatsApp the cafe to send your enquiry.",
-      );
-      return;
-    }
-    if (!/^\d{10}$/.test(mobile)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-    if (!consent) {
-      setError("Please confirm the privacy notice before continuing.");
-      return;
-    }
-    setBusy(true);
-    const whatsappWindow = window.open("", "_blank");
-    try {
-      const response = await callFunction<{
-        trackingId: string;
-        emailSent: boolean;
-        emailWarning?: string;
-      }>(
-        "create-application",
-        {
-          fullName,
-          mobile: `+91${mobile}`,
-          email: customerEmail,
-          category: selectedCategory,
-          service: effectiveSelectedService,
-          description: vehicleReference.trim()
-            ? `${description}\nVehicle Registration No. / DL No.: ${vehicleReference.trim()}`
-            : description,
-          requiredDocuments: documents,
-          consent,
-        },
-      );
-      setResult(response);
-      const message = `Hello BABA'S CYBER CAFE, I have submitted an enquiry. Reference: ${response.trackingId}. Please let me know the next steps.`;
-      if (whatsappWindow)
-        whatsappWindow.location.href = `https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
-    } catch (reason) {
-      whatsappWindow?.close();
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "The application could not be submitted. Please try again or contact the cafe.",
-      );
-    } finally {
-      setBusy(false);
-    }
+    if (!/^\d{10}$/.test(mobile.replace(/\D/g, ""))) { setError("Please enter a valid 10-digit mobile number."); return; }
+    const text = ["New customer enquiry — BABA'S CYBER CAFE", `Name: ${name.trim()}`, `Phone: +91 ${mobile.replace(/\D/g, "")}`, `Service: ${service}`, `Message: ${message.trim() || "Please contact me with the next steps."}`].join("\n");
+    window.open(`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
-
-  if (result)
-    return (
-      <main className="content-page narrow-page">
-        <div className="success-panel">
-          <span className="success-icon">
-            <Check size={26} />
-          </span>
-          <span className="eyebrow">ENQUIRY RECEIVED</span>
-          <h1>Your next step is in motion.</h1>
-          <p>
-            Your reference number is ready. Keep it private and use it with your
-            registered mobile number to check for updates.
-          </p>
-          <div className="tracking-code">
-            <small>TRACKING REFERENCE</small>
-            <strong>{result.trackingId}</strong>
-          </div>
-          <div className="success-actions">
-            <button
-              type="button"
-              className="button button-outline"
-              onClick={() => void copyTrackingReference()}
-            >
-              <Copy size={15} /> {referenceCopied ? "Reference copied" : "Copy Reference"}
-            </button>
-            <button
-              type="button"
-              className="button button-outline"
-              onClick={() => printApplicationReceipt({
-                trackingId: result.trackingId,
-                fullName,
-                mobile,
-                email: customerEmail,
-                department: categoryLabel(selectedCategory, categoryList),
-                service: effectiveSelectedService,
-                submittedAt: new Date().toISOString(),
-                status: "Application received",
-              })}
-            >
-              <FileText size={15} /> Download / Print receipt
-            </button>
-            <Link className="button button-dark" to="/track">
-              Track application <ArrowRight size={16} />
-            </Link>
-            <a
-              className="button button-outline"
-              href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello BABA'S CYBER CAFE, I submitted enquiry ${result.trackingId}.`)}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Send Documents on WhatsApp (+91 7006865909) <ArrowUpRight size={15} />
-            </a>
-          </div>
-          {result.emailSent ? (
-            <p className="success-note">A confirmation email has been sent.</p>
-          ) : (
-            <ConfigurationNote>
-              {result.emailWarning ??
-                "The enquiry was saved, but email confirmation is not configured. Keep your reference number."}
-            </ConfigurationNote>
-          )}
-        </div>
-      </main>
-    );
-
   return (
-    <main className="content-page">
-      <PageIntro
-        eyebrow="NEW ENQUIRY"
-        title="Let's get you to the right place."
-        copy="Tell us what you need. We will review your enquiry and share a reference to help you follow its progress."
-      />
-      {!isSupabaseConfigured && <ConfigurationNote />}
-      <div className="form-layout">
-        <form className="form-panel" onSubmit={submit}>
-          <div className="form-section-title">
-            <span>01</span>
-            <div>
-              <h2>Your details</h2>
-              <p>
-                We use these details to respond and verify tracking requests.
-              </p>
-            </div>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>
-                Full name <i>*</i>
-              </span>
-              <input
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                required
-                minLength={2}
-                maxLength={120}
-                autoComplete="name"
-              />
-            </label>
-            <label className="field">
-              <span>
-                Mobile number <i>*</i>
-              </span>
-              <div className="phone-input">
-                <span className="phone-prefix" aria-hidden="true">+91</span>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={mobile}
-                  onChange={(event) => {
-                    let digits = event.target.value.replace(/\D/g, "");
-                    if (digits.startsWith("91") && digits.length > 10) digits = digits.slice(2);
-                    setMobile(digits.slice(0, 10));
-                  }}
-                  onPaste={(event) => {
-                    event.preventDefault();
-                    let digits = event.clipboardData.getData("text").replace(/\D/g, "");
-                    if (digits.startsWith("91") && digits.length > 10) digits = digits.slice(2);
-                    setMobile(digits.slice(0, 10));
-                  }}
-                  required
-                  pattern="[0-9]{10}"
-                  maxLength={10}
-                  autoComplete="tel-national"
-                  placeholder="7006865909"
-                />
-              </div>
-            </label>
-            <label className="field field-wide">
-              <span>Email address</span>
-              <input
-                type="email"
-                value={customerEmail}
-                onChange={(event) => setCustomerEmail(event.target.value)}
-                maxLength={254}
-                autoComplete="email"
-              />
-              <small className="field-helper">Optional — add if you want status updates by email.</small>
-            </label>
-          </div>
-          <div className="form-section-title">
-            <span>02</span>
-            <div>
-              <h2>Your service</h2>
-              <p>
-                Choose the closest match. You can describe anything else below.
-              </p>
-            </div>
-          </div>
-          <div className="field-grid">
-            <label className="field">
-              <span>
-                Department <i>*</i>
-              </span>
-              <select
-                value={selectedCategory}
-                onChange={(event) => {
-                  setSelectedCategory(event.target.value);
-                  setSelectedService("");
-                }}
-                required
-              >
-                <option value="">Choose a department</option>
-                {categoryList.map((item) => (
-                  <option key={item.slug} value={item.slug}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              <span>
-                Service <i>*</i>
-              </span>
-              <select
-                value={effectiveSelectedService}
-                onChange={(event) => setSelectedService(event.target.value)}
-                required
-              >
-                <option value="">Choose a service</option>
-                {options.map((item) => (
-                  <option key={item.id} value={item.name}>
-                    {item.name}
-                  </option>
-                ))}
-                <option value="Other enquiry">Other enquiry</option>
-              </select>
-            </label>
-            {effectiveSelectedService && (
-              <div className="document-checklist field-wide" aria-live="polite">
-                <strong>Typically Required Documents</strong>
-                <ul>
-                  {documentChecklist.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-                <small>{serviceRequirement.note}</small>
-                <small className="document-safety-reminder">
-                  Please do not enter passwords or OTPs in this form. Share document photos only through our verified WhatsApp number or your private tracking link when requested.
-                </small>
-              </div>
-            )}
-            {isVehicleService && (
-              <label className="field field-wide">
-                <span>Vehicle Registration No. / DL No. <small>(Optional)</small></span>
-                <input
-                  value={vehicleReference}
-                  onChange={(event) => setVehicleReference(event.target.value.slice(0, 30))}
-                  maxLength={30}
-                  autoComplete="off"
-                  placeholder="Enter only if relevant to your enquiry"
-                />
-              </label>
-            )}
-            <label className="field field-wide">
-              <span>
-                Tell us what you need <i>*</i>
-              </span>
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                required
-                minLength={10}
-                maxLength={2000}
-                rows={4}
-                placeholder="A brief description of the help you are looking for"
-              />
-            </label>
-            <label className="field field-wide">
-              <span>Documents you already have</span>
-              <textarea
-                value={documents}
-                onChange={(event) => setDocuments(event.target.value)}
-                maxLength={1000}
-                rows={2}
-                placeholder="List document names only. Do not send sensitive documents here."
-              />
-              <small className="field-helper security-helper">
-                Do not type passwords, OTPs, or Aadhaar numbers here. Our team will request document photos securely via WhatsApp or your private tracking link after reviewing your request.
-              </small>
-            </label>
-          </div>
-          <label className="consent-check">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(event) => setConsent(event.target.checked)}
-              required
-            />
-            <span>
-              I agree to the{" "}
-              <Link to="/privacy" target="_blank">
-                Privacy Policy
-              </Link>{" "}
-              and consent to BABA'S CYBER CAFE using these details to respond to
-              my enquiry.
-            </span>
-          </label>
-          {error && (
-            <div className="notice notice-error" role="alert">
-              {error}
-            </div>
-          )}
-          <button
-            type="submit"
-            className="button button-dark form-submit"
-            disabled={busy || !isSupabaseConfigured}
-          >
-            {busy ? "Sending securely…" : "Submit enquiry"}{" "}
-            <ArrowRight size={16} />
-          </button>
-          <p className="form-footnote">
-            <ShieldCheck size={14} /> Your reference is generated securely after
-            submission. Do not include passwords, PINs or OTPs.
-          </p>
-        </form>
-        <aside className="form-aside">
-          <span className="eyebrow">WHAT HAPPENS NEXT</span>
-          <div className="aside-step">
-            <b>01</b>
-            <span>
-              <strong>We receive your enquiry</strong>
-              <small>
-                Your details are stored securely after the system is configured.
-              </small>
-            </span>
-          </div>
-          <div className="aside-step">
-            <b>02</b>
-            <span>
-              <strong>We review the request</strong>
-              <small>We may contact you if more information is needed.</small>
-            </span>
-          </div>
-          <div className="aside-step">
-            <b>03</b>
-            <span>
-              <strong>You follow your reference</strong>
-              <small>
-                Use your reference ID and mobile number to check progress.
-              </small>
-            </span>
-          </div>
-          <div className="aside-caution">
-            <ShieldCheck size={17} />
-            <p>
-              Never share bank PINs, passwords or one-time passcodes. Government
-              departments and insurers make all official decisions.
-            </p>
-          </div>
-        </aside>
-      </div>
+    <main className="content-page narrow-page">
+      <PageIntro eyebrow="QUICK ENQUIRY" title="Tell us what you need." copy="Fill in four short details. WhatsApp will open with your message ready to send to our team." />
+      <form className="form-panel quick-whatsapp-form" onSubmit={submit}>
+        <label className="field"><span>Name <i>*</i></span><input value={name} onChange={(event)=>setName(event.target.value)} placeholder="Your full name" autoComplete="name" required maxLength={100}/></label>
+        <label className="field"><span>Phone <i>*</i></span><input type="tel" value={mobile} onChange={(event)=>setMobile(event.target.value)} placeholder="10-digit mobile number" autoComplete="tel-national" inputMode="numeric" required maxLength={15}/></label>
+        <label className="field"><span>Service <i>*</i></span><select value={service} onChange={(event)=>setService(event.target.value)} required><option value="">Choose a service</option>{serviceOptions.map((item)=><option value={item} key={item}>{item}</option>)}</select></label>
+        <label className="field"><span>Message</span><textarea value={message} onChange={(event)=>setMessage(event.target.value)} placeholder="Tell us briefly what help you need…" rows={4} maxLength={1000}/></label>
+        {error && <p className="cyber-error" role="alert">{error}</p>}
+        <button className="cyber-button cyber-button-primary" type="submit"><MessageCircle size={17}/> Send enquiry on WhatsApp</button>
+        <p className="field-helper">Your message is sent only after you review and press Send in WhatsApp. Do not share passwords, PINs or OTPs.</p>
+      </form>
     </main>
   );
 }
@@ -4214,6 +3841,14 @@ function MobileQuickBar() {
   );
 }
 
+function FloatingWhatsApp() {
+  const location = useLocation();
+  const slug = location.pathname.startsWith("/services/") ? location.pathname.split("/").at(-1) : "";
+  const category = categories.find((item) => item.slug === slug);
+  const message = category ? `Hi, I need help with ${category.name}. Please share the required documents and next steps.` : "Hi, I need help from BABA'S CYBER CAFE. Please guide me.";
+  return <a className="floating-whatsapp" href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer" aria-label={category ? `WhatsApp about ${category.name}` : "Chat with BABA'S CYBER CAFE on WhatsApp"}><MessageCircle size={24}/><span>WhatsApp</span></a>;
+}
+
 function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
@@ -4277,7 +3912,7 @@ function RoutedApp() {
     return () => { cancelled = true; };
   }, [location.pathname]);
   if (location.pathname === "/payment-portal") return (
-    <div className="payment-standalone"><Suspense fallback={<main className="payment-page"><div className="payment-shell">Loading secure payment portal…</div></main>}><Routes><Route path="/payment-portal" element={<PaymentPortal />} /></Routes></Suspense></div>
+    <div className="payment-standalone"><Suspense fallback={<main className="payment-page"><div className="payment-shell">Loading secure payment portal…</div></main>}><Routes><Route path="/payment-portal" element={<PaymentPortal />} /></Routes></Suspense><FloatingWhatsApp /></div>
   );
   return (
     <div className="site-shell">
@@ -4314,6 +3949,7 @@ function RoutedApp() {
       </Suspense>
       <Footer />
       <MobileQuickBar />
+      <FloatingWhatsApp />
       <Suspense fallback={null}><CustomerChatAssistant /></Suspense>
     </div>
   );
