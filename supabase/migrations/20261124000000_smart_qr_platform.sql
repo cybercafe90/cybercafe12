@@ -18,21 +18,9 @@ end;
 $;
 create trigger smartqr_shop_slug_immutable before update of slug on public.smartqr_shops for each row execute function public.smartqr_keep_shop_slug_immutable();
 
-create table if not exists public.smartqr_products (
- id uuid primary key default gen_random_uuid(), shop_id uuid not null references public.smartqr_shops(id) on delete cascade,
- name text not null check (char_length(name) between 1 and 120), description text, category text, image_path text,
- display_price numeric(12,2) check (display_price is null or display_price >= 0),
- is_available boolean not null default true, sort_order integer not null default 0, created_at timestamptz not null default now()
-);
-create table if not exists public.smartqr_offers (
- id uuid primary key default gen_random_uuid(), shop_id uuid not null references public.smartqr_shops(id) on delete cascade,
- title text not null check (char_length(title) between 2 and 120), description text,
- starts_at timestamptz, ends_at timestamptz, is_active boolean not null default false, created_at timestamptz not null default now(),
- check (ends_at is null or starts_at is null or ends_at > starts_at)
-);
 create table if not exists public.smartqr_subscriptions (
  id uuid primary key default gen_random_uuid(), shop_id uuid not null references public.smartqr_shops(id) on delete cascade,
- plan_code text not null check (plan_code in ('starter','professional','vip')),
+ plan_code text not null check (plan_code in ('starter','growth','vip')),
  status text not null default 'pending' check (status in ('pending','trialing','active','past_due','cancelled','expired')),
  setup_amount_paise integer not null default 0 check (setup_amount_paise >= 0),
  recurring_amount_paise integer not null default 0 check (recurring_amount_paise >= 0),
@@ -49,17 +37,13 @@ create table if not exists public.smartqr_print_orders (
 );
 create table if not exists public.smartqr_scan_events (
  id uuid primary key default gen_random_uuid(), shop_id uuid not null references public.smartqr_shops(id) on delete cascade,
- event_type text not null default 'scan' check (event_type in ('scan','catalogue','whatsapp','directions','payment_tap','call','review')),
+ event_type text not null default 'scan' check (event_type in ('scan','whatsapp','directions','payment_tap','call','review')),
  created_at timestamptz not null default now()
 );
-create index if not exists smartqr_products_shop_idx on public.smartqr_products(shop_id, sort_order);
-create index if not exists smartqr_offers_shop_idx on public.smartqr_offers(shop_id, is_active);
 create index if not exists smartqr_subscriptions_shop_idx on public.smartqr_subscriptions(shop_id, created_at desc);
 create index if not exists smartqr_print_orders_shop_idx on public.smartqr_print_orders(shop_id, created_at desc);
 create index if not exists smartqr_scan_events_shop_time_idx on public.smartqr_scan_events(shop_id, created_at desc);
 alter table public.smartqr_shops enable row level security;
-alter table public.smartqr_products enable row level security;
-alter table public.smartqr_offers enable row level security;
 alter table public.smartqr_subscriptions enable row level security;
 alter table public.smartqr_print_orders enable row level security;
 alter table public.smartqr_scan_events enable row level security;
@@ -74,23 +58,6 @@ create policy "Owners can update their own pending Smart QR shop" on public.smar
  for update to authenticated using ((select auth.uid())=owner_user_id and approval_status='pending' and is_active=false)
  with check ((select auth.uid())=owner_user_id and approval_status='pending' and is_active=false);
 
-create policy "Public can view products for active approved shops" on public.smartqr_products
- for select to anon, authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.approval_status='approved' and s.is_active=true));
-create policy "Owners can view their Smart QR products" on public.smartqr_products
- for select to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
-create policy "Owners can manage their Smart QR products" on public.smartqr_products
- for all to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())))
- with check (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
-
-create policy "Public can view active offers" on public.smartqr_offers
- for select to anon, authenticated using (is_active=true and (starts_at is null or starts_at<=now()) and (ends_at is null or ends_at>now())
- and exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.approval_status='approved' and s.is_active=true));
-create policy "Owners can view their Smart QR offers" on public.smartqr_offers
- for select to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
-create policy "Owners can manage their Smart QR offers" on public.smartqr_offers
- for all to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())))
- with check (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
-
 create policy "Owners can read their Smart QR subscriptions" on public.smartqr_subscriptions
  for select to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
 create policy "Owners can read their Smart QR print orders" on public.smartqr_print_orders
@@ -98,7 +65,7 @@ create policy "Owners can read their Smart QR print orders" on public.smartqr_pr
 create policy "Owners can request their Smart QR print orders" on public.smartqr_print_orders
  for insert to authenticated with check (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
 create policy "Visitors can record engagement for public shops" on public.smartqr_scan_events
- for insert to anon, authenticated with check (event_type in ('scan','catalogue','whatsapp','directions','payment_tap','call','review')
+ for insert to anon, authenticated with check (event_type in ('scan','whatsapp','directions','payment_tap','call','review')
  and exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.approval_status='approved' and s.is_active=true));
 create policy "Owners can view their Smart QR analytics" on public.smartqr_scan_events
  for select to authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.owner_user_id=(select auth.uid())));
