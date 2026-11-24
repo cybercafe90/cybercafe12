@@ -40,6 +40,13 @@ const faqs = [
 ];
 
 
+const orbitPalettes = {
+  gold: { label: "Gold", core: 0x8b681f, glow: 0xffc94f, rim: 0x9b6d1c, wire: 0xf3d27a, ring: 0xb88e32, node: 0xc69a32, star: 0xe8c875, css: "#d4af37" },
+  blue: { label: "Electric blue", core: 0x164a82, glow: 0x48baff, rim: 0x174d9b, wire: 0x8bdcff, ring: 0x278de0, node: 0x53baff, star: 0xb5e8ff, css: "#39a9ff" },
+  rose: { label: "Rose pink", core: 0x7d285d, glow: 0xff78c8, rim: 0x9a316f, wire: 0xffb2df, ring: 0xe45aa8, node: 0xff91d0, star: 0xffd1eb, css: "#f06ab8" },
+  violet: { label: "Violet", core: 0x49277f, glow: 0xb68cff, rim: 0x5d37a5, wire: 0xd2baff, ring: 0x9163e8, node: 0xb99aff, star: 0xe4d7ff, css: "#a987ff" },
+};
+
 const orbitServices = [
   { icon: ShieldCheck, title: "Motor Insurance", copy: "Third-party and own-damage motor insurance enquiries.", department: "insurance", service: "Motor Insurance" },
   { icon: Landmark, title: "Revenue Services", copy: "Certificate and land-record application assistance.", department: "revenue", service: "Revenue Department Assistance" },
@@ -58,6 +65,8 @@ const orbitServices = [
 export function VipHeroExperience() {
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
+  const [palette, setPalette] = useState<keyof typeof orbitPalettes>("gold");
+  const colours = orbitPalettes[palette];
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -86,22 +95,22 @@ export function VipHeroExperience() {
       renderer = activeRenderer;
       activeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
-      scene.add(new THREE.AmbientLight(0xffe6ad, 1.7));
-      const keyLight = new THREE.PointLight(0xffc94f, 95, 12);
+      scene.add(new THREE.AmbientLight(colours.wire, 1.7));
+      const keyLight = new THREE.PointLight(colours.glow, 95, 12);
       keyLight.position.set(2.6, 2.1, 3.2);
       scene.add(keyLight);
-      const rimLight = new THREE.PointLight(0x9b6d1c, 70, 10);
+      const rimLight = new THREE.PointLight(colours.rim, 70, 10);
       rimLight.position.set(-3, -1.8, -2);
       scene.add(rimLight);
 
       const core = new THREE.Mesh(
         track(new THREE.IcosahedronGeometry(1.12, 5)),
-        new THREE.MeshPhysicalMaterial({ color: 0x8b681f, metalness: 0.88, roughness: 0.2, emissive: 0x382606, emissiveIntensity: 0.48, clearcoat: 1, clearcoatRoughness: 0.18 })
+        new THREE.MeshPhysicalMaterial({ color: colours.core, metalness: 0.88, roughness: 0.2, emissive: colours.rim, emissiveIntensity: 0.48, clearcoat: 1, clearcoatRoughness: 0.18 })
       );
       scene.add(core);
       const shell = new THREE.Mesh(
         track(new THREE.IcosahedronGeometry(1.2, 2)),
-        new THREE.MeshBasicMaterial({ color: 0xf3d27a, wireframe: true, transparent: true, opacity: 0.32 })
+        new THREE.MeshBasicMaterial({ color: colours.wire, wireframe: true, transparent: true, opacity: 0.32 })
       );
       scene.add(shell);
 
@@ -109,7 +118,7 @@ export function VipHeroExperience() {
       [1.48, 1.67, 1.88].forEach((radius, index) => {
         const ring = new THREE.Mesh(
           track(new THREE.TorusGeometry(radius, index === 1 ? 0.012 : 0.008, 8, 180)),
-          new THREE.MeshBasicMaterial({ color: index === 1 ? 0xf3d27a : 0xb88e32, transparent: true, opacity: index === 1 ? 0.82 : 0.48 })
+          new THREE.MeshBasicMaterial({ color: index === 1 ? colours.wire : colours.ring, transparent: true, opacity: index === 1 ? 0.82 : 0.48 })
         );
         ring.rotation.set(0.7 + index * 0.42, 0.35 + index * 0.3, index * 0.62);
         ringGroup.add(ring);
@@ -121,7 +130,7 @@ export function VipHeroExperience() {
         const angle = (index / 12) * Math.PI * 2;
         const node = new THREE.Mesh(
           track(new THREE.SphereGeometry(index % 3 === 0 ? 0.065 : 0.043, 16, 16)),
-          new THREE.MeshStandardMaterial({ color: index % 3 === 0 ? 0xffe5a0 : 0xc69a32, metalness: 0.8, roughness: 0.22, emissive: 0x4a3108, emissiveIntensity: 0.6 })
+          new THREE.MeshStandardMaterial({ color: index % 3 === 0 ? colours.wire : colours.node, metalness: 0.8, roughness: 0.22, emissive: colours.rim, emissiveIntensity: 0.6 })
         );
         node.position.set(Math.cos(angle) * 1.83, Math.sin(angle) * 1.83, Math.sin(angle * 2) * 0.18);
         nodeGroup.add(node);
@@ -139,12 +148,21 @@ export function VipHeroExperience() {
       }
       const starGeometry = track(new THREE.BufferGeometry());
       starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
-      scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xe8c875, size: 0.018, transparent: true, opacity: 0.65, sizeAttenuation: true })));
+      scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: colours.star, size: 0.018, transparent: true, opacity: 0.65, sizeAttenuation: true })));
 
       let targetX = 0;
       let targetY = 0;
       let pointerX = 0;
       let pointerY = 0;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      const onPointerDown = (event: PointerEvent) => {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        canvas.setPointerCapture?.(event.pointerId);
+      };
       const onPointerMove = (event: PointerEvent) => {
         const bounds = canvas.getBoundingClientRect();
         targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
@@ -188,7 +206,7 @@ export function VipHeroExperience() {
 
       cleanup = () => {
         observer.disconnect();
-        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerdown", onPointerDown);\n        canvas.removeEventListener("pointerup", onPointerUp);\n        canvas.removeEventListener("pointercancel", onPointerUp);\n        canvas.removeEventListener("pointermove", onPointerMove);
         canvas.removeEventListener("pointerleave", onPointerLeave);
       };
     };
@@ -203,7 +221,7 @@ export function VipHeroExperience() {
       resources.forEach((resource) => resource.dispose());
       renderer?.dispose();
     };
-  }, [motion]);
+  }, [motion, palette]);
 
   const selected = orbitServices[active];
   const reduceMotion = () => {
@@ -214,7 +232,7 @@ export function VipHeroExperience() {
   return (
     <section className={motion ? "vip-hero" : "vip-hero vip-motion-off"} id="home">
       <div className="vip-hero-grid" aria-hidden="true"/>
-      <div className="vip-hero-inner">
+      <div className="vip-hero-inner" style={{ "--vip-accent": colours.css } as CSSProperties}>
         <div className="vip-hero-copy">
           <span className="vip-hero-pill"><i/> YOUR TRUST, OUR SERVICE.</span>
           <h1>YOUR <em>DIGITAL SERVICE PARTNER</em> IN SRINAGAR</h1>
@@ -243,7 +261,7 @@ export function VipHeroExperience() {
             <div className="vip-orbit-caption"><span>12 SERVICE NODES</span><span>SRINAGAR · J&amp;K</span></div>
           </div>
           <div className="vip-mobile-service-dock"><span>SELECT A DEPARTMENT</span><div>{orbitServices.map(({icon:Icon,title},index)=><button type="button" key={title} className={active===index?"is-active":""} onClick={()=>setActive(index)} aria-label={title}><Icon size={17}/></button>)}</div></div>
-          <button className="vip-motion-toggle" type="button" onClick={reduceMotion}><Sparkles size={14}/> 3D Motion: {motion?"On":"Off"}</button>
+          <div className="vip-orbit-controls" aria-label="3D model controls"><span>ORBIT COLOUR</span><div>{(Object.keys(orbitPalettes) as Array<keyof typeof orbitPalettes>).map((key) => <button type="button" key={key} className={`vip-palette-swatch vip-swatch-${key}${palette === key ? " is-active" : ""}`} onClick={() => setPalette(key)} aria-label={`Use ${orbitPalettes[key].label} colour`} aria-pressed={palette === key}/>)}</div><button className="vip-motion-toggle" type="button" onClick={reduceMotion}><Sparkles size={14}/> 3D Motion: {motion?"On":"Off"}</button></div>
         </div>
       </div>
       <div className="vip-hero-trust-strip">
