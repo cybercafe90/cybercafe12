@@ -212,3 +212,15 @@ body{background:var(--vip-obsidian);color:#f5f2eb}
 .cyber-contact-band{border-color:rgba(212,175,55,.2);background:#0b0b0e;color:#fff}
 .cyber-contact-band h2{color:#fff}
 .cyber-hero,.cyber-command-wrap,.cyber-vault-section,.neon-directory,.tp-home-promo,.cyber-concierge,.cyber-social-wrap,.cyber-contact-band{scroll-margin-top:90px}
+
+
+/* Real WebGL 3D concierge orb and responsive interaction */
+.vip-3d-canvas{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;pointer-events:auto;touch-action:pan-y;cursor:grab;filter:drop-shadow(0 0 28px rgba(212,175,55,.13))}
+.vip-3d-canvas:active{cursor:grabbing}
+.vip-orbit-ring{z-index:0}
+.vip-orb-core{z-index:2;pointer-events:none;border-color:rgba(243,210,122,.32);background:radial-gradient(circle,rgba(8,8,9,.56),rgba(8,8,9,.13) 68%,transparent 74%);box-shadow:0 0 35px rgba(212,175,55,.08),inset 0 0 24px rgba(243,210,122,.035);backdrop-filter:blur(1px)}
+.vip-orb-emblem{filter:drop-shadow(0 0 14px rgba(243,210,122,.42))}
+.vip-orbit-nodes{z-index:3}
+.vip-orbit-caption{z-index:4}
+@media(max-width:700px){.vip-orbit-stage{width:min(100%,440px)}.vip-3d-canvas{touch-action:pan-y}.vip-orb-core{width:35%}.vip-orb-emblem{width:56px;height:56px}}
+@media(prefers-reduced-motion:reduce){.vip-3d-canvas{cursor:default}}
