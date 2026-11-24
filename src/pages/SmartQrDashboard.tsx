@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, Copy, Download, ExternalLink, MapPin, MessageCircle, Phone, Printer, QrCode, ShieldCheck, Store, WalletCards, LockKeyhole } from "lucide-react";
+import { Check, Copy, Download, Printer, QrCode, ShieldCheck, Store, WalletCards, LockKeyhole } from "lucide-react";
 import "./SmartQrDashboard.css";
 
 const shopUrl="https://babacybercafe.in/shop/kashmir-corner-market";
