@@ -69,6 +69,7 @@ const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
 const SmartQrPage = lazy(() => import("./pages/SmartQrPage"));
 const SmartQrDashboard = lazy(() => import("./pages/SmartQrDashboard"));
+const SmartQrPlatformPreview = lazy(() => import("./pages/SmartQrPlatformPreview"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 import "./App.css";
 import "./cyber-theme.css";
@@ -3935,6 +3936,7 @@ function RoutedApp() {
         <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/smart-qr/demo" element={<SmartQrPage />} />
         <Route path="/smart-qr/merchant-demo" element={<SmartQrDashboard />} />
+        <Route path="/smart-qr/platform-preview" element={<SmartQrPlatformPreview />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
