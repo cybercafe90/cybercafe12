@@ -224,3 +224,16 @@ body{background:var(--vip-obsidian);color:#f5f2eb}
 .vip-orbit-caption{z-index:4}
 @media(max-width:700px){.vip-orbit-stage{width:min(100%,440px)}.vip-3d-canvas{touch-action:pan-y}.vip-orb-core{width:35%}.vip-orb-emblem{width:56px;height:56px}}
 @media(prefers-reduced-motion:reduce){.vip-3d-canvas{cursor:default}}
+
+
+/* Interactive orbit controls and selectable 3D palettes */
+.vip-3d-canvas{touch-action:pan-y;cursor:grab}
+.vip-3d-canvas:active{cursor:grabbing}
+.vip-orbit-controls{display:flex;flex-direction:column;align-items:center;gap:9px;margin:10px auto 0}
+.vip-orbit-controls>span{color:#c7b47b;font-size:8px;font-weight:900;letter-spacing:.18em}
+.vip-orbit-controls>div{display:flex;align-items:center;justify-content:center;gap:11px}
+.vip-palette-swatch{width:23px;height:23px;padding:0;border:2px solid rgba(255,255,255,.3);border-radius:50%;cursor:pointer;box-shadow:0 0 12px color-mix(in srgb,var(--swatch) 35%,transparent);background:var(--swatch);transition:transform .2s ease,box-shadow .2s ease}
+.vip-palette-swatch.is-active{outline:2px solid #fff7df;outline-offset:3px;transform:scale(1.12)}
+.vip-swatch-gold{--swatch:#d4af37}.vip-swatch-blue{--swatch:#39a9ff}.vip-swatch-rose{--swatch:#f06ab8}.vip-swatch-violet{--swatch:#a987ff}
+.vip-orbit-controls .vip-motion-toggle{margin-top:2px}
+@media(max-width:560px){.vip-orbit-controls{margin-top:8px}.vip-palette-swatch{width:25px;height:25px}}
