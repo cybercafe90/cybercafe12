@@ -165,10 +165,21 @@ export function VipHeroExperience() {
       };
       const onPointerMove = (event: PointerEvent) => {
         const bounds = canvas.getBoundingClientRect();
-        targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
-        targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.35;
+        if (dragging) {
+          targetY += (event.clientX - lastX) * 0.008;
+          targetX += (event.clientY - lastY) * 0.008;
+          lastX = event.clientX;
+          lastY = event.clientY;
+        } else {
+          targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
+          targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.35;
+        }
       };
-      const onPointerLeave = () => { targetX = 0; targetY = 0; };
+      const onPointerUp = () => { dragging = false; };
+      const onPointerLeave = () => { dragging = false; targetX = 0; targetY = 0; };
+      canvas.addEventListener("pointerdown", onPointerDown);
+      canvas.addEventListener("pointerup", onPointerUp);
+      canvas.addEventListener("pointercancel", onPointerUp);
       canvas.addEventListener("pointermove", onPointerMove);
       canvas.addEventListener("pointerleave", onPointerLeave);
 
@@ -206,7 +217,10 @@ export function VipHeroExperience() {
 
       cleanup = () => {
         observer.disconnect();
-        canvas.removeEventListener("pointerdown", onPointerDown);\n        canvas.removeEventListener("pointerup", onPointerUp);\n        canvas.removeEventListener("pointercancel", onPointerUp);\n        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerdown", onPointerDown);\n        canvas.removeEventListener("pointerup", onPointerUp);\n        canvas.removeEventListener("pointercancel", onPointerUp);\n        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
+        canvas.removeEventListener("pointermove", onPointerMove);
         canvas.removeEventListener("pointerleave", onPointerLeave);
       };
     };
