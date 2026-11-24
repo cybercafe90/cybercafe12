@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Activity, ArrowLeft, BadgeCheck, Building2, Check, ChevronRight, CircleHelp, Copy, Download, ExternalLink, Eye, LayoutDashboard, MapPin, MessageCircle, Pencil, Phone, Plus, Printer, QrCode, ShieldCheck, Store, Users, WalletCards } from "lucide-react";
+import { Activity, ArrowLeft, BadgeCheck, Building2, Check, ChevronRight, CircleHelp, Copy, Download, ExternalLink, Eye, LayoutDashboard, MapPin, MessageCircle, Pencil, Phone, Plus, Printer, QrCode, ShieldCheck, Store, WalletCards } from "lucide-react";
 import "./SmartQrPlatformPreview.css";
 
 type Shop = { id: string; name: string; slug: string; category: string; phone: string; whatsapp: string; address: string; hours: string; description: string; plan: "starter" | "growth" | "vip"; status: "Active" | "Pending"; };
