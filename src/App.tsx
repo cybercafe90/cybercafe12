@@ -67,6 +67,7 @@ const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
+const SmartQrPage = lazy(() => import("./pages/SmartQrPage"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 import "./App.css";
 import "./cyber-theme.css";
@@ -3877,6 +3878,7 @@ function RoutedApp() {
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
+      "/smart-qr/demo": "BABA'S SMART QR | Customer Shop Preview",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3929,6 +3931,7 @@ function RoutedApp() {
         <Route path="/instant-tp-admin" element={<InstantTPPreview adminOnly />} />
         <Route path="/print" element={<PrintPortal />} />
         <Route path="/print/admin" element={<PrintAdminPortal />} />
+        <Route path="/smart-qr/demo" element={<SmartQrPage />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
         <Route path="/challan" element={<ChallanPortal />} />
