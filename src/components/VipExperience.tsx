@@ -104,12 +104,12 @@ export function VipHeroExperience() {
       scene.add(rimLight);
 
       const core = new THREE.Mesh(
-        track(new THREE.IcosahedronGeometry(1.12, 5)),
+        track(new THREE.SphereGeometry(1.12, 96, 64)),
         new THREE.MeshPhysicalMaterial({ color: colours.core, metalness: 0.88, roughness: 0.2, emissive: colours.rim, emissiveIntensity: 0.48, clearcoat: 1, clearcoatRoughness: 0.18 })
       );
       scene.add(core);
       const shell = new THREE.Mesh(
-        track(new THREE.IcosahedronGeometry(1.2, 2)),
+        track(new THREE.SphereGeometry(1.2, 36, 24)),
         new THREE.MeshBasicMaterial({ color: colours.wire, wireframe: true, transparent: true, opacity: 0.32 })
       );
       scene.add(shell);
@@ -267,7 +267,7 @@ export function VipHeroExperience() {
           <div className="vip-orbit-stage">
             <div className="vip-orbit-ring vip-ring-one"/><div className="vip-orbit-ring vip-ring-two"/><div className="vip-orbit-ring vip-ring-three"/>
             <canvas ref={canvasRef} className="vip-3d-canvas" aria-label="Rotating three-dimensional gold BCC digital concierge orb. Move your pointer over it to explore."/>
-            <div className="vip-orb-core"><div className="vip-orb-glow"/><div className="vip-orb-emblem"><ShieldCheck size={58}/><span>BCC</span></div><b>BCC AI</b><small>CONCIERGE</small></div>
+            <div className="vip-3d-orb-label" aria-hidden="true"><span>BCC</span><small>360° DIGITAL CONCIERGE</small></div>
             <div className="vip-orbit-nodes">
               {orbitServices.map(({icon:Icon,title},index)=> {
                 const angle=(index*30)-90;
