@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Activity, ArrowRight, ArrowUpRight, BadgeCheck, BookOpen, BriefcaseBusiness,
   Building2, CarFront, CheckCircle2, ChevronDown, Clock3, FileCheck2,
@@ -58,6 +58,152 @@ const orbitServices = [
 export function VipHeroExperience() {
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
+    let frame = 0;
+    let renderer: { setPixelRatio: (value: number) => void; setSize: (width: number, height: number, updateStyle?: boolean) => void; render: (scene: unknown, camera: unknown) => void; dispose: () => void } | null = null;
+    const resources: Array<{ dispose: () => void }> = [];
+    const track = <T extends { dispose: () => void }>(resource: T): T => {
+      resources.push(resource);
+      return resource;
+    };
+    let cleanup: (() => void) | undefined;
+
+    const initialise = async () => {
+      const moduleUrl = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+      const THREE = await import(/* @vite-ignore */ moduleUrl);
+      if (cancelled) return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+      camera.position.set(0, 0, 5.4);
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      scene.add(new THREE.AmbientLight(0xffe6ad, 1.7));
+      const keyLight = new THREE.PointLight(0xffc94f, 95, 12);
+      keyLight.position.set(2.6, 2.1, 3.2);
+      scene.add(keyLight);
+      const rimLight = new THREE.PointLight(0x9b6d1c, 70, 10);
+      rimLight.position.set(-3, -1.8, -2);
+      scene.add(rimLight);
+
+      const core = new THREE.Mesh(
+        track(new THREE.IcosahedronGeometry(1.12, 5)),
+        new THREE.MeshPhysicalMaterial({ color: 0x8b681f, metalness: 0.88, roughness: 0.2, emissive: 0x382606, emissiveIntensity: 0.48, clearcoat: 1, clearcoatRoughness: 0.18 })
+      );
+      scene.add(core);
+      const shell = new THREE.Mesh(
+        track(new THREE.IcosahedronGeometry(1.2, 2)),
+        new THREE.MeshBasicMaterial({ color: 0xf3d27a, wireframe: true, transparent: true, opacity: 0.32 })
+      );
+      scene.add(shell);
+
+      const ringGroup = new THREE.Group();
+      [1.48, 1.67, 1.88].forEach((radius, index) => {
+        const ring = new THREE.Mesh(
+          track(new THREE.TorusGeometry(radius, index === 1 ? 0.012 : 0.008, 8, 180)),
+          new THREE.MeshBasicMaterial({ color: index === 1 ? 0xf3d27a : 0xb88e32, transparent: true, opacity: index === 1 ? 0.82 : 0.48 })
+        );
+        ring.rotation.set(0.7 + index * 0.42, 0.35 + index * 0.3, index * 0.62);
+        ringGroup.add(ring);
+      });
+      scene.add(ringGroup);
+
+      const nodeGroup = new THREE.Group();
+      for (let index = 0; index < 12; index += 1) {
+        const angle = (index / 12) * Math.PI * 2;
+        const node = new THREE.Mesh(
+          track(new THREE.SphereGeometry(index % 3 === 0 ? 0.065 : 0.043, 16, 16)),
+          new THREE.MeshStandardMaterial({ color: index % 3 === 0 ? 0xffe5a0 : 0xc69a32, metalness: 0.8, roughness: 0.22, emissive: 0x4a3108, emissiveIntensity: 0.6 })
+        );
+        node.position.set(Math.cos(angle) * 1.83, Math.sin(angle) * 1.83, Math.sin(angle * 2) * 0.18);
+        nodeGroup.add(node);
+      }
+      scene.add(nodeGroup);
+
+      const starPositions = new Float32Array(540 * 3);
+      for (let index = 0; index < 540; index += 1) {
+        const radius = 2.15 + Math.random() * 1.25;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        starPositions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        starPositions[index * 3 + 2] = radius * Math.cos(phi);
+      }
+      const starGeometry = track(new THREE.BufferGeometry());
+      starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
+      scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: 0xe8c875, size: 0.018, transparent: true, opacity: 0.65, sizeAttenuation: true })));
+
+      let targetX = 0;
+      let targetY = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+      const onPointerMove = (event: PointerEvent) => {
+        const bounds = canvas.getBoundingClientRect();
+        targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
+        targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.35;
+      };
+      const onPointerLeave = () => { targetX = 0; targetY = 0; };
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerleave", onPointerLeave);
+
+      const resize = () => {
+        if (!renderer) return;
+        const width = Math.max(1, canvas.clientWidth);
+        const height = Math.max(1, canvas.clientHeight);
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
+      const observer = new ResizeObserver(resize);
+      observer.observe(canvas);
+      resize();
+
+      const animate = () => {
+        if (cancelled || !renderer) return;
+        frame = window.requestAnimationFrame(animate);
+        if (motion) {
+          core.rotation.y += 0.0028;
+          core.rotation.x += 0.0011;
+          shell.rotation.y -= 0.0018;
+          shell.rotation.x += 0.0013;
+          ringGroup.rotation.y += 0.0017;
+          ringGroup.rotation.z -= 0.0008;
+          nodeGroup.rotation.z += 0.0014;
+          pointerX += (targetX - pointerX) * 0.035;
+          pointerY += (targetY - pointerY) * 0.035;
+          scene.rotation.x = pointerX;
+          scene.rotation.y = pointerY;
+        }
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      cleanup = () => {
+        observer.disconnect();
+        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerleave", onPointerLeave);
+      };
+    };
+
+    void initialise().catch((error: unknown) => {
+      if (!cancelled) console.warn("3D concierge visual could not initialise:", error);
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      cleanup?.();
+      resources.forEach((resource) => resource.dispose());
+      renderer?.dispose();
+    };
+  }, [motion]);
+
   const selected = orbitServices[active];
   const reduceMotion = () => {
     const next = !motion;
@@ -85,6 +231,7 @@ export function VipHeroExperience() {
         <div className="vip-orbit-column">
           <div className="vip-orbit-stage">
             <div className="vip-orbit-ring vip-ring-one"/><div className="vip-orbit-ring vip-ring-two"/><div className="vip-orbit-ring vip-ring-three"/>
+            <canvas ref={canvasRef} className="vip-3d-canvas" aria-label="Rotating three-dimensional gold BCC digital concierge orb. Move your pointer over it to explore."/>
             <div className="vip-orb-core"><div className="vip-orb-glow"/><div className="vip-orb-emblem"><ShieldCheck size={58}/><span>BCC</span></div><b>BCC AI</b><small>CONCIERGE</small></div>
             <div className="vip-orbit-nodes">
               {orbitServices.map(({icon:Icon,title},index)=> {
