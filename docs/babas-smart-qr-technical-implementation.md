@@ -2,7 +2,7 @@
 
 ## Confirmed product decisions
 - QR scanner is optional; customers can scan with their normal phone camera.
-- QR generation uses the qrcode npm library, high error correction and PNG output.
+- QR generation uses the qrcode.react package, high error correction and scalable SVG output.
 - Razorpay is the selected subscription provider; test mode only after secure server setup.
 - Physical product is a printed QR stand with counter-card and folded-tent proof options.
 - Advanced analytics preview includes weekly scans, unique-visitor estimate, action breakdown and payment-button taps.
@@ -14,8 +14,8 @@
 - /smart-qr/merchant-demo — merchant workspace, QR Studio, print proof, plans and analytics.
 
 ## Implemented in the preview UI
-- Real QR generated in-browser for a stable sample shop URL using qrcode.
-- PNG QR download and copyable permanent shop URL.
+- Real QR generated in-browser for a stable sample shop URL using qrcode.react.
+- SVG QR download and copyable permanent shop URL.
 - Printed stand proof with two styles and browser Print / Save as PDF.
 - Interactive sample analytics and plan selector.
 - No production database writes, payment requests, real merchant orders or actual scan tracking.
