@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Activity, BarChart3, Check, ChevronRight, CircleDollarSign, Copy, Download, Eye, Printer, QrCode, ShieldCheck, Store, TrendingUp, Users, WalletCards } from "lucide-react";
+import { Activity, BarChart3, Check, ChevronRight, CircleDollarSign, Copy, Download, Eye, Printer, QrCode, ShieldCheck, Store, Users, WalletCards } from "lucide-react";
 import "./SmartQrDashboard.css";
 const shopUrl="https://babacybercafe.in/shop/kashmir-corner-market";
 const plans=[{id:"starter",name:"Starter",setup:499,monthly:0,features:["Branded shop QR","Contact and WhatsApp links","Basic shop profile"]},{id:"professional",name:"Professional",setup:999,monthly:99,features:["Everything in Starter","Catalogue and offers","Advanced scan analytics","Priority support"]},{id:"vip",name:"VIP Business",setup:1999,monthly:199,features:["Everything in Professional","Premium QR artwork","Monthly performance report","Priority support"]}];
-const days=[["Mon",28],["Tue",42],["Wed",35],["Thu",61],["Fri",49],["Sat",82],["Sun",67]];
-const actions=[["Catalogue",148],["WhatsApp",96],["Directions",71],["Pay Shop",54],["Call",31]];
+const days: [string, number][]=[["Mon",28],["Tue",42],["Wed",35],["Thu",61],["Fri",49],["Sat",82],["Sun",67]];
+const actions: [string, number][]=[["Catalogue",148],["WhatsApp",96],["Directions",71],["Pay Shop",54],["Call",31]];
 export default function SmartQrDashboard(){
  const [tab,setTab]=useState("overview"),[plan,setPlan]=useState("professional"),[stand,setStand]=useState("counter"),[notice,setNotice]=useState(""),[copied,setCopied]=useState(false);
  const chosen=plans.find(p=>p.id===plan)!;const total=days.reduce((n,d)=>n+d[1],0);
