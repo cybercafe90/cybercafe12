@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, BriefcaseBusiness, CarFront,
-  CheckCircle2, ChevronDown, Clock3, FileCheck2, HeartHandshake,
-  Landmark, LockKeyhole, MessageCircle, Search, ShieldCheck, Sparkles,
-  Zap,
+  Activity, ArrowRight, ArrowUpRight, BadgeCheck, BookOpen, BriefcaseBusiness,
+  Building2, CarFront, CheckCircle2, ChevronDown, Clock3, FileCheck2,
+  HeartHandshake, Landmark, Layers, LockKeyhole, MessageCircle, Search,
+  ShieldCheck, Sparkles, Ticket, UsersRound, Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -90,7 +90,7 @@ export function VipHeroExperience() {
             <div className="vip-orbit-nodes">
               {orbitServices.map(({icon:Icon,title},index)=> {
                 const angle=(index*30)-90;
-                return <button type="button" key={title} className={active===index?"vip-orbit-node is-active":"vip-orbit-node"} style={{"--orbit-angle":`${angle}deg`} as React.CSSProperties} onClick={()=>setActive(index)} aria-label={`View ${title}`} aria-pressed={active===index}><Icon size={18}/></button>;
+                return <button type="button" key={title} className={active===index?"vip-orbit-node is-active":"vip-orbit-node"} style={{"--orbit-angle":`${angle}deg`} as CSSProperties} onClick={()=>setActive(index)} aria-label={`View ${title}`} aria-pressed={active===index}><Icon size={18}/></button>;
               })}
             </div>
             <div className="vip-orbit-caption"><span>12 SERVICE NODES</span><span>SRINAGAR · J&amp;K</span></div>
