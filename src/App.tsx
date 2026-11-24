@@ -23,7 +23,6 @@ import {
   Building2,
   CarFront,
   Check,
-  Copy,
   ChevronDown,
   CircleHelp,
   Clock3,
@@ -1034,8 +1033,10 @@ function AboutPage() {
       <section className="about-grid">
         <div className="about-portrait">
           <img
-            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1100&q=85"
+            src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=800&q=72"
             alt="People collaborating at a bright workspace"
+            loading="lazy"
+            decoding="async"
           />
           <span>SRINAGAR · JAMMU &amp; KASHMIR</span>
         </div>
@@ -1196,6 +1197,22 @@ function ApplicationPage() {
     </main>
   );
 }
+
+type CustomerPaymentSummary = {
+  application: { tracking_id: string; full_name: string; mobile: string; service_name: string };
+  payment: { amount: number | string; status: "pending" | "claimed" | "paid" | "needs_review"; claimed_utr?: string | null; utr?: string | null; paid_at?: string | null };
+};
+
+type TrackedRecord = {
+  trackingId: string;
+  service: string;
+  category: string;
+  status: ApplicationStatus;
+  submittedAt: string;
+  remarks: string[];
+  history: { status: ApplicationStatus; created_at: string }[];
+  documents: { name: string; url: string; expiresAt: string }[];
+};
 
 function TrackPage() {
   const categoryList = useCategoryList();
