@@ -59,7 +59,6 @@ export function VipHeroExperience() {
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
   const selected = orbitServices[active];
-  const SelectedIcon = selected.icon;
   const reduceMotion = () => {
     const next = !motion;
     setMotion(next);
