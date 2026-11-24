@@ -10,6 +10,14 @@ create table if not exists public.smartqr_shops (
  approval_status text not null default 'pending' check (approval_status in ('pending','approved','rejected','suspended')),
  is_active boolean not null default false, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+create or replace function public.smartqr_keep_shop_slug_immutable() returns trigger language plpgsql as $
+begin
+ if new.slug <> old.slug then raise exception 'Smart QR shop URLs cannot be changed after creation'; end if;
+ return new;
+end;
+$;
+create trigger smartqr_shop_slug_immutable before update of slug on public.smartqr_shops for each row execute function public.smartqr_keep_shop_slug_immutable();
+
 create table if not exists public.smartqr_products (
  id uuid primary key default gen_random_uuid(), shop_id uuid not null references public.smartqr_shops(id) on delete cascade,
  name text not null check (char_length(name) between 1 and 120), description text, category text, image_path text,
@@ -62,9 +70,9 @@ create policy "Owners can view their own Smart QR shops" on public.smartqr_shops
  for select to authenticated using ((select auth.uid())=owner_user_id);
 create policy "Owners can create pending Smart QR shops" on public.smartqr_shops
  for insert to authenticated with check ((select auth.uid())=owner_user_id and approval_status='pending' and is_active=false);
-create policy "Owners can update their own Smart QR shop" on public.smartqr_shops
- for update to authenticated using ((select auth.uid())=owner_user_id)
- with check ((select auth.uid())=owner_user_id and approval_status in ('pending','approved'));
+create policy "Owners can update their own pending Smart QR shop" on public.smartqr_shops
+ for update to authenticated using ((select auth.uid())=owner_user_id and approval_status='pending' and is_active=false)
+ with check ((select auth.uid())=owner_user_id and approval_status='pending' and is_active=false);
 
 create policy "Public can view products for active approved shops" on public.smartqr_products
  for select to anon, authenticated using (exists(select 1 from public.smartqr_shops s where s.id=shop_id and s.approval_status='approved' and s.is_active=true));
