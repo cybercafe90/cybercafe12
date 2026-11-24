@@ -217,7 +217,9 @@ export function VipHeroExperience() {
 
       cleanup = () => {
         observer.disconnect();
-        canvas.removeEventListener("pointerdown", onPointerDown);\n        canvas.removeEventListener("pointerup", onPointerUp);\n        canvas.removeEventListener("pointercancel", onPointerUp);\n        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
         canvas.removeEventListener("pointerup", onPointerUp);
         canvas.removeEventListener("pointercancel", onPointerUp);
         canvas.removeEventListener("pointermove", onPointerMove);
