@@ -51,7 +51,7 @@ async function agentDevice(request: Request, admin: SupabaseClient) {
 }
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok',{headers:cors(request)})
-  if (request.method !== 'POST') return json(request,request,{error:'Method not allowed.'},405)
+  if (request.method !== 'POST') return json(request,{error:'Method not allowed.'},405)
   const origin = request.headers.get('origin') ?? ''
   if (origin && !isAllowedOrigin(origin)) return json(request,{error:'Origin not allowed.'},403)
   try {
