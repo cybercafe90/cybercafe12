@@ -158,30 +158,42 @@ function Dashboard(){
 }
 function Admin(){
   const [shops,setShops]=useState<Record<string,unknown>[]>([]);
+  const [events,setEvents]=useState<Record<string,unknown>[]>([]);
   const [search,setSearch]=useState("");
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
-  const load=()=>void api<{shops:Record<string,unknown>[]}>("admin/shops").then(x=>setShops(x.shops)).catch(e=>setError(e.message));
+  const [busyCode,setBusyCode]=useState("");
+  const load=()=>void Promise.all([
+    api<{shops:Record<string,unknown>[]}>("admin/shops"),
+    api<{events:Record<string,unknown>[]}>("admin/audit")
+  ]).then(([s,a])=>{setShops(s.shops);setEvents(a.events);}).catch(e=>setError(e.message));
   useEffect(()=>{load();},[]);
   async function change(code:string,status:string){
-    setError("");setNotice("");
+    setError("");setNotice("");setBusyCode(code);
     try{await api("admin/shops/"+encodeURIComponent(code)+"/status",{method:"PATCH",body:JSON.stringify({status})});setNotice("Merchant status updated.");load();}
     catch(e){setError(e instanceof Error?e.message:"Update failed.");}
+    finally{setBusyCode("");}
   }
   async function logout(){await api("logout",{method:"POST",body:"{}"});window.location.assign("/smart-qr/login");}
   const filtered=shops.filter(s=>[s.shop_name,s.shop_code,s.email,s.full_name,s.approval_status].some(v=>String(v||"").toLowerCase().includes(search.toLowerCase())));
+  const count=(status:string)=>shops.filter(s=>s.approval_status===status).length;
   return <Shell><section className="smartqr-dashboard-head"><div><span className="smartqr-eyebrow">PLATFORM OWNER</span><h1>Merchant administration</h1><p>Review applications, payments and shop status.</p></div><button className="smartqr-outline" onClick={logout}><LogOut size={16}/> Sign out</button></section>
     {error&&<Notice error>{error}</Notice>}{notice&&<Notice>{notice}</Notice>}
+    <div className="smartqr-admin-stats"><div><small>Total merchants</small><b>{shops.length}</b></div><div><small>Pending review</small><b>{count("pending")}</b></div><div><small>Approved</small><b>{count("approved")}</b></div><div><small>Suspended</small><b>{count("suspended")}</b></div></div>
     <div className="smartqr-admin-toolbar"><input aria-label="Search merchants" placeholder="Search shop, Shop ID, owner or status…" value={search} onChange={e=>setSearch(e.target.value)}/><span>{filtered.length} merchants</span></div>
     <div className="smartqr-table-wrap"><table><thead><tr><th>Shop</th><th>Merchant</th><th>Plan</th><th>Setup payment</th><th>Status</th><th>Review</th></tr></thead><tbody>{filtered.map((s,i)=>{
-      const status=String(s.approval_status||"pending");
-      return <tr key={String(s.shop_code||i)}><td><b>{String(s.shop_name)}</b><small>{String(s.shop_code)}</small></td><td>{String(s.full_name)}<small>{String(s.email)}</small></td><td>{String(s.plan_code)} / {String(s.monthly_option)}</td><td>{String(s.setup_payment_status||"not paid")}</td><td><span className={"smartqr-status status-"+status}>{status}</span></td><td>
-        {status==="pending"&&<><button className="smartqr-small-button" onClick={()=>change(String(s.shop_code),"approved")}>Approve</button> <button className="smartqr-small-button" onClick={()=>change(String(s.shop_code),"rejected")}>Reject</button></>}
-        {status==="approved"&&<button className="smartqr-small-button" onClick={()=>change(String(s.shop_code),"suspended")}>Suspend</button>}
-        {status==="suspended"&&<button className="smartqr-small-button" onClick={()=>change(String(s.shop_code),"approved")}>Reactivate</button>}
-        {status==="rejected"&&<button className="smartqr-small-button" onClick={()=>change(String(s.shop_code),"pending")}>Reopen</button>}
+      const status=String(s.approval_status||"pending"),code=String(s.shop_code||"");
+      return <tr key={code||i}><td><b>{String(s.shop_name)}</b><small>{code}</small></td><td>{String(s.full_name)}<small>{String(s.email)}</small></td><td>{String(s.plan_code)} / {String(s.monthly_option)}</td><td>{String(s.setup_payment_status||"not paid")}</td><td><span className={"smartqr-status status-"+status}>{status}</span></td><td>
+        {status==="pending"&&<><button className="smartqr-small-button" disabled={busyCode===code} onClick={()=>change(code,"approved")}>Approve</button> <button className="smartqr-small-button" disabled={busyCode===code} onClick={()=>change(code,"rejected")}>Reject</button></>}
+        {status==="approved"&&<button className="smartqr-small-button" disabled={busyCode===code} onClick={()=>change(code,"suspended")}>Suspend</button>}
+        {status==="suspended"&&<button className="smartqr-small-button" disabled={busyCode===code} onClick={()=>change(code,"approved")}>Reactivate</button>}
+        {status==="rejected"&&<button className="smartqr-small-button" disabled={busyCode===code} onClick={()=>change(code,"pending")}>Reopen</button>}
       </td></tr>;
-    })}</tbody></table>{filtered.length===0&&<p className="smartqr-empty">No matching merchant applications found.</p>}</div></Shell>;
+    })}</tbody></table>{filtered.length===0&&<p className="smartqr-empty">No matching merchant applications found.</p>}</div>
+    <section className="smartqr-audit-card"><div className="smartqr-card-heading"><div><h2>Recent owner activity</h2><p>Security and merchant-management actions, newest first.</p></div></div>
+      {events.length===0?<p className="smartqr-empty">No audit activity has been recorded yet.</p>:<div className="smartqr-audit-list">{events.map((event,i)=><div className="smartqr-audit-item" key={String(event.created_at)+i}><span className="smartqr-audit-dot"/><div><b>{String(event.action||"Activity")}</b><small>{String(event.actor_email||"System")}{event.shop_code?" · "+String(event.shop_code):""}</small></div><time>{event.created_at?new Date(String(event.created_at)+"Z").toLocaleString("en-IN"):"—"}</time></div>)}</div>}
+    </section>
+  </Shell>;
 }
 function PublicShop(){
   const {slug=""}=useParams();const [shop,setShop]=useState<Record<string,unknown>|null>(null);const [error,setError]=useState("");
