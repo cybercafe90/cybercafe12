@@ -97,6 +97,7 @@ export default function InstantServicesPage() {
   }
 
   const selectedToolTitle = selected === "kyc_aadhaar_dl" ? (docType === "aadhaar" ? "Aadhaar OTP request" : "Driving licence check") : (activeTool?.title ?? "Instant service");
+  const selectedToolDescription = selected === "kyc_aadhaar_dl" && docType === "dl" ? "Check driving-licence details through the provider." : (activeTool?.description ?? "Choose a service to continue.");
   const whatsappMessage = encodeURIComponent(`Hello BABA'S CYBER CAFE, I need assistance with ${selectedToolTitle}.`);
   const serviceReady = sessionReady && signedIn;
 
@@ -141,7 +142,7 @@ export default function InstantServicesPage() {
             <div className="instant-service-workspace-head">
               <span className="eyebrow">SELECTED SERVICE</span>
               <h2>{selectedToolTitle}</h2>
-              <p>{activeTool?.description}</p>
+              <p>{selectedToolDescription}</p>
             </div>
             {!serviceReady ? <div className="instant-service-auth">
               <ShieldCheck size={25}/>
