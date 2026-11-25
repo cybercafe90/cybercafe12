@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Activity, ArrowRight, BadgeCheck, CarFront, CloudSun, Fuel, Gem, LoaderCircle, MapPin, Radio, ShieldCheck, Smartphone, Wind } from "lucide-react";
+import { Activity, ArrowRight, BadgeCheck, CarFront, CloudSun, Fuel, Gem, LoaderCircle, MapPin, Radio, ShieldCheck, Wind } from "lucide-react";
 import { callApiExpress, type ApiExpressService } from "../lib/apiExpressClient";
 import { supabase } from "../lib/supabase";
 import "../instant-services.css";
