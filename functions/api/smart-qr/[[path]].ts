@@ -360,7 +360,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
           }
         }
       }
-      if (subscriptionId && eventType.startsWith("subscription.")) {
+      if (subscriptionId && (eventType.startsWith("subscription.") || eventType === "payment.failed" || eventType === "payment.refunded")) {
         const row=await db.prepare("SELECT id,shop_id,plan_code,monthly_fee_paise FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{id:string;shop_id:number;plan_code:string;monthly_fee_paise:number}>();
         if(row && entity && text(entity.subscription_id,80)===subscriptionId && paymentId){
           const chargeAmount=Number(entity.amount);
