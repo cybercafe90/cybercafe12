@@ -330,7 +330,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const inserted = await db.prepare("INSERT OR IGNORE INTO smartqr_webhook_events(event_id,event_type,payload_hash) VALUES(?,?,?)").bind(eventId,eventType||"unknown",payloadHash).run();
       if (inserted.meta.changes === 0 && orderId) {
         const previous = await db.prepare("SELECT status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{status:string}>();
-        const terminal = eventType==="payment.captured" || eventType==="order.paid" ? previous?.status==="captured" : eventType==="payment.failed" ? previous?.status==="failed" : eventType==="payment.refunded" ? previous?.status==="refunded" : false;
+        const terminal = eventType==="payment.captured" || eventType==="order.paid" ? previous?.status==="captured" : eventType==="payment.failed" ? previous?.status==="failed" : eventType==="payment.authorized" ? previous?.status==="authorized" : eventType==="payment.refunded" ? previous?.status==="refunded" : false;
         if (terminal) return response({received:true,duplicate:true});
       } else if (inserted.meta.changes === 0 && subscriptionId) {
         const previous = await db.prepare("SELECT status FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{status:string}>();
@@ -339,7 +339,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       } else if (inserted.meta.changes === 0) {
         return response({received:true,duplicate:true});
       }
-      if (orderId && (eventType==="payment.captured" || eventType==="order.paid" || eventType==="payment.failed" || eventType==="payment.refunded")) {
+      if (orderId && (eventType==="payment.captured" || eventType==="order.paid" || eventType==="payment.failed" || eventType==="payment.authorized" || eventType==="payment.refunded")) {
         const payment = await db.prepare("SELECT id,shop_id,amount_paise,status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{id:string;shop_id:number;amount_paise:number;status:string}>();
         if (payment && entity) {
           const amountMatches = Number(entity.amount) === payment.amount_paise && entity.currency === "INR";
@@ -348,8 +348,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
               db.prepare("UPDATE smartqr_payments SET status='captured',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId,payment.id),
               db.prepare("INSERT INTO smartqr_audit_logs(shop_id,action,detail_json) VALUES(?,?,?)").bind(payment.shop_id,"setup_payment_captured",JSON.stringify({orderId,paymentId,amountPaise:payment.amount_paise,eventId})),
             ]);
+          } else if (eventType==="payment.authorized" && amountMatches) {
+            await db.prepare("UPDATE smartqr_payments SET status='authorized',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='created'").bind(paymentId||null,payment.id).run();
           } else if (eventType==="payment.failed") {
-            await db.prepare("UPDATE smartqr_payments SET status='failed',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='created'").bind(paymentId||null,payment.id).run();
+            await db.prepare("UPDATE smartqr_payments SET status='failed',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId||null,payment.id).run();
           } else if (eventType==="payment.refunded") {
             await db.prepare("UPDATE smartqr_payments SET status='refunded',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='captured'").bind(paymentId||null,payment.id).run();
           }
@@ -375,7 +377,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
           const endAt=Number.isFinite(end)&&end>0?new Date(end*1000).toISOString():null;
           await db.batch([
             db.prepare("UPDATE smartqr_subscriptions SET status=?,current_period_start=COALESCE(?,current_period_start),current_period_end=COALESCE(?,current_period_end),updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(nextStatus,startAt,endAt,row.id),
-            db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(nextStatus,row.shop_id),
+            db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(nextStatus==="authenticated"?"inactive":nextStatus,row.shop_id),
             db.prepare("INSERT INTO smartqr_audit_logs(shop_id,action,detail_json) VALUES(?,?,?)").bind(row.shop_id,"monthly_subscription_status_changed",JSON.stringify({subscriptionId,eventType,status:nextStatus,eventId})),
           ]);
         }
@@ -410,7 +412,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!amountPaise) return fail("The selected plan is invalid.",409);
       const existing=await db.prepare("SELECT id,amount_paise,status,razorpay_order_id FROM smartqr_payments WHERE shop_id=? AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{id:string;amount_paise:number;status:string;razorpay_order_id:string|null}>();
       if (existing?.status==="captured") return fail("The setup fee has already been paid.",409);
-      if (existing?.status==="created" && existing.razorpay_order_id) return response({orderId:existing.razorpay_order_id,amount:existing.amount_paise,currency:"INR",keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
+      if ((existing?.status==="created" || existing?.status==="authorized") && existing.razorpay_order_id) return response({orderId:existing.razorpay_order_id,amount:existing.amount_paise,currency:"INR",keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
       const order=await razorpayRequest(env,"/orders","POST",{amount:amountPaise,currency:"INR",receipt:shop.shop_code.slice(0,40),notes:{shop_code:shop.shop_code,payment_kind:"smartqr_setup",plan_code:shop.plan_code}});
       const orderId=text(order.id,80);
       if (!orderId || Number(order.amount)!==amountPaise || order.currency!=="INR") throw new Error("Razorpay returned an invalid order.");
@@ -440,6 +442,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!constantTimeEqual(expected,signature)) return fail("The payment signature could not be verified.",400);
       const remote=await razorpayRequest(env,"/payments/"+encodeURIComponent(paymentId),"GET");
       if (remote.order_id!==orderId || Number(remote.amount)!==payment.amount_paise || remote.currency!=="INR") return fail("Payment details do not match the order.",409);
+      if (remote.status==="authorized") {
+        await db.prepare("UPDATE smartqr_payments SET status='authorized',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='created'").bind(paymentId,payment.id).run();
+        return response({verified:true,paid:false,message:"Payment is authorized and awaiting capture confirmation. Do not pay again."},202);
+      }
       if (remote.status!=="captured" || remote.captured!==true) return response({verified:true,paid:false,message:"Payment is awaiting capture confirmation. Do not pay again."},202);
       await db.prepare("UPDATE smartqr_payments SET status='captured',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId,payment.id).run();
       await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"setup_payment_verified",JSON.stringify({orderId,paymentId,amountPaise:payment.amount_paise})).run();
@@ -501,7 +507,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const status=remote.status==="active"?"active":"authenticated";
       await db.batch([
         db.prepare("UPDATE smartqr_subscriptions SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,record.id),
-        db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,shop.id),
+        db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status==="active"?"active":"inactive",shop.id),
         db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"monthly_subscription_authorized",JSON.stringify({subscriptionId,paymentId,status})),
       ]);
       return response({authorized:true,status,message:status==="active"?"Monthly subscription is active.":"Monthly mandate authorized. Activation will be confirmed by Razorpay webhook."});
