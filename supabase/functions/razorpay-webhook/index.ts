@@ -59,8 +59,18 @@ Deno.serve(async (request) => {
       metadata: { order_id: orderId || null, event_type: eventType },
     })
     if (insertError) {
-      if (insertError.code === '23505') return response(request, { received: true, duplicate: true }, 200)
-      throw insertError
+      if (insertError.code !== '23505') throw insertError
+      // A previous delivery may have inserted the event before a transient
+      // database failure. Only acknowledge it as a duplicate after processing
+      // has completed; otherwise allow Razorpay's retry to resume the work.
+      const { data: existingEvent, error: existingEventError } = await admin
+        .from('razorpay_webhook_events')
+        .select('processed')
+        .eq('event_id', eventId)
+        .maybeSingle()
+      if (existingEventError) throw existingEventError
+      if (!existingEvent) throw new Error('Webhook idempotency state could not be confirmed.')
+      if (existingEvent.processed) return response(request, { received: true, duplicate: true }, 200)
     }
 
     if (eventType === 'payment.captured' || eventType === 'order.paid') {
