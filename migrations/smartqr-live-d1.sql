@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS smartqr_users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
   full_name TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
   role TEXT NOT NULL DEFAULT 'merchant' CHECK (role IN ('merchant','platform_admin')),
   email_verified_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS smartqr_shops (
   payment_url TEXT,
   approval_status TEXT NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('pending','approved','rejected','suspended')),
   plan_code TEXT NOT NULL DEFAULT 'starter' CHECK (plan_code IN ('starter','growth','vip')),
-  monthly_option TEXT NOT NULL DEFAULT 'none' CHECK (monthly_option IN ('none','growth','vip')),
   subscription_status TEXT NOT NULL DEFAULT 'inactive' CHECK (subscription_status IN ('inactive','active','past_due','cancelled','expired')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -36,7 +35,7 @@ CREATE TABLE IF NOT EXISTS smartqr_shops (
 CREATE TABLE IF NOT EXISTS smartqr_email_tokens (
   token_hash TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES smartqr_users(id) ON DELETE CASCADE,
-  purpose TEXT NOT NULL CHECK (purpose IN ('verify','reset')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('setup','reset')),
   expires_at TEXT NOT NULL,
   used_at TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
