@@ -363,7 +363,8 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const locations = await db.prepare("SELECT location_code,label,address_text,phone,opening_hours,is_primary FROM smartqr_locations WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY is_primary DESC,id").bind(user.id).all();
       const qrCodes = await db.prepare("SELECT qr_code,label,is_active,created_at FROM smartqr_qr_codes WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY id").bind(user.id).all();
       const setupPayment = await db.prepare("SELECT status,amount_paise FROM smartqr_payments WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(user.id).first<{status:string;amount_paise:number}>();
-      return response({shop,locations:locations.results,qrCodes:qrCodes.results,setupPayment:setupPayment||null,user:{email:user.email,role:user.role}});
+      const subscription = await db.prepare("SELECT status,monthly_fee_paise,cancel_at_period_end,current_period_end FROM smartqr_subscriptions WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY created_at DESC LIMIT 1").bind(user.id).first<{status:string;monthly_fee_paise:number;cancel_at_period_end:number;current_period_end:string|null}>();
+      return response({shop,locations:locations.results,qrCodes:qrCodes.results,setupPayment:setupPayment||null,subscription:subscription||null,user:{email:user.email,role:user.role}});
     }
 
 
@@ -411,6 +412,79 @@ export const onRequest = async ({ request, env, params }: Context) => {
       await db.prepare("UPDATE smartqr_payments SET status='captured',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId,payment.id).run();
       await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"setup_payment_verified",JSON.stringify({orderId,paymentId,amountPaise:payment.amount_paise})).run();
       return response({verified:true,paid:true,message:"Setup payment successfully verified."});
+    }
+
+
+    if (route === "subscriptions/create" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const shop=await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option,monthly_consent_at FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string;monthly_consent_at:string|null}>();
+      if (!shop) return fail("Shop not found.",404);
+      if (!shop.monthly_consent_at || shop.monthly_option==="none") return fail("No recurring subscription consent was recorded for this shop.",409);
+      const setup=await db.prepare("SELECT status FROM smartqr_payments WHERE shop_id=? AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{status:string}>();
+      if (setup?.status!=="captured") return fail("The one-time setup payment must be verified before monthly authorization.",409);
+      const monthlyFee=shop.monthly_option==="growth"?9900:shop.monthly_option==="vip"?19900:0;
+      if (!monthlyFee || shop.plan_code!==shop.monthly_option) return fail("The selected monthly plan is invalid.",409);
+      if (!(await rateLimit(db,"subscription-create:"+shop.id,3,300))) return fail("Please wait before retrying subscription authorization.",429);
+      let record=await db.prepare("SELECT id,status,razorpay_plan_id,razorpay_subscription_id FROM smartqr_subscriptions WHERE shop_id=? ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{id:string;status:string;razorpay_plan_id:string|null;razorpay_subscription_id:string|null}>();
+      if (record && (record.status==="active" || record.status==="authenticated")) return fail("A monthly subscription is already authorized for this shop.",409);
+      if (record?.status==="created" && record.razorpay_subscription_id) return response({subscriptionId:record.razorpay_subscription_id,keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
+      if (!record || record.status!=="created") {
+        const id=crypto.randomUUID();
+        await db.prepare("INSERT INTO smartqr_subscriptions(id,shop_id,plan_code,monthly_fee_paise,status,consent_at) VALUES(?,?,?,?,'created',?)").bind(id,shop.id,shop.monthly_option,monthlyFee,shop.monthly_consent_at).run();
+        record={id,status:"created",razorpay_plan_id:null,razorpay_subscription_id:null};
+      }
+      let planId=record.razorpay_plan_id;
+      if (!planId) {
+        const plan=await razorpayRequest(env,"/plans","POST",{period:"monthly",interval:1,item:{name:"BABA'S SMART QR "+shop.monthly_option.toUpperCase(),amount:monthlyFee,currency:"INR",description:"Optional monthly BABA'S SMART QR plan"}});
+        planId=text(plan.id,80);
+        if (!planId) throw new Error("Razorpay did not return a valid subscription plan.");
+        await db.prepare("UPDATE smartqr_subscriptions SET razorpay_plan_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(planId,record.id).run();
+      }
+      const remote=await razorpayRequest(env,"/subscriptions","POST",{plan_id:planId,total_count:120,customer_notify:1,notes:{shop_code:shop.shop_code,plan_code:shop.plan_code,product:"BABA'S SMART QR"}});
+      const subscriptionId=text(remote.id,80);
+      if (!subscriptionId || remote.plan_id!==planId) throw new Error("Razorpay returned an invalid subscription.");
+      await db.prepare("UPDATE smartqr_subscriptions SET razorpay_subscription_id=?,status='created',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(subscriptionId,record.id).run();
+      await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"monthly_subscription_created",JSON.stringify({subscriptionId,planId,monthlyFee})).run();
+      return response({subscriptionId,keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
+    }
+
+    if (route === "subscriptions/verify" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const input=await bodyJson(request);
+      const subscriptionId=text(input.razorpaySubscriptionId,80);
+      const paymentId=text(input.razorpayPaymentId,80);
+      const signature=text(input.razorpaySignature,128).toLowerCase();
+      if (!subscriptionId || !paymentId || !/^[a-f0-9]{64}$/.test(signature)) return fail("Subscription verification details are invalid.");
+      const shop=await db.prepare("SELECT id FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number}>();
+      if (!shop) return fail("Shop not found.",404);
+      const record=await db.prepare("SELECT id,razorpay_plan_id,status FROM smartqr_subscriptions WHERE shop_id=? AND razorpay_subscription_id=?").bind(shop.id,subscriptionId).first<{id:string;razorpay_plan_id:string|null;status:string}>();
+      if (!record || !record.razorpay_plan_id) return fail("Subscription record not found.",404);
+      const secret=env.RAZORPAY_KEY_SECRET||"";
+      if (!secret) throw new Error("Razorpay credentials are not configured.");
+      const expected=await hmacSha256(secret,paymentId+"|"+subscriptionId);
+      if (!constantTimeEqual(expected,signature)) return fail("The subscription signature could not be verified.",400);
+      const remote=await razorpayRequest(env,"/subscriptions/"+encodeURIComponent(subscriptionId),"GET");
+      const payment=await razorpayRequest(env,"/payments/"+encodeURIComponent(paymentId),"GET");
+      if (remote.plan_id!==record.razorpay_plan_id || payment.subscription_id!==subscriptionId || !["authorized","captured"].includes(String(payment.status))) return fail("The subscription authorization could not be confirmed.",409);
+      const status=remote.status==="active"?"active":"authenticated";
+      await db.batch([
+        db.prepare("UPDATE smartqr_subscriptions SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,record.id),
+        db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,shop.id),
+        db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"monthly_subscription_authorized",JSON.stringify({subscriptionId,paymentId,status})),
+      ]);
+      return response({authorized:true,status,message:status==="active"?"Monthly subscription is active.":"Monthly mandate authorized. Activation will be confirmed by Razorpay webhook."});
+    }
+
+    if (route === "subscriptions/cancel" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const shop=await db.prepare("SELECT id FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number}>();
+      if (!shop) return fail("Shop not found.",404);
+      const record=await db.prepare("SELECT id,razorpay_subscription_id,status FROM smartqr_subscriptions WHERE shop_id=? ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{id:string;razorpay_subscription_id:string|null;status:string}>();
+      if (!record?.razorpay_subscription_id || !["active","authenticated","past_due"].includes(record.status)) return fail("There is no active monthly subscription to cancel.",409);
+      await razorpayRequest(env,"/subscriptions/"+encodeURIComponent(record.razorpay_subscription_id)+"/cancel","POST",{cancel_at_cycle_end:true});
+      await db.prepare("UPDATE smartqr_subscriptions SET cancel_at_period_end=1,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(record.id).run();
+      await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"monthly_subscription_cancel_requested",JSON.stringify({subscriptionId:record.razorpay_subscription_id,cancelAtCycleEnd:true})).run();
+      return response({message:"Cancellation is scheduled for the end of the current billing period. Access remains until the period ends."});
     }
 
     if (route === "locations" && method === "POST") {
