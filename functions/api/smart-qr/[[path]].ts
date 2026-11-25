@@ -622,6 +622,13 @@ export const onRequest = async ({ request, env, params }: Context) => {
       updates.push("updated_at=CURRENT_TIMESTAMP");
       values.push(user.id);
       await db.prepare(`UPDATE smartqr_shops SET ${updates.join(",")} WHERE owner_user_id=?`).bind(...values).run();
+      const primary=await db.prepare("SELECT id FROM smartqr_locations WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) AND is_primary=1").bind(user.id).first<{id:number}>();
+      if(primary){
+        const addressValue=Object.hasOwn(input,"address_text")?text(input.address_text,240):null;
+        const phoneValue=Object.hasOwn(input,"phone")?text(input.phone,24):null;
+        const hoursValue=Object.hasOwn(input,"opening_hours")?JSON.stringify({text:text(input.opening_hours,300)}):null;
+        await db.prepare("UPDATE smartqr_locations SET address_text=COALESCE(?,address_text),phone=COALESCE(?,phone),opening_hours=COALESCE(?,opening_hours),updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(addressValue,phoneValue,hoursValue,primary.id).run();
+      }
       return response({message:"Shop profile updated."});
     }
 
