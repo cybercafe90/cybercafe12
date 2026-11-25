@@ -62,6 +62,6 @@ test("system readiness page never needs to display secret values", async ({ page
   await expect(page.getByRole("heading", { name: "System readiness" })).toBeVisible();
   await expect(page.getByText("Smart QR database")).toBeVisible();
   await expect(page.getByText("Email delivery secret")).toBeVisible();
-  await expect(page.getByText("Not configured").count()).resolves.toBeGreaterThan(0);
+  await expect(page.getByText("Not configured").first()).toBeVisible();
   await expect(page.getByText(/Credentials are never displayed/)).toBeVisible();
 });
