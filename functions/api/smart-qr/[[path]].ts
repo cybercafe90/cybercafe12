@@ -364,6 +364,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
     }
 
     if (route === "admin/bootstrap" && method === "POST") {
+      if (!(await rateLimit(db, "owner-bootstrap:" + await sha256(request.headers.get("cf-connecting-ip") || "unknown"), 3, 3600))) return fail("Too many owner setup attempts. Try again later.",429);
       const supplied = request.headers.get("x-owner-bootstrap-secret") || "";
       const expected = env.SMART_QR_OWNER_BOOTSTRAP_SECRET || "";
       if (!expected || !constantTimeEqual(supplied,expected) || text((await bodyJson(request)).email,254).toLowerCase()!==ADMIN_EMAIL) return fail("Owner bootstrap is not authorized.",403);
