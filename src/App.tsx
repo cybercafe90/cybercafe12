@@ -77,6 +77,7 @@ import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
 import "./vip-experience.css";
+import InstantServicesPage from "./pages/InstantServicesPage";
 import FreeEnhancements from "./components/FreeEnhancements";
 import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
 
@@ -268,6 +269,7 @@ function Header() {
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
@@ -3987,6 +3989,7 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<VipFaqPage />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/instant-services" element={<InstantServicesPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/instant-tp-preview" element={<InstantTPPreview />} />
