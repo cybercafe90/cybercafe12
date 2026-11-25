@@ -465,6 +465,17 @@ export const onRequest = async ({ request, env, params }: Context) => {
       return response({message:"Shop profile updated."});
     }
 
+    if (route.startsWith("qr/") && method === "GET") {
+      const slug=text(route.slice(3),80);
+      const shop=await db.prepare("SELECT slug FROM smartqr_shops WHERE slug=? AND approval_status='approved'").bind(slug).first<{slug:string}>();
+      if (!shop) return fail("Shop not found.",404);
+      const destination=new URL("/s/"+encodeURIComponent(slug),env.SMART_QR_PUBLIC_ORIGIN||url.origin).toString();
+      const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=720x720&format=png&margin=18&data="+encodeURIComponent(destination);
+      const image=await fetch(qrUrl,{headers:{"accept":"image/png"}});
+      if (!image.ok || !image.body) return fail("QR image generation is temporarily unavailable.",503);
+      return new Response(image.body,{status:200,headers:{"content-type":"image/png","cache-control":"public, max-age=86400, stale-while-revalidate=604800","content-disposition":'inline; filename="smart-qr-'+slug+'.png"',"x-content-type-options":"nosniff"}});
+    }
+
     if (route.startsWith("public/") && method === "GET") {
       const slug = text(route.slice(7),80);
       const shop = await publicShop(db,slug);
