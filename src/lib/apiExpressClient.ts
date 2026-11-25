@@ -74,6 +74,7 @@ export async function getApiExpressLogs(limit = 50) {
       created_at: string;
     }>;
     counts: { total: number; success: number; errors: number; cache_hits: number };
+    quota: { configured_limit: number; estimated_upstream_attempts: number; remaining_estimate: number; note: string };
   }>>(FUNCTION_NAME, {
     body: { service: "admin_logs", payload: { limit } },
     headers: { Authorization: `Bearer ${token}` },
