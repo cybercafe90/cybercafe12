@@ -19,6 +19,7 @@ create table if not exists public.api_express_logs (
   service_name text not null,
   status text not null check (status in ('success','error','cache_hit','rejected')),
   http_code integer not null check (http_code between 100 and 599),
+  environment text not null default 'sandbox' check (environment in ('sandbox','production')),
   created_at timestamptz not null default now()
 );
 
