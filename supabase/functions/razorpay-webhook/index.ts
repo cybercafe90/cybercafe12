@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+import { shouldAcknowledgeDuplicateWebhook } from '../_shared/razorpay-webhook.ts'
 
 function serviceClient() {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -70,7 +71,7 @@ Deno.serve(async (request) => {
         .maybeSingle()
       if (existingEventError) throw existingEventError
       if (!existingEvent) throw new Error('Webhook idempotency state could not be confirmed.')
-      if (existingEvent.processed) return response(request, { received: true, duplicate: true }, 200)
+      if (shouldAcknowledgeDuplicateWebhook(existingEvent.processed)) return response(request, { received: true, duplicate: true }, 200)
     }
 
     if (eventType === 'payment.captured' || eventType === 'order.paid') {
