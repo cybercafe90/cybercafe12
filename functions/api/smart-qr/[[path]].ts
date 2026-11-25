@@ -321,6 +321,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const data = payload.payload as Record<string,unknown> | undefined;
       const paymentData = data?.payment as Record<string,unknown> | undefined;
       const entity = paymentData?.entity as Record<string,unknown> | undefined;
+      const subscriptionData = data?.subscription as Record<string,unknown> | undefined;
+      const subscriptionEntity = subscriptionData?.entity as Record<string,unknown> | undefined;
+      const subscriptionId = text(subscriptionEntity?.id,80);
       const orderId = text(entity?.order_id,80);
       const paymentId = text(entity?.id,80);
       const payloadHash = await sha256(raw);
@@ -328,6 +331,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (inserted.meta.changes === 0 && orderId) {
         const previous = await db.prepare("SELECT status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{status:string}>();
         const terminal = eventType==="payment.captured" || eventType==="order.paid" ? previous?.status==="captured" : eventType==="payment.failed" ? previous?.status==="failed" : eventType==="payment.refunded" ? previous?.status==="refunded" : false;
+        if (terminal) return response({received:true,duplicate:true});
+      } else if (inserted.meta.changes === 0 && subscriptionId) {
+        const previous = await db.prepare("SELECT status FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{status:string}>();
+        const terminal = ["subscription.activated","subscription.charged","subscription.authenticated","subscription.cancelled","subscription.completed","subscription.halted","subscription.paused","subscription.resumed"].includes(eventType) && previous?.status===String(subscriptionEntity?.status);
         if (terminal) return response({received:true,duplicate:true});
       } else if (inserted.meta.changes === 0) {
         return response({received:true,duplicate:true});
@@ -346,6 +353,31 @@ export const onRequest = async ({ request, env, params }: Context) => {
           } else if (eventType==="payment.refunded") {
             await db.prepare("UPDATE smartqr_payments SET status='refunded',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='captured'").bind(paymentId||null,payment.id).run();
           }
+        }
+      }
+      if (subscriptionId && eventType.startsWith("subscription.")) {
+        const row=await db.prepare("SELECT id,shop_id FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{id:string;shop_id:number}>();
+        const statusMap:Record<string,string>={
+          "subscription.authenticated":"authenticated",
+          "subscription.activated":"active",
+          "subscription.charged":"active",
+          "subscription.resumed":"active",
+          "subscription.cancelled":"cancelled",
+          "subscription.completed":"expired",
+          "subscription.halted":"past_due",
+          "subscription.paused":"past_due",
+        };
+        const nextStatus=statusMap[eventType];
+        if(row && nextStatus){
+          const start=Number(subscriptionEntity?.current_start);
+          const end=Number(subscriptionEntity?.current_end);
+          const startAt=Number.isFinite(start)&&start>0?new Date(start*1000).toISOString():null;
+          const endAt=Number.isFinite(end)&&end>0?new Date(end*1000).toISOString():null;
+          await db.batch([
+            db.prepare("UPDATE smartqr_subscriptions SET status=?,current_period_start=COALESCE(?,current_period_start),current_period_end=COALESCE(?,current_period_end),updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(nextStatus,startAt,endAt,row.id),
+            db.prepare("UPDATE smartqr_shops SET subscription_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(nextStatus,row.shop_id),
+            db.prepare("INSERT INTO smartqr_audit_logs(shop_id,action,detail_json) VALUES(?,?,?)").bind(row.shop_id,"monthly_subscription_status_changed",JSON.stringify({subscriptionId,eventType,status:nextStatus,eventId})),
+          ]);
         }
       }
       return response({received:true,processed:true});
