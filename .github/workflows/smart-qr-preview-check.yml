@@ -2,35 +2,30 @@ name: Smart QR preview checks
 on:
   push:
     branches:
-      - preview/babas-smart-qr
-    paths-ignore:
-      - package-lock.json
+      - preview/smart-qr-merchant-platform
+    paths:
+      - "src/pages/SmartQr*"
+      - "src/App.tsx"
+      - "migrations/smartqr-d1.sql"
+      - "wrangler.toml"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/smart-qr-preview-check.yml"
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   preview-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: preview/babas-smart-qr
+          ref: preview/smart-qr-merchant-platform
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Synchronise npm lockfile
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Build preview
         run: npm run build
-      - name: Commit lockfile update when needed
-        run: |
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore: sync Smart QR preview dependency lockfile"
-            git push origin HEAD:preview/babas-smart-qr
-          fi
