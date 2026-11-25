@@ -141,8 +141,8 @@ async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{use
   const { data, error } = await userClient.auth.getUser(token);
   if (error || !data.user) return null;
   const { data: roleRows, error: roleError } = await admin.from("user_roles").select("role").eq("user_id", data.user.id);
-  if (roleError || !roleRows?.length) return null;
-  return { user: data.user, roles: roleRows.map((row: {role:string}) => String(row.role)) };
+  if (roleError) return null;
+  return { user: data.user, roles: (roleRows ?? []).map((row: {role:string}) => String(row.role)) };
 }
 async function logCall(admin: SupabaseClient, userId: string, service: string, status: string, code: number) {
   // Metadata only. Never log request bodies, provider bodies, PAN, Aadhaar, bank details, VPA, or mobile.
@@ -234,8 +234,7 @@ Deno.serve(async (req: Request) => {
   if (!upstream.ok) {
     const invalid = isInvalidProviderError(upstreamData);
     await logCall(admin, identity.user.id, service, "error", upstream.status);
-    const providerMessage = jsonObject(upstreamData) && typeof upstreamData.message === "string" ? upstreamData.message.slice(0, 180) : "";
-    return reply(req, { ok: false, service, error: invalid ? (providerMessage || "The supplied details were not found or are invalid.") : (providerMessage || "The verification provider returned an error.") }, upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502);
+    return reply(req, { ok: false, service, error: invalid ? "The supplied details were not found or are invalid." : "The verification provider returned an error." }, upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502);
   }
 
   const safeData = normalizedCacheData(serviceName, upstreamData);
