@@ -115,6 +115,9 @@ async function createSession(db: D1Database, userId: string) {
   await db.prepare("INSERT INTO smartqr_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)").bind(hash, userId, expires).run();
   return token;
 }
+function isHttpsUrl(value: string) {
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; }
+}
 function slugify(value: string) {
   return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48);
 }
@@ -316,14 +319,25 @@ export const onRequest = async ({ request, env, params }: Context) => {
     if (route === "shop" && method === "PATCH") {
       if (!user || user.role !== "merchant") return fail("Merchant authentication required.",401);
       const input = await bodyJson(request);
-      const allowed = ["shop_name","category","description","phone","whatsapp","address_text","opening_hours","social_links","payment_url"];
+      const allowed = ["shop_name","category","description","phone","whatsapp","address_text","opening_hours","social_links","payment_url","logo_url"];
       const values: unknown[] = [];
       const updates: string[] = [];
       for (const field of allowed) if (Object.hasOwn(input,field)) {
         const value = input[field];
-        const max = field==="description"?600:field==="shop_name"?140:field==="address_text"?240:field==="opening_hours"||field==="social_links"?2000:field==="payment_url"?500:120;
-        const clean = typeof value==="string" ? value.trim().slice(0,max) : field==="opening_hours"||field==="social_links" ? JSON.stringify(value) : "";
-        updates.push(`${field}=?`); values.push(clean);
+        const max = field==="description"?600:field==="shop_name"?140:field==="address_text"?240:field==="opening_hours"?300:field==="social_links"?2000:field==="payment_url"||field==="logo_url"?500:120;
+        let clean = typeof value==="string" ? value.trim().slice(0,max) : field==="opening_hours"||field==="social_links" ? JSON.stringify(value) : "";
+        if ((field==="payment_url" || field==="logo_url") && clean && !isHttpsUrl(clean)) return fail("Shop links and images must use a valid HTTPS URL.");
+        if (field==="social_links") {
+          let parsed: Record<string,unknown>;
+          try { parsed = typeof value==="string" ? JSON.parse(value) : (value as Record<string,unknown>); } catch { return fail("Social links must be valid structured data."); }
+          const safe: Record<string,string> = {};
+          for (const key of ["facebook","instagram","website"]) {
+            const link = typeof parsed?.[key]==="string" ? (parsed[key] as string).trim() : "";
+            if (link) { if (!isHttpsUrl(link)) return fail("Social links must use HTTPS."); safe[key] = new URL(link).toString(); }
+          }
+          clean = JSON.stringify(safe);
+        }
+        updates.push(field+"=?"); values.push(clean);
       }
       if (!updates.length) return fail("No editable shop fields were supplied.");
       updates.push("updated_at=CURRENT_TIMESTAMP");
