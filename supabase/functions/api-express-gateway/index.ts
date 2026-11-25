@@ -244,6 +244,28 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  const minuteAgo = new Date(Date.now() - 60_000).toISOString();
+  const { count: userCalls, error: rateError } = await admin.from("api_express_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", identity.user.id)
+    .in("status", ["success", "error"])
+    .gte("created_at", minuteAgo);
+  if (rateError) return reply(req, { ok: false, service, error: "Usage protection is temporarily unavailable." }, 503);
+  if ((userCalls ?? 0) >= 20) {
+    await logCall(admin, identity.user.id, service, "rejected", 429);
+    return reply(req, { ok: false, service, error: "Request limit reached. Please wait one minute before trying again." }, 429);
+  }
+
+  const configuredLimit = Math.max(1, Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000));
+  const { count: totalAttempts, error: quotaError } = await admin.from("api_express_logs")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["success", "error"]);
+  if (quotaError) return reply(req, { ok: false, service, error: "API quota protection is temporarily unavailable." }, 503);
+  if ((totalAttempts ?? 0) >= configuredLimit) {
+    await logCall(admin, identity.user.id, service, "rejected", 429);
+    return reply(req, { ok: false, service, error: "The configured API Express call allowance has been reached. Please check the provider account quota." }, 429);
+  }
+
   let upstream: Response;
   try {
     upstream = await fetch(`${baseUrl}${routed.path}`, {
