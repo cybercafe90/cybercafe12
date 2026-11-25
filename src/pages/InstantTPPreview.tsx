@@ -5,7 +5,7 @@ import { callFunction, supabase } from "../lib/supabase";
 import "./InstantTPPreview.css";
 
 type Application = {
-  id?: string; trackingId: string; customerName: string; mobile: string; email?: string;
+  id?: string; trackingId: string; customerName: string; mobile?: string; email?: string;
   vehicleRegistration: string; vehicleMakeModel: string; vehicleType: string;
   quotedAmount: number | null; insurerName: string | null; paymentStatus: "not_submitted" | "under_verification" | "paid";
   adminNote?: string; policyStatus: "processing" | "issued";
