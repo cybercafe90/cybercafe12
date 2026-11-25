@@ -216,7 +216,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!(await rateLimit(db, "reset:" + await sha256(request.headers.get("cf-connecting-ip") || "unknown"), 5, 3600))) return fail("Too many requests. Try again later.",429);
       const input = await bodyJson(request);
       const email = text(input.email,254).toLowerCase();
-      if (/^[^\s@]+@[^\s@@]+\.[^\s@]+$/.test(email)) {
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         const account = await db.prepare("SELECT id,email FROM smartqr_users WHERE email=? AND password_hash IS NOT NULL").bind(email).first<{id:string;email:string}>();
         if (account) {
           const token = await createSetupToken(db,account.id,"reset");
