@@ -165,6 +165,14 @@ export const onRequest = async ({ request, env, params }: Context) => {
   if (method !== "GET" && route !== "payments/webhook" && !assertSameOrigin(request)) return fail("Request origin could not be verified.", 403);
 
   try {
+    if (route === "health" && method === "GET") {
+      const check=await db.prepare("SELECT 1 AS ok").first<{ok:number}>();
+      const tables=await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'smartqr_%'").all<{name:string}>();
+      const required=["smartqr_users","smartqr_shops","smartqr_email_tokens","smartqr_sessions","smartqr_events","smartqr_audit_logs","smartqr_locations","smartqr_qr_codes","smartqr_payments","smartqr_subscriptions","smartqr_webhook_events","smartqr_rate_limits"];
+      const present=new Set((tables.results||[]).map(row=>row.name));
+      return response({status:check?.ok===1&&required.every(name=>present.has(name))?"ready":"incomplete",database:check?.ok===1,schema:required.every(name=>present.has(name)),emailReady:Boolean(env.RESEND_API_KEY),paymentsReady:Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.SMART_QR_RAZORPAY_WEBHOOK_SECRET),ownerBootstrapReady:Boolean(env.SMART_QR_OWNER_BOOTSTRAP_SECRET)});
+    }
+
     if (route === "register" && method === "POST") {
       if (!(await rateLimit(db, `register:${await sha256(request.headers.get("cf-connecting-ip") || "unknown")}`, 5, 3600))) return fail("Too many attempts. Try again later.", 429);
       const input = await bodyJson(request);
