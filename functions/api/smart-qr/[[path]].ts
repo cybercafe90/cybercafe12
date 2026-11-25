@@ -236,9 +236,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const consumed = await db.batch([
         db.prepare(`UPDATE smartqr_users SET password_hash=?,email_verified_at=COALESCE(email_verified_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
           WHERE id=? AND password_hash IS NULL AND EXISTS (
-            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP
+            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND julianday(expires_at)>julianday('now')
           )`).bind(stored.encoded,row.user_id,hash),
-        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP").bind(hash),
+        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND julianday(expires_at)>julianday('now')").bind(hash),
       ]);
       if (consumed[0].meta.changes !== 1 || consumed[1].meta.changes !== 1) return fail("This setup link is invalid, expired or already used.",410);
       const session = await createSession(db,row.user_id);
@@ -253,7 +253,8 @@ export const onRequest = async ({ request, env, params }: Context) => {
         const account = await db.prepare("SELECT id,email FROM smartqr_users WHERE email=? AND password_hash IS NOT NULL").bind(email).first<{id:string;email:string}>();
         if (account) {
           const token = await createSetupToken(db,account.id,"reset");
-          await sendSetupEmail(env,account.email,token,url.origin,"reset");
+          try { await sendSetupEmail(env,account.email,token,url.origin,"reset"); }
+          catch (emailError) { console.error("Smart QR password reset email failed:", emailError instanceof Error ? emailError.message.slice(0,120) : "unknown"); }
         }
       }
       return response({message:"If an account exists for that address, password reset instructions have been sent."});
@@ -271,9 +272,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const consumed = await db.batch([
         db.prepare(`UPDATE smartqr_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP
           WHERE id=? AND EXISTS (
-            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP
+            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND julianday(expires_at)>julianday('now')
           )`).bind(stored.encoded,row.user_id,hash),
-        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP").bind(hash),
+        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND julianday(expires_at)>julianday('now')").bind(hash),
         db.prepare("DELETE FROM smartqr_sessions WHERE user_id=?").bind(row.user_id),
       ]);
       if (consumed[0].meta.changes !== 1 || consumed[1].meta.changes !== 1) return fail("This reset link is invalid, expired or already used.",410);
