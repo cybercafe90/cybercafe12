@@ -416,7 +416,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
         FROM smartqr_shops WHERE owner_user_id=?`).bind(user.id).first<Record<string,unknown>>();
       if (!shop) return fail("Shop not found.",404);
       const locations = await db.prepare("SELECT location_code,label,address_text,phone,opening_hours,is_primary FROM smartqr_locations WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY is_primary DESC,id").bind(user.id).all();
-      const qrCodes = await db.prepare("SELECT qr_code,label,is_active,created_at FROM smartqr_qr_codes WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY id").bind(user.id).all();
+      const qrCodes = await db.prepare("SELECT q.qr_code,q.label,q.is_active,q.created_at,l.location_code,l.label AS location_label FROM smartqr_qr_codes q LEFT JOIN smartqr_locations l ON l.id=q.location_id WHERE q.shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY q.id").bind(user.id).all();
       const setupPayment = await db.prepare("SELECT status,amount_paise FROM smartqr_payments WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(user.id).first<{status:string;amount_paise:number}>();
       const subscription = await db.prepare("SELECT status,monthly_fee_paise,cancel_at_period_end,current_period_end FROM smartqr_subscriptions WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY created_at DESC LIMIT 1").bind(user.id).first<{status:string;monthly_fee_paise:number;cancel_at_period_end:number;current_period_end:string|null}>();
       return response({shop,locations:locations.results,qrCodes:qrCodes.results,setupPayment:setupPayment||null,subscription:subscription||null,user:{email:user.email,role:user.role}});
@@ -660,6 +660,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
         const qr=await db.prepare("SELECT location_id FROM smartqr_qr_codes WHERE shop_id=? AND qr_code=? AND is_active=1").bind(shop.id,qrCode).first<{location_id:number|null}>();
         if(!qr) return fail("QR code not found.",404);
         locationId=qr.location_id;
+        if(!locationId){
+          const primary=await db.prepare("SELECT id FROM smartqr_locations WHERE shop_id=? AND is_primary=1").bind(shop.id).first<{id:number}>();
+          locationId=primary?.id??null;
+        }
       }else{
         const primary=await db.prepare("SELECT id FROM smartqr_locations WHERE shop_id=? AND is_primary=1").bind(shop.id).first<{id:number}>();
         locationId=primary?.id??null;
