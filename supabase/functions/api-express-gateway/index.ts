@@ -156,7 +156,7 @@ async function logCall(admin: SupabaseClient, userId: string, service: string, s
   const { error } = await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code });
   if (error) throw new Error("API audit logging is unavailable; request blocked.");
 }
-async function readLogs(req: Request, admin: SupabaseClient, _userId: string) {
+async function readLogs(req: Request, admin: SupabaseClient) {
   const limitRaw = 50;
   const limit = Math.max(1, Math.min(100, Number.isFinite(limitRaw) ? Math.floor(limitRaw) : 50));
   const { data, error } = await admin.from("api_express_logs").select("id,user_id,service_name,status,http_code,created_at").order("created_at", { ascending: false }).limit(limit);
@@ -220,7 +220,7 @@ Deno.serve(async (req: Request) => {
   const payload = (body.payload ?? {}) as Json;
   if (service === "admin_logs") {
     if (!identity.roles.some(role => ["owner", "admin"].includes(role))) return reply(req, { ok: false, service, error: "Owner/admin authorization required." }, 403);
-    return await readLogs(req, admin, identity.user.id);
+    return await readLogs(req, admin);
   }
   if (!SERVICES.has(service)) return reply(req, { ok: false, service, error: "Unsupported service." }, 400);
   const serviceName = service as ServiceName;
