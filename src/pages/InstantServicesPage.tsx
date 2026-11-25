@@ -96,7 +96,7 @@ export default function InstantServicesPage() {
     } finally { setBusy(false); }
   }
 
-  const selectedToolTitle = activeTool?.title ?? "Instant service";
+  const selectedToolTitle = selected === "kyc_aadhaar_dl" ? (docType === "aadhaar" ? "Aadhaar OTP request" : "Driving licence check") : (activeTool?.title ?? "Instant service");
   const whatsappMessage = encodeURIComponent(`Hello BABA'S CYBER CAFE, I need assistance with ${selectedToolTitle}.`);
   const serviceReady = sessionReady && signedIn;
 
@@ -151,7 +151,7 @@ export default function InstantServicesPage() {
             </div> : <form className="instant-service-form" onSubmit={(e) => void submit(e)}>
               {selected === "kyc_pan" && <label className="field"><span>PAN number</span><input required minLength={10} maxLength={10} pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]" autoComplete="off" value={form.pan} onChange={(e) => setForm({ ...form, pan: e.target.value.toUpperCase() })} placeholder="ABCDE1234F"/></label>}
               {selected === "kyc_aadhaar_dl" && <>
-                <label className="field"><span>Document type</span><select value={docType} onChange={(e) => { setDocType(e.target.value as "aadhaar" | "dl"); setResult(null); setError(""); }}><option value="aadhaar">Aadhaar OTP request</option><option value="dl">Driving licence</option></select></label>
+                <label className="field"><span>Document type</span><select value={docType} onChange={(e) => { setDocType(e.target.value as "aadhaar" | "dl"); setForm((current) => ({ ...current, consent: false })); setResult(null); setError(""); }}><option value="aadhaar">Aadhaar OTP request</option><option value="dl">Driving licence</option></select></label>
                 <label className="field"><span>{docType === "aadhaar" ? "Aadhaar number" : "Driving licence number"}</span><input required minLength={docType === "aadhaar" ? 12 : 5} maxLength={24} autoComplete="off" inputMode={docType === "aadhaar" ? "numeric" : "text"} value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value.replace(docType === "aadhaar" ? /\D/g : /[^a-zA-Z0-9-]/g, "").slice(0,24) })} placeholder={docType === "aadhaar" ? "12-digit Aadhaar number" : "Driving licence number"}/></label>
                 {docType === "aadhaar" && <label className="instant-consent"><input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })}/><span>I consent to sending my Aadhaar number to the verification provider to request an OTP. I understand this starts a request only; OTP confirmation is a separate step.</span></label>}
               </>}
