@@ -5,7 +5,7 @@ This feature is isolated on `feature/smart-qr-live`. Do not merge the older `pre
 ## Cloudflare bindings and database
 
 - Preview Pages environment: `SMART_QR_DB` → `babas-smart-qr-preview`
-- Production D1: `babas-smart-qr-production` (not yet bound to the currently deployed production Pages environment)
+- Production D1: `babas-smart-qr-production` (dedicated database; schema migrations are applied and `SMART_QR_DB` is bound in the Production Pages environment)
 - Keep the existing `DB` binding unchanged.
 
 Migration order for a fresh D1 database:
@@ -15,7 +15,7 @@ Migration order for a fresh D1 database:
 3. `migrations/smartqr-subscription-plan.sql`
 4. `migrations/smartqr-location-analytics.sql`
 
-The preview database has the reconciliation schema, `razorpay_plan_id` column, and location-aware event attribution (`smartqr_events.location_id`). The production database currently contains only the baseline Smart QR tables; do not release until the two additive migrations are reviewed and applied to production.
+Both Preview and the dedicated Production database now contain the reconciliation schema, `razorpay_plan_id` column, and location-aware event attribution (`smartqr_events.location_id`). Production has no merchant records yet. The Production Pages binding and `SMART_QR_PUBLIC_ORIGIN` are configured. The production checkout gate is explicitly `false`.
 
 ## Cloudflare Pages secrets
 
@@ -28,7 +28,7 @@ Add these under **Workers & Pages → babacybercafe → Settings → Variables a
 | `RAZORPAY_KEY_SECRET` | Secret | Order and subscription signature verification |
 | `SMART_QR_RAZORPAY_WEBHOOK_SECRET` | Secret | Dedicated Smart QR webhook signature verification |
 | `SMART_QR_OWNER_BOOTSTRAP_SECRET` | Secret | One-time allowlisted platform-owner bootstrap |
-| `SMART_QR_ALLOW_LIVE_PAYMENTS` | Plain text | Keep unset/false by default. For an approved Preview payment test only, set `true` while using Razorpay TEST keys and a TEST webhook secret exclusively. Never put live Razorpay credentials in Preview. Production remains unset/false until a separate release approval. |
+| `SMART_QR_ALLOW_LIVE_PAYMENTS` | Plain text | Keep unset/false by default. For an approved Preview payment test only, set `true` while using Razorpay TEST keys and a TEST webhook secret exclusively. Never put live Razorpay credentials in Preview. Production `SMART_QR_ALLOW_LIVE_PAYMENTS` is explicitly set to `false`; do not change it until separate live-payment approval. |
 
 The existing live Razorpay functions in Supabase are not modified. Smart QR uses its own Cloudflare Pages API routes and D1 records. Preview billing is intentionally disabled so a live key cannot accidentally charge a test merchant.
 
@@ -75,4 +75,4 @@ The permanent QR destination is `/s/{slug}`. PNG generation is served through th
 5. Test merchant registration and setup email, password creation, login, test setup payment, webhook confirmation, owner review, QR download, public scan and analytics. For VIP, create two additional locations and QR codes, verify each QR opens the correct branch details, and confirm events appear against the matching location. Also test a monthly mandate only if the merchant explicitly opted in.
 6. Return `SMART_QR_ALLOW_LIVE_PAYMENTS` to unset/false after testing. Production remains untouched.
 
-Preview deployment is for review only; the custom production domain is unchanged. The production D1 binding and full reconciliation schema must be confirmed before any release. Live end-to-end billing and email have not been certified until these tests pass.
+Preview deployment is for review only; the custom production domain is unchanged. The production D1 binding and full reconciliation schema have been configured. Production email and Razorpay secrets are not yet configured or verified, so registration email and billing are not certified. Do not merge or enable live billing until all required secrets are added securely and end-to-end tests pass.
