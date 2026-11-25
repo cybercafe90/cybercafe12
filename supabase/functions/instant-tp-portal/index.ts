@@ -1,5 +1,6 @@
 import { checkRateLimit, serviceClient, verifyOwner } from '../_shared/auth.ts'
 import { createTrackingReference, normalizeMobile, preflight, response } from '../_shared/http.ts'
+import { customerInstantTpRecord } from '../_shared/instant-tp.ts'
 
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : ''
 const trackingPattern = /^BABA-[A-HJ-NP-Z2-9]{10}$/
@@ -8,15 +9,6 @@ const mobileFor = (value: unknown) => normalizeMobile(value)
 async function audit(db: ReturnType<typeof serviceClient>, id: string, actor: string | null, action: string, details: Record<string, unknown> = {}) {
   const { error } = await db.from('instant_tp_audit_events').insert({ application_id: id, actor_id: actor, action, details })
   if (error) throw error
-}
-function publicRecord(row: Record<string, unknown>, policyUrl: string | null = null) {
-  return {
-    trackingId: row.tracking_id, customerName: row.customer_name, mobile: row.mobile,
-    vehicleRegistration: row.vehicle_registration, vehicleMakeModel: row.vehicle_make_model,
-    vehicleType: row.vehicle_type, quotedAmount: row.quoted_amount, insurerName: row.insurer_name,
-    paymentStatus: row.payment_status, utr: row.utr, policyStatus: row.policy_status,
-    policyNumber: row.policy_number, policyUrl, createdAt: row.created_at, updatedAt: row.updated_at,
-  }
 }
 Deno.serve(async (request: Request) => {
   const early = preflight(request); if (early) return early
@@ -48,7 +40,7 @@ Deno.serve(async (request: Request) => {
       }
       if (!saved) return response(request, { error: 'Could not create a tracking reference. Try again.' }, 503)
       await audit(db, String(saved.id), null, 'application_created')
-      return response(request, { application: publicRecord(saved as Record<string, unknown>) }, 201, { 'Cache-Control': 'no-store' })
+      return response(request, { application: customerInstantTpRecord(saved as Record<string, unknown>) }, 201, { 'Cache-Control': 'no-store' })
     }
     if (body.action === 'customer_lookup' || body.action === 'submit_utr') {
       if (!await checkRateLimit(db, request, 'instant-tp-customer', 'all', 12, 15)) return response(request, { error: 'Too many attempts. Please wait and try again.' }, 429)
@@ -72,7 +64,7 @@ Deno.serve(async (request: Request) => {
         const { data, error: signedError } = await db.storage.from('instant-tp-policies').createSignedUrl(row.policy_storage_path, 300, { download: true })
         if (!signedError) policyUrl = data.signedUrl
       }
-      return response(request, { application: publicRecord(row, policyUrl) }, 200, { 'Cache-Control': 'no-store' })
+      return response(request, { application: customerInstantTpRecord(row, policyUrl) }, 200, { 'Cache-Control': 'no-store' })
     }
     const owner = await verifyOwner(request, db)
     if (body.action === 'admin_list') {
