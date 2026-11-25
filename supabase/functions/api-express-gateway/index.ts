@@ -207,6 +207,7 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const apiKey = Deno.env.get("APIEXPRESS_API_KEY");
   const baseUrl = (Deno.env.get("APIEXPRESS_BASE_URL") || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const environment: "sandbox" | "production" = baseUrl.includes("sandbox.api.apiexpress.in") ? "sandbox" : "production";
   if (!supabaseUrl || !serviceRoleKey || !apiKey) return reply(req, { ok: false, service: "unknown", error: "Gateway is not configured." }, 503);
 
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
