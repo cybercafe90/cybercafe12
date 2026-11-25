@@ -251,8 +251,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
         db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND julianday(expires_at)>julianday('now')").bind(hash),
       ]);
       if (consumed[0].meta.changes !== 1 || consumed[1].meta.changes !== 1) return fail("This setup link is invalid, expired or already used.",410);
+      const account = await db.prepare("SELECT role FROM smartqr_users WHERE id=?").bind(row.user_id).first<{role:"merchant"|"platform_admin"}>();
       const session = await createSession(db,row.user_id);
-      return response({message:"Password created. Your merchant application is pending approval."},200,{"set-cookie":cookieHeader(session,604800)});
+      return response({message:account?.role==="platform_admin"?"Administrator password created.":"Password created. Your merchant application is pending approval.",user:{role:account?.role||"merchant"}},200,{"set-cookie":cookieHeader(session,604800)});
     }
 
     if (route === "forgot-password" && method === "POST") {
