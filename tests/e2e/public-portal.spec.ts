@@ -151,7 +151,7 @@ test("customer portal guides visitors to secure reference-based tracking", async
   await expect(
     page.getByRole("heading", { name: /Your services, made simple\./ }),
   ).toBeVisible();
-  await page.getByRole("link", { name: /Open tracking portal/ }).click();
+  await page.getByRole("link", { name: /Track request/ }).click();
   await expect(page).toHaveURL(/\/track$/);
   await expect(
     page.getByRole("heading", { name: "A clear view of what comes next." }),
