@@ -30,6 +30,8 @@ Add these under **Workers & Pages → babacybercafe → Settings → Variables a
 | `SMART_QR_OWNER_BOOTSTRAP_SECRET` | Secret | One-time allowlisted platform-owner bootstrap |
 | `SMART_QR_ALLOW_LIVE_PAYMENTS` | Plain text | Keep unset/false by default. For an approved Preview payment test only, set `true` while using Razorpay TEST keys and a TEST webhook secret exclusively. Never put live Razorpay credentials in Preview. Production `SMART_QR_ALLOW_LIVE_PAYMENTS` is explicitly set to `false`; do not change it until separate live-payment approval. |
 
+Create a Resend API key with **sending access only**, restricted to `babacybercafe.in`; do not use a full-access key. Use different randomly generated owner-bootstrap secrets in Preview and Production, each at least 32 characters.
+
 The existing live Razorpay functions in Supabase are not modified. Smart QR uses its own Cloudflare Pages API routes and D1 records. Preview billing is intentionally disabled so a live key cannot accidentally charge a test merchant.
 
 ## Razorpay webhook
