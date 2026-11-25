@@ -17,7 +17,7 @@
   function localBusinessSchema() {
     if (document.getElementById("bbc-local-business-schema")) return;
     document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => node.remove());
-    const schema = {"@context":"https://schema.org","@type":"LocalBusiness","name":"BABA'S CYBER CAFE","url":"https://babacybercafe.in","telephone":"+91-7006865909","email":"support@babacybercafe.in","address":{"@type":"PostalAddress","streetAddress":"Zaripora Zoonimar","addressLocality":"Srinagar","addressRegion":"Jammu & Kashmir","postalCode":"190011","addressCountry":"IN"},"areaServed":"Srinagar, Jammu & Kashmir"};
+    const schema = {"@context":"https://schema.org","@type":"LocalBusiness","name":"BABA'S CYBER CAFE","url":"https://babacybercafe.in","telephone":"+91-7006865909","email":"support@babacybercafe.in","areaServed":"Srinagar, Jammu & Kashmir"};
     const node = document.createElement("script");
     node.id = "bbc-local-business-schema";
     node.type = "application/ld+json";
