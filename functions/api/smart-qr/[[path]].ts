@@ -81,7 +81,7 @@ function cookie(request: Request, name: string) {
   return found ? decodeURIComponent(found.slice(name.length + 1)) : "";
 }
 function cookieHeader(value: string, maxAge: number) {
-  return `smartqr_session=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+  return `smartqr_session=${encodeURIComponent(value)}; Path=/api/smart-qr; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }
 function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -177,6 +177,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!(await rateLimit(db, `register:${await sha256(request.headers.get("cf-connecting-ip") || "unknown")}`, 5, 3600))) return fail("Too many attempts. Try again later.", 429);
       const input = await bodyJson(request);
       const email = text(input.email, 254).toLowerCase();
+      if (email === ADMIN_EMAIL) return fail("This email address is reserved for platform administration.",403);
       const ownerName = text(input.ownerName, 120);
       const shopName = text(input.shopName, 140);
       const plan = text(input.plan, 20);
@@ -478,7 +479,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
         if (!planId) throw new Error("Razorpay did not return a valid subscription plan.");
         await db.prepare("UPDATE smartqr_subscriptions SET razorpay_plan_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(planId,record.id).run();
       }
-      const remote=await razorpayRequest(env,"/subscriptions","POST",{plan_id:planId,total_count:120,customer_notify:1,notes:{shop_code:shop.shop_code,plan_code:shop.plan_code,product:"BABA'S SMART QR"}});
+      const remote=await razorpayRequest(env,"/subscriptions","POST",{plan_id:planId,total_count:120,customer_notify:true,notes:{shop_code:shop.shop_code,plan_code:shop.plan_code,product:"BABA'S SMART QR"}});
       const subscriptionId=text(remote.id,80);
       if (!subscriptionId || remote.plan_id!==planId) throw new Error("Razorpay returned an invalid subscription.");
       await db.prepare("UPDATE smartqr_subscriptions SET razorpay_subscription_id=?,status='created',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(subscriptionId,record.id).run();
