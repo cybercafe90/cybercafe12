@@ -673,6 +673,16 @@ export const onRequest = async ({ request, env, params }: Context) => {
       return response({message:"Owner setup email sent. The account is not active until the password is set."},202);
     }
 
+    if (route === "admin/audit" && method === "GET") {
+      if (!user || user.role!=="platform_admin") return fail("Owner access required.",403);
+      const rows=await db.prepare(`SELECT a.action,a.created_at,u.email AS actor_email,s.shop_code,s.shop_name
+        FROM smartqr_audit_logs a
+        LEFT JOIN smartqr_users u ON u.id=a.actor_user_id
+        LEFT JOIN smartqr_shops s ON s.id=a.shop_id
+        ORDER BY a.id DESC LIMIT 50`).all();
+      return response({events:rows.results});
+    }
+
     if (route === "admin/shops" && method === "GET") {
       if (!user || user.role!=="platform_admin") return fail("Owner access required.",403);
       const rows=await db.prepare(`SELECT s.shop_code,s.shop_name,s.slug,s.category,s.approval_status,s.plan_code,s.monthly_option,
