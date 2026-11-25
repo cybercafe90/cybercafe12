@@ -752,6 +752,17 @@ export const onRequest = async ({ request, env, params }: Context) => {
     return fail("Smart QR endpoint not found.",404);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected server error.";
-    return fail(message.includes("RESEND_API_KEY") ? message : "The request could not be completed. Please try again.", message.includes("RESEND_API_KEY") ? 503 : 500);
+    const requestId = crypto.randomUUID().slice(0, 12);
+    const emailNotConfigured = message.includes("RESEND_API_KEY");
+    const emailDeliveryFailed = message.toLowerCase().includes("email");
+    const category = emailNotConfigured ? "email_not_configured" : emailDeliveryFailed ? "email_delivery_failed" : "unexpected_error";
+    console.error("Smart QR request failed", JSON.stringify({ requestId, route, category }));
+    if (emailNotConfigured) {
+      return response({ error: "Email delivery is not configured. Add RESEND_API_KEY as a Cloudflare secret for this environment.", requestId }, 503);
+    }
+    if (emailDeliveryFailed) {
+      return response({ error: "The account email could not be sent. Check the Resend API key and confirm the sending domain is active in Resend.", requestId }, 503);
+    }
+    return response({ error: "The request could not be completed. Contact support with reference " + requestId + ".", requestId }, 500);
   }
 };
