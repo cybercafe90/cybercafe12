@@ -675,7 +675,8 @@ export const onRequest = async ({ request, env, params }: Context) => {
     if (route === "admin/shops" && method === "GET") {
       if (!user || user.role!=="platform_admin") return fail("Owner access required.",403);
       const rows=await db.prepare(`SELECT s.shop_code,s.shop_name,s.slug,s.category,s.approval_status,s.plan_code,s.monthly_option,
-        s.subscription_status,s.created_at,u.email,u.full_name
+        s.subscription_status,s.created_at,u.email,u.full_name,
+        (SELECT p.status FROM smartqr_payments p WHERE p.shop_id=s.id AND p.payment_kind='setup' ORDER BY p.created_at DESC LIMIT 1) AS setup_payment_status
         FROM smartqr_shops s JOIN smartqr_users u ON u.id=s.owner_user_id ORDER BY s.created_at DESC LIMIT 200`).all();
       return response({shops:rows.results});
     }
