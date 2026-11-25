@@ -1,8 +1,8 @@
-name: Build and deploy Cloudflare Pages
+name: CI - Build and verify
 
 on:
   push:
-    branches: [main, feature/upi-dynamic-payment-portal]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -10,31 +10,57 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  verify:
+    name: Lint, build, and test
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.12.0
           cache: npm
-      - run: npm ci
-      - name: Audit all production and development dependencies
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit all dependencies
         run: npm audit
-      - run: npm audit --omit=dev
-      - run: npm run lint
-      - run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build production bundle
+        run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-          # PostHog project key is a public browser-ingestion key, not a secret.
+          # Public PostHog browser-ingestion key; never place provider secrets here.
           VITE_POSTHOG_KEY: phc_AnW9LxtnbUJMRcjuUhMTga6HTiQPvsvv9Ywq57TvvFVC
           VITE_POSTHOG_HOST: https://us.i.posthog.com
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-      - run: npm run test:edge
-      - run: npm run check:edge
-      # Cloudflare Pages is connected directly to this GitHub repository and
-      # deploys each main-branch push itself. Keep this workflow as CI only;
-      # a second Wrangler deploy requires separate secrets and causes false failures.
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: npm run test:e2e
+
+      - name: Test shared Edge Function utilities
+        run: npm run test:edge
+
+      - name: Type-check Edge Functions
+        run: npm run check:edge
+
+  # Cloudflare Pages is connected directly to GitHub. This workflow verifies
+  # source only; it intentionally does not run a second Wrangler deployment.
