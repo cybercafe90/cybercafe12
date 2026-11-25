@@ -84,7 +84,7 @@ async function sendSetupEmail(env: Env, email: string, token: string, origin: st
   const result = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: EMAIL_FROM, to: [email], subject: "Set up your BABA'S SMART QR account", html }),
+    body: JSON.stringify({ from: EMAIL_FROM, to: [email], subject: kind === "reset" ? "Reset your BABA'S SMART QR password" : "Set up your BABA'S SMART QR account", html }),
   });
   if (!result.ok) throw new Error("The account email could not be delivered. Please try again later.");
 }
@@ -337,12 +337,13 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
     if (route.startsWith("event/") && method === "POST") {
       const slug = text(route.slice(6),80);
+      const ip = request.headers.get("cf-connecting-ip") || "unknown";
+      if (!(await rateLimit(db, "event:" + await sha256(ip + "|" + slug), 120, 900))) return fail("Too many activity events. Try again later.",429);
       const input = await bodyJson(request);
       const type = text(input.type,30);
       if (!ALLOWED_EVENTS.has(type)) return fail("Unsupported event type.");
       const shop = await db.prepare("SELECT id FROM smartqr_shops WHERE slug=? AND approval_status='approved'").bind(slug).first<{id:number}>();
       if (!shop) return fail("Shop not found.",404);
-      const ip = request.headers.get("cf-connecting-ip") || "unknown";
       const ua = (request.headers.get("user-agent") || "").slice(0,160);
       const bucket = Math.floor(Date.now()/900000);
       const dedupe = await sha256(`${ip}|${ua}|${slug}|${type}|${bucket}`);
