@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, BarChart3, CheckCircle2, ExternalLink, LogOut, MapPin, MessageCircle, Phone, QrCode, ShieldCheck, Store, Wallet } from "lucide-react";
 import "../smart-qr.css";
+import { SMART_QR_PLANS, SMART_QR_MONTHLY_OPTIONS, type SmartQrPlanCode } from "../config/smartQrPlans";
 
 type ApiError = { error?: string; message?: string };
 type Shop = {
@@ -32,9 +33,9 @@ function loadRazorpay():Promise<void>{
 }
 const API="/api/smart-qr";
 const plans = [
-  {code:"starter",name:"Starter",setup:499,monthly:0,qr:1,locations:1,retention:7,description:"A simple permanent shop QR."},
-  {code:"growth",name:"Growth",setup:999,monthly:99,qr:1,locations:1,retention:365,description:"Detailed engagement insights."},
-  {code:"vip",name:"VIP Business",setup:1999,monthly:199,qr:3,locations:3,retention:730,description:"Multiple QR codes and locations."},
+  {code:"starter" as const,name:SMART_QR_PLANS.starter.name,setup:SMART_QR_PLANS.starter.setupFeeInr,monthly:SMART_QR_PLANS.starter.monthlyFeeInr,qr:SMART_QR_PLANS.starter.qrLimit,locations:SMART_QR_PLANS.starter.locationLimit,retention:SMART_QR_PLANS.starter.analyticsRetentionDays,description:"A simple permanent shop QR."},
+  {code:"growth" as const,name:SMART_QR_PLANS.growth.name,setup:SMART_QR_PLANS.growth.setupFeeInr,monthly:SMART_QR_PLANS.growth.monthlyFeeInr,qr:SMART_QR_PLANS.growth.qrLimit,locations:SMART_QR_PLANS.growth.locationLimit,retention:SMART_QR_PLANS.growth.analyticsRetentionDays,description:"Detailed engagement insights."},
+  {code:"vip" as const,name:SMART_QR_PLANS.vip.name,setup:SMART_QR_PLANS.vip.setupFeeInr,monthly:SMART_QR_PLANS.vip.monthlyFeeInr,qr:SMART_QR_PLANS.vip.qrLimit,locations:SMART_QR_PLANS.vip.locationLimit,retention:SMART_QR_PLANS.vip.analyticsRetentionDays,description:"Multiple QR codes and locations."},
 ] as const;
 async function api<T>(path:string, init:RequestInit={}):Promise<T>{
   const response=await fetch(API+"/"+path,{...init,credentials:"same-origin",headers:{"content-type":"application/json",...(init.headers||{})}});
@@ -77,7 +78,7 @@ function Register(){
         <label>Shop address<input maxLength={240} value={form.address} onChange={e=>update("address",e.target.value)} placeholder="Area, city"/></label>
         <div className="smartqr-divider"/><div className="smartqr-card-heading"><span className="smartqr-step">02</span><div><h2>Choose your plan</h2><p>Setup fee and optional recurring subscription are separate.</p></div></div>
         <div className="smartqr-plan-picker">{plans.map(p=><button type="button" key={p.code} className={form.plan===p.code?"smartqr-plan is-selected":"smartqr-plan"} onClick={()=>update("plan",p.code)}><span>{p.name}</span><b>₹{p.setup.toLocaleString("en-IN")}</b><small>one-time setup</small><small>{p.qr} QR · {p.locations} location · {p.retention} days analytics</small><em>{p.description}</em></button>)}</div>
-        <label>Monthly subscription<select value={form.monthlyOption} onChange={e=>update("monthlyOption",e.target.value)}>{(form.plan==="starter"?[{value:"none",label:"No monthly subscription"}]:form.plan==="growth"?[{value:"none",label:"No monthly subscription"},{value:"growth",label:"Growth — ₹99/month"}]:[{value:"none",label:"No monthly subscription"},{value:"vip",label:"VIP — ₹199/month"}]).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+        <label>Monthly subscription<select value={form.monthlyOption} onChange={e=>update("monthlyOption",e.target.value)}>{SMART_QR_MONTHLY_OPTIONS[form.plan as SmartQrPlanCode].map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
         {form.monthlyOption!=="none"&&<label className="smartqr-consent"><input type="checkbox" checked={form.monthlyConsent} onChange={e=>setForm(current=>({...current,monthlyConsent:e.target.checked}))}/><span>I explicitly agree to the selected recurring monthly subscription. Billing will begin only after a separate Razorpay authorization, and I can cancel according to the subscription terms.</span></label>}
         <div className="smartqr-price-summary"><div><span>One-time setup fee</span><b>₹{plan.setup.toLocaleString("en-IN")}</b></div><div><span>Monthly recurring fee</span><b>₹{form.monthlyOption==="growth"?99:form.monthlyOption==="vip"?199:0}</b></div><small>Recurring billing is optional. It will never start without your explicit consent and a separate payment authorization. No payment is collected by this application form.</small></div>
         <button className="smartqr-primary" disabled={busy||(form.monthlyOption!=="none"&&!form.monthlyConsent)}>{busy?"Submitting…":"Submit merchant application"} <ArrowRight size={17}/></button>
