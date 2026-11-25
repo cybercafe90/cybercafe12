@@ -16,3 +16,5 @@
 .smartqr-form .smartqr-consent{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid #e7d9b9;border-radius:10px;background:#fffcf5;font-size:12px;line-height:1.6;color:#51452f}.smartqr-form .smartqr-consent input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#8e6828}.smartqr-form .smartqr-consent span{font-weight:550}
 
 .smartqr-qr-preview{margin-top:16px;display:grid;justify-items:start;gap:10px}.smartqr-qr-preview img{width:190px;max-width:100%;aspect-ratio:1;object-fit:contain;padding:10px;background:#fff;border:1px solid var(--sq-line);border-radius:12px}.smartqr-qr-preview small{font-size:11px;color:var(--sq-muted);line-height:1.5}
+
+.smartqr-admin-toolbar{max-width:1180px;margin:0 auto 14px;display:flex;align-items:center;gap:12px}.smartqr-admin-toolbar input{flex:1;min-width:0;border:1px solid var(--sq-line);border-radius:9px;background:#fff;padding:12px 14px;font:inherit;font-size:13px}.smartqr-admin-toolbar span{font-size:12px;color:var(--sq-muted);white-space:nowrap}
