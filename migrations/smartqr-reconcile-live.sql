@@ -4,6 +4,7 @@ ALTER TABLE smartqr_shops ADD COLUMN monthly_option TEXT NOT NULL DEFAULT 'none'
   CHECK (monthly_option IN ('none','growth','vip'));
 ALTER TABLE smartqr_shops ADD COLUMN logo_url TEXT;
 ALTER TABLE smartqr_shops ADD COLUMN owner_display_name TEXT;
+ALTER TABLE smartqr_shops ADD COLUMN monthly_consent_at TEXT;
 
 ALTER TABLE smartqr_events ADD COLUMN dedupe_hash TEXT;
 CREATE INDEX IF NOT EXISTS smartqr_events_dedupe_idx
