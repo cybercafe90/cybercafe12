@@ -15,7 +15,7 @@ create index if not exists api_express_cache_service_idx
 
 create table if not exists public.api_express_logs (
   id bigint generated always as identity primary key,
-  user_id uuid not null references auth.users(id) on delete set null,
+  user_id uuid references auth.users(id) on delete set null,
   service_name text not null,
   status text not null check (status in ('success','error','cache_hit','rejected')),
   http_code integer not null check (http_code between 100 and 599),
