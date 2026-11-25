@@ -266,9 +266,11 @@ Deno.serve(async (req: Request) => {
   }
 
   const configuredLimit = Math.max(1, Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000));
+  const quotaMonthStart = new Date(); quotaMonthStart.setUTCDate(1); quotaMonthStart.setUTCHours(0, 0, 0, 0);
   const { count: totalAttempts, error: quotaError } = await admin.from("api_express_logs")
     .select("id", { count: "exact", head: true })
-    .in("status", ["success", "error"]);
+    .in("status", ["success", "error"])
+    .gte("created_at", quotaMonthStart.toISOString());
   if (quotaError) return reply(req, { ok: false, service, error: "API quota protection is temporarily unavailable." }, 503);
   if ((totalAttempts ?? 0) >= configuredLimit) {
     await logCall(admin, identity.user.id, service, "rejected", 429);
