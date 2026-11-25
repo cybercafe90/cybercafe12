@@ -78,3 +78,5 @@ CREATE TABLE IF NOT EXISTS smartqr_rate_limits (
   window_started_at INTEGER NOT NULL,
   request_count INTEGER NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS smartqr_events_dedupe_unique ON smartqr_events(dedupe_hash) WHERE dedupe_hash IS NOT NULL;
