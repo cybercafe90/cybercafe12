@@ -76,9 +76,9 @@ async function rateLimit(db: D1Database, key: string, max: number, windowSeconds
   const row = await db.prepare("SELECT request_count FROM smartqr_rate_limits WHERE rate_key=?").bind(key).first<{request_count:number}>();
   return (row?.request_count ?? max + 1) <= max;
 }
-async function sendSetupEmail(env: Env, email: string, token: string, origin: string, kind: "merchant" | "owner") {
+async function sendSetupEmail(env: Env, email: string, token: string, origin: string, kind: "merchant" | "owner" | "reset") {
   if (!env.RESEND_API_KEY) throw new Error("Email delivery is not configured. Add RESEND_API_KEY as a Cloudflare secret before enabling registration.");
-  const url = new URL(kind === "owner" ? "/smart-qr/owner-setup" : "/smart-qr/setup", env.SMART_QR_PUBLIC_ORIGIN || origin);
+  const url = new URL(kind === "reset" ? "/smart-qr/reset-password" : kind === "owner" ? "/smart-qr/owner-setup" : "/smart-qr/setup", env.SMART_QR_PUBLIC_ORIGIN || origin);
   url.searchParams.set("token", token);
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#202124"><h2>BABA'S SMART QR</h2><p>Set a secure password for your ${kind} account using the one-time link below.</p><p><a href="${url.toString()}" style="display:inline-block;padding:12px 18px;background:#171717;color:#fff;text-decoration:none">Set password</a></p><p>This link expires in 30 minutes and can be used once. If you did not request it, ignore this email.</p></div>`;
   const result = await fetch("https://api.resend.com/emails", {
@@ -88,11 +88,11 @@ async function sendSetupEmail(env: Env, email: string, token: string, origin: st
   });
   if (!result.ok) throw new Error("The account email could not be delivered. Please try again later.");
 }
-async function createSetupToken(db: D1Database, userId: string) {
+async function createSetupToken(db: D1Database, userId: string, purpose: "setup" | "reset" = "setup") {
   const raw = randomToken();
   const tokenHash = await sha256(raw);
   const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-  await db.prepare("INSERT INTO smartqr_email_tokens(token_hash,user_id,purpose,expires_at) VALUES(?,?, 'setup', ?)").bind(tokenHash, userId, expires).run();
+  await db.prepare("INSERT INTO smartqr_email_tokens(token_hash,user_id,purpose,expires_at) VALUES(?,?, ?, ?)").bind(tokenHash, userId, purpose, expires).run();
   return raw;
 }
 async function sessionUser(request: Request, db: D1Database): Promise<SessionUser | null> {
@@ -212,6 +212,37 @@ export const onRequest = async ({ request, env, params }: Context) => {
       return response({message:"Password created. Your merchant application is pending approval."},200,{"set-cookie":cookieHeader(session,604800)});
     }
 
+    if (route === "forgot-password" && method === "POST") {
+      if (!(await rateLimit(db, "reset:" + await sha256(request.headers.get("cf-connecting-ip") || "unknown"), 5, 3600))) return fail("Too many requests. Try again later.",429);
+      const input = await bodyJson(request);
+      const email = text(input.email,254).toLowerCase();
+      if (/^[^\s@]+@[^\s@@]+\.[^\s@]+$/.test(email)) {
+        const account = await db.prepare("SELECT id,email FROM smartqr_users WHERE email=? AND password_hash IS NOT NULL").bind(email).first<{id:string;email:string}>();
+        if (account) {
+          const token = await createSetupToken(db,account.id,"reset");
+          await sendSetupEmail(env,account.email,token,url.origin,"reset");
+        }
+      }
+      return response({message:"If an account exists for that address, password reset instructions have been sent."});
+    }
+
+    if (route === "reset-password" && method === "POST") {
+      const input = await bodyJson(request);
+      const token = text(input.token,128);
+      const password = text(input.password,256);
+      if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) return fail("Use at least 12 characters with uppercase, lowercase and a number.");
+      const hash = await sha256(token);
+      const row = await db.prepare("SELECT user_id,expires_at,used_at FROM smartqr_email_tokens WHERE token_hash=? AND purpose='reset'").bind(hash).first<{user_id:string;expires_at:string;used_at:string|null}>();
+      if (!row || row.used_at || Date.parse(row.expires_at)<=Date.now()) return fail("This reset link is invalid or expired.",410);
+      const stored = await passwordHash(password);
+      await db.batch([
+        db.prepare("UPDATE smartqr_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(stored.encoded,row.user_id),
+        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND used_at IS NULL").bind(hash),
+        db.prepare("DELETE FROM smartqr_sessions WHERE user_id=?").bind(row.user_id),
+      ]);
+      return response({message:"Password reset successfully. Sign in with your new password."});
+    }
+
     if (route === "login" && method === "POST") {
       if (!(await rateLimit(db, `login:${await sha256(request.headers.get("cf-connecting-ip") || "unknown")}`, 10, 900))) return fail("Too many login attempts. Try again later.",429);
       const input = await bodyJson(request);
@@ -241,6 +272,42 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const locations = await db.prepare("SELECT location_code,label,address_text,phone,opening_hours,is_primary FROM smartqr_locations WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY is_primary DESC,id").bind(user.id).all();
       const qrCodes = await db.prepare("SELECT qr_code,label,is_active,created_at FROM smartqr_qr_codes WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY id").bind(user.id).all();
       return response({shop,locations:locations.results,qrCodes:qrCodes.results});
+    }
+
+    if (route === "locations" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const input=await bodyJson(request);
+      const label=text(input.label,80);
+      if (label.length<2) return fail("Enter a location name.");
+      const shop=await db.prepare("SELECT id,plan_code FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string}>();
+      if (!shop) return fail("Shop not found.",404);
+      const limit=shop.plan_code==="vip"?3:1;
+      const count=await db.prepare("SELECT COUNT(*) AS total FROM smartqr_locations WHERE shop_id=?").bind(shop.id).first<{total:number}>();
+      if ((count?.total??0)>=limit) return fail("Your current plan's location limit has been reached.",409);
+      const code="LOC-"+randomToken(4).toUpperCase();
+      await db.prepare("INSERT INTO smartqr_locations(shop_id,location_code,label,address_text,phone,opening_hours,is_primary) VALUES(?,?,?,?,?,?,0)").bind(shop.id,code,label,text(input.address,240),text(input.phone,24),JSON.stringify(input.openingHours||{})).run();
+      return response({message:"Location added.",locationCode:code},201);
+    }
+
+    if (route === "qr" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const input=await bodyJson(request);
+      const label=text(input.label,80)||"Additional QR";
+      const shop=await db.prepare("SELECT id,plan_code FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string}>();
+      if (!shop) return fail("Shop not found.",404);
+      const limit=shop.plan_code==="vip"?3:1;
+      const count=await db.prepare("SELECT COUNT(*) AS total FROM smartqr_qr_codes WHERE shop_id=? AND is_active=1").bind(shop.id).first<{total:number}>();
+      if ((count?.total??0)>=limit) return fail("Your current plan's QR-code limit has been reached.",409);
+      let locationId:number|null=null;
+      const locationCode=text(input.locationCode,40);
+      if (locationCode) {
+        const location=await db.prepare("SELECT id FROM smartqr_locations WHERE shop_id=? AND location_code=?").bind(shop.id,locationCode).first<{id:number}>();
+        if (!location) return fail("That location does not belong to your shop.",403);
+        locationId=location.id;
+      }
+      const code="QR-"+randomToken(5).toUpperCase();
+      await db.prepare("INSERT INTO smartqr_qr_codes(shop_id,location_id,qr_code,label) VALUES(?,?,?,?)").bind(shop.id,locationId,code,label).run();
+      return response({qrCode:code},201);
     }
 
     if (route === "shop" && method === "PATCH") {
@@ -321,6 +388,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const input=await bodyJson(request);
       const status=text(input.status,20);
       if (!["approved","rejected","suspended","pending"].includes(status)) return fail("Invalid shop status.");
+      if (status==="approved") {
+        const payment=await db.prepare("SELECT id FROM smartqr_payments WHERE shop_id=(SELECT id FROM smartqr_shops WHERE shop_code=?) AND payment_kind='setup' AND status='captured' LIMIT 1").bind(shopCode).first();
+        if (!payment) return fail("The verified setup payment must be captured before approval.",409);
+      }
       await db.prepare("UPDATE smartqr_shops SET approval_status=?,updated_at=CURRENT_TIMESTAMP WHERE shop_code=?").bind(status,shopCode).run();
       await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,action,detail_json) VALUES(?,?,?)").bind(user.id,"shop_status_changed",JSON.stringify({shopCode,status})).run();
       return response({message:"Shop status updated."});
