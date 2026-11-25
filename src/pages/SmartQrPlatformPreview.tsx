@@ -13,7 +13,8 @@ const plans = [
  {id:"growth" as const,name:"Growth",setup:999,monthly:99,qr:1,locations:1,history:"12 months",features:["Everything in Starter","Branded QR design","Scan and action analytics","Monthly performance summary"]},
  {id:"vip" as const,name:"VIP Business",setup:1999,monthly:199,qr:3,locations:3,history:"24 months",features:["Everything in Growth","Up to 3 QR codes","Up to 3 shop locations","Advanced reports and priority support"]}
 ];
-const payNowHref=(value:string,name:string)=>{const v=value.trim();if(!v)return "";if(/^(https?:|upi:)/i.test(v))return v;if(v.includes("@"))return "upi://pay?pa="+encodeURIComponent(v)+"&pn="+encodeURIComponent(name);return v;};\nconst money=(n:number)=>"₹"+n.toLocaleString("en-IN");
+const payNowHref=(value:string,name:string)=>{const v=value.trim();if(!v)return "";if(/^(https?:|upi:)/i.test(v))return v;if(v.includes("@"))return "upi://pay?pa="+encodeURIComponent(v)+"&pn="+encodeURIComponent(name);return v;};
+const money=(n:number)=>"₹"+n.toLocaleString("en-IN");
 function slugify(v:string){return v.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"my-shop";}
 function loadShops():Shop[]{try{const saved=localStorage.getItem("babas-smartqr-preview-shops");return saved?JSON.parse(saved):seed;}catch{return seed;}}
 export default function SmartQrPlatformPreview(){
