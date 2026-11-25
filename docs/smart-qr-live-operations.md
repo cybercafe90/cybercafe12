@@ -27,7 +27,7 @@ Add these under **Workers & Pages → babacybercafe → Settings → Variables a
 | `RAZORPAY_KEY_SECRET` | Secret | Order and subscription signature verification |
 | `SMART_QR_RAZORPAY_WEBHOOK_SECRET` | Secret | Dedicated Smart QR webhook signature verification |
 | `SMART_QR_OWNER_BOOTSTRAP_SECRET` | Secret | One-time allowlisted platform-owner bootstrap |
-| `SMART_QR_ALLOW_LIVE_PAYMENTS` | Plain text | Set to `true` only in Production after final approval; leave unset/false in Preview |
+| `SMART_QR_ALLOW_LIVE_PAYMENTS` | Plain text | Keep unset/false by default. For an approved Preview payment test only, set `true` while using Razorpay TEST keys and a TEST webhook secret exclusively. Never put live Razorpay credentials in Preview. Production remains unset/false until a separate release approval. |
 
 The existing live Razorpay functions in Supabase are not modified. Smart QR uses its own Cloudflare Pages API routes and D1 records. Preview billing is intentionally disabled so a live key cannot accidentally charge a test merchant.
 
@@ -54,18 +54,24 @@ Use the dedicated `SMART_QR_RAZORPAY_WEBHOOK_SECRET`. Subscribe to:
 
 Do not replace or edit the existing BABA'S CYBER CAFE Razorpay webhook.
 
-## Owner bootstrap
+## Readiness check and owner bootstrap
 
-The only permitted owner email is `support@babacybercafe.in`. Public merchant registration reserves this address. No owner account is created automatically. Once Production secrets, email delivery, payment/webhook configuration and security checks are confirmed, invoke the one-time `POST /api/smart-qr/admin/bootstrap` endpoint with the `x-owner-bootstrap-secret` header and the allowlisted email. The owner then receives a single-use, 30-minute password setup link. Do not invoke bootstrap before release approval.
+- Open `/smart-qr/system-check` on the preview deployment to see whether the D1 schema, email secret, Razorpay credentials/webhook secret and owner bootstrap secret are available. The page reports readiness only; it never reveals secret values.
+- The only permitted owner email is `support@babacybercafe.in`. Public merchant registration reserves this address. No owner account is created automatically.
+- After Preview email delivery is configured and verified, open `/smart-qr/owner-bootstrap`, enter the `SMART_QR_OWNER_BOOTSTRAP_SECRET` value from the Preview environment and request the one-time owner setup email. The endpoint is rate-limited and permits only the allowlisted email. The owner receives a single-use, 30-minute password setup link.
+- Do not bootstrap the Production owner or create production accounts until the separate production release is approved.
 
 ## QR image delivery
 
 The permanent QR destination is `/s/{slug}`. PNG generation is served through the Smart QR API and currently uses QRServer's image endpoint. Only the approved shop's public destination URL is sent to that provider; no customer profile or private merchant data is sent.
 
-## Current release constraints
+## Preview test and release checklist
 
-- Preview deployment is for review only; the custom production domain is unchanged.
-- Preview environment has no Resend or Razorpay secrets configured.
-- Live payments are gated off unless `SMART_QR_ALLOW_LIVE_PAYMENTS=true`.
-- The production D1 binding and full reconciliation schema must be confirmed before release.
-- Recurring subscription authorization, cancellation and lifecycle events are implemented, but live end-to-end billing has not been tested because production credentials/webhook configuration are not yet enabled.
+1. Add `RESEND_API_KEY` and a dedicated Razorpay TEST key ID, TEST key secret and TEST webhook secret to the Preview environment. Never copy Production secrets into Preview.
+2. Confirm `/smart-qr/system-check` reports email, payment and owner-bootstrap configuration as ready. D1 readiness should already pass.
+3. Set `SMART_QR_ALLOW_LIVE_PAYMENTS=true` in Preview only while all Razorpay credentials are TEST credentials; this existing gate enables checkout and recurring authorization regardless of credential mode.
+4. Configure a separate Razorpay TEST webhook to the current Preview host at `/api/smart-qr/payments/webhook`, using the matching TEST webhook secret and the events listed above.
+5. Test merchant registration and setup email, password creation, login, test setup payment, webhook confirmation, owner review, QR download, public scan and analytics. Also test a monthly mandate only if the merchant explicitly opted in.
+6. Return `SMART_QR_ALLOW_LIVE_PAYMENTS` to unset/false after testing. Production remains untouched.
+
+Preview deployment is for review only; the custom production domain is unchanged. The production D1 binding and full reconciliation schema must be confirmed before any release. Live end-to-end billing and email have not been certified until these tests pass.
