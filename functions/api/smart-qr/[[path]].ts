@@ -6,6 +6,7 @@ interface Env {
   RAZORPAY_KEY_ID?: string;
   RAZORPAY_KEY_SECRET?: string;
   SMART_QR_RAZORPAY_WEBHOOK_SECRET?: string;
+  SMART_QR_ALLOW_LIVE_PAYMENTS?: string;
 }
 
 type Context = { request: Request; env: Env; params: { path?: string } };
@@ -415,6 +416,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
 
     if (route === "payments/create-order" && method === "POST") {
+      if (env.SMART_QR_ALLOW_LIVE_PAYMENTS !== "true") return fail("Live payments are disabled in this environment. Production payment activation is pending final release approval.",503);
       if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
       const shop = await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string}>();
       if (!shop) return fail("Shop not found.",404);
@@ -466,6 +468,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
 
     if (route === "subscriptions/create" && method === "POST") {
+      if (env.SMART_QR_ALLOW_LIVE_PAYMENTS !== "true") return fail("Live recurring billing is disabled in this environment until production release approval.",503);
       if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
       const shop=await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option,monthly_consent_at FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string;monthly_consent_at:string|null}>();
       if (!shop) return fail("Shop not found.",404);
