@@ -1,6 +1,28 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
-const cors = { 'Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-print-agent-token', 'Access-Control-Allow-Methods':'POST, OPTIONS', 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' }
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors })
+const allowedOrigins = ['https://babacybercafe.in', 'https://www.babacybercafe.in']
+function isAllowedOrigin(origin: string) {
+  if (!origin) return true
+  if (allowedOrigins.includes(origin)) return true
+  try {
+    const url = new URL(origin)
+    return url.protocol === 'https:' && (url.hostname === 'babacybercafe.pages.dev' || url.hostname.endsWith('.babacybercafe.pages.dev'))
+  } catch {
+    return false
+  }
+}
+function cors(request: Request): HeadersInit {
+  const origin = request.headers.get('origin') ?? ''
+  return {
+    'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-print-agent-token',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+    'Cache-Control': 'no-store',
+    'Content-Type': 'application/json; charset=utf-8',
+    'Vary': 'Origin',
+  }
+}
+const json = (request: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors(request) })
 const encoder = new TextEncoder()
 const hex = (bytes: ArrayBuffer) => Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2,'0')).join('')
 const sha256 = async (value: string) => hex(await crypto.subtle.digest('SHA-256', encoder.encode(value)))
@@ -28,8 +50,10 @@ async function agentDevice(request: Request, admin: SupabaseClient) {
   return data ?? null
 }
 Deno.serve(async (request: Request) => {
-  if (request.method === 'OPTIONS') return new Response('ok',{headers:cors})
-  if (request.method !== 'POST') return json({error:'Method not allowed.'},405)
+  if (request.method === 'OPTIONS') return new Response('ok',{headers:cors(request)})
+  if (request.method !== 'POST') return json(request,request,{error:'Method not allowed.'},405)
+  const origin = request.headers.get('origin') ?? ''
+  if (origin && !isAllowedOrigin(origin)) return json(request,{error:'Origin not allowed.'},403)
   try {
     const declaredLength = Number(request.headers.get('content-length') ?? 0)
     if (declaredLength > 16_000) return json({error:'Request is too large.'},413)
