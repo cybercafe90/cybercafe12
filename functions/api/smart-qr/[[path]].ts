@@ -171,7 +171,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const tables=await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'smartqr_%'").all<{name:string}>();
       const required=["smartqr_users","smartqr_shops","smartqr_email_tokens","smartqr_sessions","smartqr_events","smartqr_audit_logs","smartqr_locations","smartqr_qr_codes","smartqr_payments","smartqr_subscriptions","smartqr_webhook_events","smartqr_rate_limits"];
       const present=new Set((tables.results||[]).map(row=>row.name));
-      return response({status:check?.ok===1&&required.every(name=>present.has(name))?"ready":"incomplete",database:check?.ok===1,schema:required.every(name=>present.has(name)),emailReady:Boolean(env.RESEND_API_KEY),paymentsReady:Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.SMART_QR_RAZORPAY_WEBHOOK_SECRET),ownerBootstrapReady:Boolean(env.SMART_QR_OWNER_BOOTSTRAP_SECRET)});
+      return response({status:check?.ok===1&&required.every(name=>present.has(name))?"ready":"incomplete",database:check?.ok===1,schema:required.every(name=>present.has(name)),emailReady:Boolean(env.RESEND_API_KEY),paymentsReady:Boolean(env.RAZORPAY_KEY_ID&&env.RAZORPAY_KEY_SECRET&&env.SMART_QR_RAZORPAY_WEBHOOK_SECRET),livePaymentsEnabled:env.SMART_QR_ALLOW_LIVE_PAYMENTS==="true",ownerBootstrapReady:Boolean(env.SMART_QR_OWNER_BOOTSTRAP_SECRET)});
     }
 
     if (route === "register" && method === "POST") {
