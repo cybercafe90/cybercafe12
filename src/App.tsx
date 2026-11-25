@@ -59,6 +59,7 @@ import {
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
+const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
@@ -3911,6 +3912,16 @@ function RoutedApp() {
     });
     return () => { cancelled = true; };
   }, [location.pathname]);
+  if (location.pathname.startsWith("/smart-qr") || location.pathname.startsWith("/s/")) return (
+    <div className="smartqr-standalone">
+      <Suspense fallback={<main className="smartqr-shell" role="status">Loading Smart QR…</main>}>
+        <Routes>
+          <Route path="/smart-qr/*" element={<SmartQrPortal />} />
+          <Route path="/s/:slug" element={<SmartQrPortal />} />
+        </Routes>
+      </Suspense>
+    </div>
+  );
   if (location.pathname === "/payment-portal") return (
     <div className="payment-standalone"><Suspense fallback={<main className="payment-page"><div className="payment-shell">Loading secure payment portal…</div></main>}><Routes><Route path="/payment-portal" element={<PaymentPortal />} /></Routes></Suspense><FloatingWhatsApp /></div>
   );
