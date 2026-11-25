@@ -63,3 +63,36 @@ Cloudflare Pages is connected directly to this repository. Verify its production
 - No branch merge, production deployment, production database migration, secret rotation, or account-setting change is authorized by this document.
 - Before release, present the branch/PR, changed-file summary, CI results, unresolved risks, exact target commit, and rollback plan to the owner.
 - Obtain explicit owner approval before merging or deploying.
+
+
+## Live Supabase diagnostic baseline — 26 November 2026
+
+Read-only checks were run against project `dyzyfugxzsdvboxerbxv`. No live database, Auth, Storage, or Edge Function settings were changed during this review.
+
+### Confirmed controls
+
+- All inspected public application tables have RLS enabled.
+- Tables with RLS but no policies are not directly granted to `anon` or `authenticated`; the service-role-only access pattern is intentional for application, grievance, payment, webhook, rate-limit, and security records.
+- Owner-facing table policies consistently check the owner role through `private.is_owner()` or an explicit owner-role lookup. UPDATE policies include matching `USING` and `WITH CHECK` predicates.
+- Storage buckets `application-documents`, `instant-tp-policies`, and `print-jobs` are private. The document buckets have strict PDF/JPEG/PNG allowlists and file-size limits.
+- Public SECURITY DEFINER functions inspected have execution revoked from `anon` and `authenticated`; service-only functions are executable by `service_role`. The private owner helper is executable by authenticated users only.
+- Public submission/tracking functions use server-side validation and rate limiting. Razorpay webhook validates the HMAC signature and checks amount/currency before marking payments paid. Bank SMS matching is explicitly a review suggestion and does not auto-confirm payment.
+
+### Findings and remediation
+
+- **High — public instant-TP response minimization:** customer lookup responses previously echoed the registered mobile number and UTR. The security branch now returns neither field; the UI retains the mobile locally and shows a generic payment-reference status. Added a Deno unit test.
+- **High — Razorpay webhook retry reliability:** a duplicate event ID was previously acknowledged even if the first attempt had inserted the event row but failed before completing payment processing. The branch now checks the stored `processed` state and retries incomplete events; added a unit test.
+- **Medium — print agent request size:** the live print-agent function was not present in repository source control. Its deployed source is now tracked in `supabase/functions/print-agent/index.ts`, and request payloads are capped at 16 KB.
+- **Medium — missing FK indexes:** the live advisor identified three uncovered foreign keys on instant-TP payment verification, policy issuance, and audit actor columns. A migration is prepared in `supabase/migrations/20261126100000_add_instant_tp_foreign_key_indexes.sql`; it has not been applied to production.
+- **Medium — leaked-password protection:** Supabase Auth reports this setting disabled. Enable it in the Auth security settings after confirming owner sign-in/recovery access.
+- **Medium — MFA posture:** Supabase reports insufficient MFA options. Enable an MFA factor and verify owner recovery before enforcing AAL2; do not enable a hard owner-MFA requirement without testing the owner account first.
+- **Low / monitor — unused indexes:** the advisor reports 33 unused indexes. The project is new and low-traffic; do not remove indexes based on this snapshot alone. Reassess after meaningful production query volume.
+- **CI correction:** the customer portal browser test was asserting an obsolete link label. It now targets the current `Track request` action.
+
+### Not changed in this branch
+
+- Production Supabase Auth settings, secrets, Storage policies, live Edge Function deployments, and production database schema.
+- GitHub repository visibility, branch protection/rulesets, secret-scanning settings, and main-branch release state.
+- Cloudflare production configuration or production DNS.
+
+These settings require a separate, explicit owner decision or an approved production-change window. The prepared SQL migration must be reviewed and tested on a disposable Supabase branch before production application.
