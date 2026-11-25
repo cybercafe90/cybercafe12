@@ -37,10 +37,10 @@ function Notice({children,error=false}:{children:string;error?:boolean}){
   return <div className={error?"smartqr-notice is-error":"smartqr-notice"} role="status">{error?<ShieldCheck size={17}/>:<CheckCircle2 size={17}/>}<span>{children}</span></div>;
 }
 function Register(){
-  const [form,setForm]=useState({ownerName:"",email:"",shopName:"",category:"Retail",description:"",phone:"",whatsapp:"",address:"",plan:"starter",monthlyOption:"none"});
+  const [form,setForm]=useState({ownerName:"",email:"",shopName:"",category:"Retail",description:"",phone:"",whatsapp:"",address:"",plan:"starter",monthlyOption:"none",monthlyConsent:false});
   const [busy,setBusy]=useState(false); const [message,setMessage]=useState(""); const [error,setError]=useState("");
   const plan=plans.find(p=>p.code===form.plan)!;
-  const update=(key:string,value:string)=>setForm(current=>({...current,[key]:value,...(key==="plan"?{monthlyOption:"none"}:{})}));
+  const update=(key:string,value:string)=>setForm(current=>({...current,[key]:value,...(key==="plan"?{monthlyOption:"none",monthlyConsent:false}:key==="monthlyOption"&&value==="none"?{monthlyConsent:false}:{})}));
   async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError("");setMessage("");try{
     const result=await api<{message:string;shopCode:string}>("register",{method:"POST",body:JSON.stringify(form)});
     setMessage(result.message+" Your Shop ID is "+result.shopCode+".");
@@ -59,8 +59,9 @@ function Register(){
         <div className="smartqr-divider"/><div className="smartqr-card-heading"><span className="smartqr-step">02</span><div><h2>Choose your plan</h2><p>Setup fee and optional recurring subscription are separate.</p></div></div>
         <div className="smartqr-plan-picker">{plans.map(p=><button type="button" key={p.code} className={form.plan===p.code?"smartqr-plan is-selected":"smartqr-plan"} onClick={()=>update("plan",p.code)}><span>{p.name}</span><b>₹{p.setup.toLocaleString("en-IN")}</b><small>one-time setup</small><em>{p.description}</em></button>)}</div>
         <label>Monthly subscription<select value={form.monthlyOption} onChange={e=>update("monthlyOption",e.target.value)}>{(form.plan==="starter"?[{value:"none",label:"No monthly subscription"}]:form.plan==="growth"?[{value:"none",label:"No monthly subscription"},{value:"growth",label:"Growth — ₹99/month"}]:[{value:"none",label:"No monthly subscription"},{value:"vip",label:"VIP — ₹199/month"}]).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+        {form.monthlyOption!=="none"&&<label className="smartqr-consent"><input type="checkbox" checked={form.monthlyConsent} onChange={e=>setForm(current=>({...current,monthlyConsent:e.target.checked}))}/><span>I explicitly agree to the selected recurring monthly subscription. Billing will begin only after a separate Razorpay authorization, and I can cancel according to the subscription terms.</span></label>}
         <div className="smartqr-price-summary"><div><span>One-time setup fee</span><b>₹{plan.setup.toLocaleString("en-IN")}</b></div><div><span>Monthly recurring fee</span><b>₹{form.monthlyOption==="growth"?99:form.monthlyOption==="vip"?199:0}</b></div><small>Recurring billing is optional. It will never start without your explicit consent and a separate payment authorization. No payment is collected by this application form.</small></div>
-        <button className="smartqr-primary" disabled={busy}>{busy?"Submitting…":"Submit merchant application"} <ArrowRight size={17}/></button>
+        <button className="smartqr-primary" disabled={busy||(form.monthlyOption!=="none"&&!form.monthlyConsent)}>{busy?"Submitting…":"Submit merchant application"} <ArrowRight size={17}/></button>
         <p className="smartqr-legal">By submitting, you confirm that you are authorised to represent this shop. Account activation and public listing require email setup, payment verification and owner approval.</p>
       </form></div>
       <aside className="smartqr-side-card"><div className="smartqr-side-icon"><QrCode size={26}/></div><h3>Simple for shop owners.</h3><p>One QR destination for customers. Manage your shop details, view scans and keep your permanent shop link in one dashboard.</p><ul><li>Starter: 1 QR · 1 location · 7-day analytics</li><li>Growth: 1 QR · 1 location · 365-day analytics</li><li>VIP: up to 3 QR codes · 3 locations · 730-day analytics</li></ul><Link to="/smart-qr/login">Already registered? Sign in <ArrowRight size={15}/></Link></aside></section></Shell>;
