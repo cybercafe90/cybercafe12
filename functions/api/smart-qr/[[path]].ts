@@ -324,7 +324,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const entity = paymentData?.entity as Record<string,unknown> | undefined;
       const subscriptionData = data?.subscription as Record<string,unknown> | undefined;
       const subscriptionEntity = subscriptionData?.entity as Record<string,unknown> | undefined;
-      const subscriptionId = text(subscriptionEntity?.id,80);
+      const subscriptionId = text(subscriptionEntity?.id || entity?.subscription_id,80);
       const orderId = text(entity?.order_id,80);
       const paymentId = text(entity?.id,80);
       const payloadHash = await sha256(raw);
@@ -359,7 +359,18 @@ export const onRequest = async ({ request, env, params }: Context) => {
         }
       }
       if (subscriptionId && eventType.startsWith("subscription.")) {
-        const row=await db.prepare("SELECT id,shop_id FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{id:string;shop_id:number}>();
+        const row=await db.prepare("SELECT id,shop_id,plan_code,monthly_fee_paise FROM smartqr_subscriptions WHERE razorpay_subscription_id=?").bind(subscriptionId).first<{id:string;shop_id:number;plan_code:string;monthly_fee_paise:number}>();
+        if(row && entity && text(entity.subscription_id,80)===subscriptionId && paymentId){
+          const chargeAmount=Number(entity.amount);
+          const chargeCurrency=entity.currency;
+          if(eventType==="subscription.charged" && entity.status==="captured" && entity.captured===true && chargeAmount===row.monthly_fee_paise && chargeCurrency==="INR"){
+            await db.prepare("INSERT OR IGNORE INTO smartqr_payments(id,shop_id,payment_kind,amount_paise,currency,status,plan_code,monthly_option,razorpay_payment_id) VALUES(?,?,'subscription',?,'INR','captured',?,?,?)").bind(crypto.randomUUID(),row.shop_id,row.monthly_fee_paise,row.plan_code,row.plan_code,paymentId).run();
+          } else if(eventType==="payment.failed" && chargeCurrency==="INR" && chargeAmount===row.monthly_fee_paise){
+            await db.prepare("INSERT OR IGNORE INTO smartqr_payments(id,shop_id,payment_kind,amount_paise,currency,status,plan_code,monthly_option,razorpay_payment_id) VALUES(?,?,'subscription',?,'INR','failed',?,?,?)").bind(crypto.randomUUID(),row.shop_id,row.monthly_fee_paise,row.plan_code,row.plan_code,paymentId).run();
+          } else if(eventType==="payment.refunded"){
+            await db.prepare("UPDATE smartqr_payments SET status='refunded',updated_at=CURRENT_TIMESTAMP WHERE razorpay_payment_id=? AND payment_kind='subscription' AND status='captured'").bind(paymentId).run();
+          }
+        }
         const statusMap:Record<string,string>={
           "subscription.authenticated":"authenticated",
           "subscription.activated":"active",
@@ -630,6 +641,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const shop = await db.prepare("SELECT id,plan_code FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string}>();
       if (!shop) return fail("Shop not found.",404);
       const days = shop.plan_code==="starter"?7:shop.plan_code==="growth"?365:730;
+      await db.prepare("DELETE FROM smartqr_events WHERE shop_id=? AND created_at<datetime('now',?)").bind(shop.id,`-${days} days`).run();
       const stats = await db.prepare("SELECT event_type,COUNT(*) AS total FROM smartqr_events WHERE shop_id=? AND created_at>=datetime('now',?) GROUP BY event_type").bind(shop.id,`-${days} days`).all();
       return response({retentionDays:days,stats:stats.results});
     }
