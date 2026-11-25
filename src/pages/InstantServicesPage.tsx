@@ -8,10 +8,10 @@ import "../instant-services.css";
 type ToolId = "kyc_pan" | "kyc_aadhaar_dl" | "rc_verify" | "telecom_operator" | "fuel_price" | "commodity_price" | "weather" | "air_quality";
 type ToolDefinition = { id: ToolId; title: string; description: string; icon: typeof ShieldCheck; group: string };
 const tools: ToolDefinition[] = [
+  { id: "rc_verify", title: "Vehicle RC verification", description: "Enter a registration number to retrieve available vehicle details.", icon: CarFront, group: "Vehicle services" },
   { id: "kyc_pan", title: "PAN verification", description: "Check a PAN document's verification status.", icon: ShieldCheck, group: "Identity checks" },
   { id: "kyc_aadhaar_dl", title: "Aadhaar OTP request", description: "Start an Aadhaar verification request with your explicit consent.", icon: BadgeCheck, group: "Identity checks" },
   { id: "kyc_aadhaar_dl", title: "Driving licence check", description: "Check driving-licence details through the provider.", icon: CarFront, group: "Identity checks" },
-  { id: "rc_verify", title: "Vehicle RC verification", description: "Check vehicle registration details.", icon: CarFront, group: "Vehicle services" },
   { id: "telecom_operator", title: "Mobile operator lookup", description: "Identify the operator and telecom circle for a mobile number.", icon: Radio, group: "Everyday utilities" },
   { id: "fuel_price", title: "Fuel price", description: "Request the latest available city fuel-price data.", icon: Fuel, group: "Everyday utilities" },
   { id: "commodity_price", title: "Gold & silver rates", description: "Look up gold or silver price data by city.", icon: Gem, group: "Everyday utilities" },
@@ -28,7 +28,7 @@ function displayValue(value: unknown): string {
 
 export default function InstantServicesPage() {
   const [form, setForm] = useState<FormState>(initial);
-  const [selected, setSelected] = useState<ToolId>("kyc_pan");
+  const [selected, setSelected] = useState<ToolId>("rc_verify");
   const [docType, setDocType] = useState<"aadhaar" | "dl">("aadhaar");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<unknown>(null);
@@ -106,8 +106,8 @@ export default function InstantServicesPage() {
       <section className="instant-services-hero">
         <div className="instant-services-hero-copy">
           <span className="eyebrow"><i className="eyebrow-dot" /> DIGITAL SERVICE DESK · SRINAGAR</span>
-          <h1>Useful checks.<br /><em>One simple place.</em></h1>
-          <p>Access identity, vehicle and everyday information checks through our secure service gateway. Select a service to see what information is required.</p>
+          <h1>Vehicle details.<br /><em>Just one number.</em></h1>
+          <p>Start with a vehicle registration number, or choose another identity and everyday service. Enter the details once and view the provider response in this page.</p>
           <div className="instant-services-trust"><ShieldCheck size={17} /> Secure gateway · No public API keys · Clear result messages</div>
         </div>
         <div className="instant-services-hero-panel">
@@ -115,13 +115,13 @@ export default function InstantServicesPage() {
           <strong>09</strong>
           <small>Customer-facing tools</small>
           <div className="instant-services-panel-line" />
-          <p>Choose a check and follow the guided steps.</p>
+          <p>Enter your RC number to begin. Other checks are one tap away.</p>
         </div>
       </section>
 
       <section className="instant-services-body">
         <div className="instant-services-heading">
-          <div><span className="eyebrow">SERVICE DIRECTORY</span><h2>Choose a service</h2><p>Search the available tools, then complete the short form.</p></div>
+          <div><span className="eyebrow">SERVICE DIRECTORY</span><h2>Start your service</h2><p>Vehicle RC lookup is ready first. Choose another service whenever you need it.</p></div>
           <label className="instant-services-search"><span className="sr-only">Search services</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search services…" /></label>
         </div>
         <div className="instant-services-layout">
@@ -156,7 +156,7 @@ export default function InstantServicesPage() {
                 <label className="field"><span>{docType === "aadhaar" ? "Aadhaar number" : "Driving licence number"}</span><input required minLength={docType === "aadhaar" ? 12 : 5} maxLength={24} autoComplete="off" inputMode={docType === "aadhaar" ? "numeric" : "text"} value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value.replace(docType === "aadhaar" ? /\D/g : /[^a-zA-Z0-9-]/g, "").slice(0,24) })} placeholder={docType === "aadhaar" ? "12-digit Aadhaar number" : "Driving licence number"}/></label>
                 {docType === "aadhaar" && <label className="instant-consent"><input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })}/><span>I consent to sending my Aadhaar number to the verification provider to request an OTP. I understand this starts a request only; OTP confirmation is a separate step.</span></label>}
               </>}
-              {selected === "rc_verify" && <label className="field"><span>Vehicle registration number</span><input required minLength={5} maxLength={24} autoComplete="off" value={form.rc} onChange={(e) => setForm({ ...form, rc: e.target.value.toUpperCase() })} placeholder="JK01AB1234"/></label>}
+              {selected === "rc_verify" && <label className="field"><span>Vehicle registration number</span><input required minLength={5} maxLength={24} autoComplete="off" value={form.rc} onChange={(e) => setForm({ ...form, rc: e.target.value.toUpperCase() })} placeholder="e.g. JK01AB1234"/></label>}
               {selected === "telecom_operator" && <label className="field"><span>Mobile number</span><input required minLength={10} maxLength={15} inputMode="tel" autoComplete="off" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "").slice(0,15) })} placeholder="10-digit mobile number"/></label>}
               {["fuel_price", "commodity_price", "weather", "air_quality"].includes(selected) && <>
                 <label className="field"><span>City</span><input required maxLength={80} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Srinagar"/></label>
