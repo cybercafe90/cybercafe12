@@ -147,6 +147,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const shopName = text(input.shopName, 140);
       const plan = text(input.plan, 20);
       const monthly = text(input.monthlyOption, 20);
+      const monthlyConsent = input.monthlyConsent === true;
+      if (monthly !== "none" && !monthlyConsent) return fail("Explicit consent is required before selecting recurring monthly billing.");
+      const monthlyConsentAt = monthly === "none" ? null : new Date().toISOString();
       const category = text(input.category, 80);
       const description = text(input.description, 600);
       const phone = text(input.phone, 24);
@@ -171,8 +174,8 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const qrCode = `QR-${randomToken(5).toUpperCase()}`;
       const batch = db.batch([
         db.prepare("INSERT INTO smartqr_users(id,email,full_name,password_hash,role) VALUES(?,?,?,NULL,'merchant')").bind(id,email,ownerName),
-        db.prepare(`INSERT INTO smartqr_shops(shop_code,owner_user_id,slug,shop_name,category,description,phone,whatsapp,address_text,owner_display_name,plan_code,monthly_option,approval_status,subscription_status)
-          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'pending','inactive')`).bind(shopCode,id,slug,shopName,category,description,phone,whatsapp,address,ownerName,plan,monthly),
+        db.prepare(`INSERT INTO smartqr_shops(shop_code,owner_user_id,slug,shop_name,category,description,phone,whatsapp,address_text,owner_display_name,plan_code,monthly_option,monthly_consent_at,approval_status,subscription_status)
+          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'pending','inactive')`).bind(shopCode,id,slug,shopName,category,description,phone,whatsapp,address,ownerName,plan,monthly,monthlyConsentAt),
       ]);
       await batch;
       const shop = await db.prepare("SELECT id FROM smartqr_shops WHERE owner_user_id=?").bind(id).first<{id:number}>();
