@@ -154,10 +154,38 @@ async function readLogs(req: Request, admin: SupabaseClient, _userId: string) {
   const { data, error } = await admin.from("api_express_logs").select("id,user_id,service_name,status,http_code,created_at").order("created_at", { ascending: false }).limit(limit);
   if (error) return reply(req, { ok: false, service: "admin_logs", error: "Could not load API logs." }, 500);
   const rows = data ?? [];
-  const counts = rows.reduce((acc: {total:number;success:number;errors:number;cache_hits:number}, row: {status:string}) => {
-    acc.total++; if (row.status === "success") acc.success++; if (row.status === "error" || row.status === "rejected") acc.errors++; if (row.status === "cache_hit") acc.cache_hits++; return acc;
-  }, {total:0,success:0,errors:0,cache_hits:0});
-  return reply(req, { ok: true, service: "admin_logs", data: { items: rows, counts } });
+  const [totalResult, successResult, errorResult, cacheResult, upstreamResult] = await Promise.all([
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "success"),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "error"),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "cache_hit"),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]),
+  ]);
+  if ([totalResult, successResult, errorResult, cacheResult, upstreamResult].some(result => result.error)) {
+    return reply(req, { ok: false, service: "admin_logs", error: "Could not calculate API usage." }, 500);
+  }
+  const used = upstreamResult.count ?? 0;
+  const quotaLimit = Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000);
+  const counts = {
+    total: totalResult.count ?? 0,
+    success: successResult.count ?? 0,
+    errors: errorResult.count ?? 0,
+    cache_hits: cacheResult.count ?? 0,
+  };
+  return reply(req, {
+    ok: true,
+    service: "admin_logs",
+    data: {
+      items: rows,
+      counts,
+      quota: {
+        configured_limit: quotaLimit,
+        estimated_upstream_attempts: used,
+        remaining_estimate: Math.max(0, quotaLimit - used),
+        note: "Estimate from retained gateway logs; API Express account usage is authoritative.",
+      },
+    },
+  });
 }
 
 Deno.serve(async (req: Request) => {
