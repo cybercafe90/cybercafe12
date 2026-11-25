@@ -59,20 +59,13 @@ test("service pages and enquiry controls remain usable on mobile", async ({
 
   await page.goto("/apply");
   await expect(
-    page.getByRole("heading", { name: "Let's get you to the right place." }),
+    page.getByRole("heading", { name: "Tell us what you need." }),
   ).toBeVisible();
-  const submitButton = page.getByRole("button", { name: /Submit enquiry/ });
-  if (backendConfigured) {
-    await expect(
-      page.getByText(/Secure online submissions are not configured yet/),
-    ).toHaveCount(0);
-    await expect(submitButton).toBeEnabled();
-  } else {
-    await expect(
-      page.getByText(/Secure online submissions are not configured yet/),
-    ).toBeVisible();
-    await expect(submitButton).toBeDisabled();
-  }
+  await expect(page.getByRole("textbox", { name: "Name" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Phone" })).toBeVisible();
+  await expect(page.getByLabel("Service *")).toBeVisible();
+  const submitButton = page.getByRole("button", { name: "Send enquiry on WhatsApp" });
+  await expect(submitButton).toBeEnabled();
   const viewportWidth = await page.evaluate(
     () => document.documentElement.clientWidth,
   );
@@ -156,12 +149,12 @@ test("insurance quotation, payment and customer upload controls remain responsiv
 test("customer portal guides visitors to secure reference-based tracking", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(
-    page.getByRole("heading", { name: "Track your application securely." }),
+    page.getByRole("heading", { name: "Your services, made simple." }),
   ).toBeVisible();
   await expect(
-    page.getByText(/Email OTP sign-in has been removed/),
+    page.getByText("Check progress and customer-visible updates using your reference and registered mobile."),
   ).toBeVisible();
-  await page.getByRole("link", { name: /Open tracking portal/ }).click();
+  await page.getByRole("link", { name: /Track request/ }).click();
   await expect(page).toHaveURL(/\/track$/);
   await expect(
     page.getByRole("heading", { name: "A clear view of what comes next." }),
