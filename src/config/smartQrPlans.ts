@@ -16,17 +16,17 @@ export const SMART_QR_PLANS: Record<SmartQrPlanCode, SmartQrPlan> = {
   starter: {
     code: "starter", name: "Starter", setupFeeInr: 499, monthlyFeeInr: 0,
     qrLimit: 1, locationLimit: 1, analyticsRetentionDays: 7,
-    features: ["Permanent shop QR", "Shop profile and contact links", "Basic scan count", "Digital QR download"],
+    features: ["Permanent shop destination", "Shop profile and contact links", "Basic scan count", "7-day analytics retention"],
   },
   growth: {
     code: "growth", name: "Growth", setupFeeInr: 999, monthlyFeeInr: 99,
     qrLimit: 1, locationLimit: 1, analyticsRetentionDays: 365,
-    features: ["Everything in Starter", "Branded QR design", "Scan and action analytics", "Monthly performance summary"],
+    features: ["Everything in Starter", "Detailed scan and action analytics", "365-day analytics retention"],
   },
   vip: {
     code: "vip", name: "VIP Business", setupFeeInr: 1999, monthlyFeeInr: 199,
     qrLimit: 3, locationLimit: 3, analyticsRetentionDays: 730,
-    features: ["Everything in Growth", "Up to 3 QR codes", "Up to 3 locations", "Advanced reports", "Priority support"],
+    features: ["Everything in Growth", "Up to 3 QR code records", "Up to 3 locations", "730-day analytics retention"],
   },
 };
 
