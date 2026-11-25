@@ -14,3 +14,5 @@
 @media(max-width:520px){.smartqr-plan-picker{grid-template-columns:1fr}.smartqr-plan{display:grid;grid-template-columns:1fr auto;align-items:center}.smartqr-plan small,.smartqr-plan em{grid-column:1/-1}.smartqr-two-col{grid-template-columns:1fr}.smartqr-trust{gap:10px}.smartqr-dashboard-head{flex-direction:column}.smartqr-status-row{gap:10px}.smartqr-public-actions{grid-template-columns:1fr 1fr}.smartqr-auth-wrap .smartqr-form-card{padding:22px 18px}}
 
 .smartqr-form .smartqr-consent{display:flex;align-items:flex-start;gap:10px;padding:13px;border:1px solid #e7d9b9;border-radius:10px;background:#fffcf5;font-size:12px;line-height:1.6;color:#51452f}.smartqr-form .smartqr-consent input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#8e6828}.smartqr-form .smartqr-consent span{font-weight:550}
+
+.smartqr-qr-preview{margin-top:16px;display:grid;justify-items:start;gap:10px}.smartqr-qr-preview img{width:190px;max-width:100%;aspect-ratio:1;object-fit:contain;padding:10px;background:#fff;border:1px solid var(--sq-line);border-radius:12px}.smartqr-qr-preview small{font-size:11px;color:var(--sq-muted);line-height:1.5}
