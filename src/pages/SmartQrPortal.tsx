@@ -14,16 +14,16 @@ type Analytics = {retentionDays:number;stats:{event_type:string;total:number}[]}
 type SetupPayment = {status:string;amount_paise:number}|null;
 type CreateOrder = {orderId:string;amount:number;currency:"INR";keyId:string;shopName:string};
 type CheckoutResult = {razorpay_order_id:string;razorpay_payment_id:string;razorpay_signature:string};
-type RazorpayOptions = {key:string;amount:number;currency:string;name:string;description:string;order_id:string;handler:(result:CheckoutResult)=>void;modal?:{ondismiss?:()=>void};theme?:{color:string}};
-type RazorpayInstance = {open:()=>void;on:(event:"payment.failed",callback:(event:{error?:{description?:string}})=>void)=>void};
-declare global { interface Window { Razorpay?: new(options:RazorpayOptions)=>RazorpayInstance } }
+type RazorpayInstance = {open:()=>void;on?:(event:string,callback:(event:{error?:{description?:string}})=>void)=>void};
+type SmartQrRazorpayWindow = Omit<Window,"Razorpay"> & {Razorpay?:new(options:Record<string,unknown>)=>RazorpayInstance};
+function razorpayConstructor(){return (window as unknown as SmartQrRazorpayWindow).Razorpay;}
 function loadRazorpay():Promise<void>{
-  if(window.Razorpay)return Promise.resolve();
+  if(razorpayConstructor())return Promise.resolve();
   return new Promise((resolve,reject)=>{
     const existing=document.querySelector<HTMLScriptElement>('script[data-smartqr-razorpay="true"]');
     if(existing){existing.addEventListener("load",()=>resolve(),{once:true});existing.addEventListener("error",()=>reject(new Error("Razorpay checkout could not load.")),{once:true});return;}
     const script=document.createElement("script");script.src="https://checkout.razorpay.com/v1/checkout.js";script.async=true;script.dataset.smartqrRazorpay="true";
-    script.onload=()=>window.Razorpay?resolve():reject(new Error("Razorpay checkout is unavailable."));
+    script.onload=()=>razorpayConstructor()?resolve():reject(new Error("Razorpay checkout is unavailable."));
     script.onerror=()=>reject(new Error("Razorpay checkout could not load."));
     document.head.appendChild(script);
   });
@@ -109,12 +109,12 @@ function Dashboard(){
     try{
       const order=await api<CreateOrder>("payments/create-order",{method:"POST",body:"{}"});
       await loadRazorpay();
-      if(!window.Razorpay)throw new Error("Razorpay checkout is unavailable.");
-      const checkout=new window.Razorpay({key:order.keyId,amount:order.amount,currency:order.currency,name:"BABA'S SMART QR",description:"One-time merchant setup fee",order_id:order.orderId,theme:{color:"#b58a3b"},handler:async result=>{
+      const Razorpay=razorpayConstructor();if(!Razorpay)throw new Error("Razorpay checkout is unavailable.");
+      const checkout=new Razorpay({key:order.keyId,amount:order.amount,currency:order.currency,name:"BABA'S SMART QR",description:"One-time merchant setup fee",order_id:order.orderId,theme:{color:"#b58a3b"},handler:async rawResult=>{const result=rawResult as CheckoutResult;
         try{const verified=await api<{paid:boolean;message:string}>("payments/verify",{method:"POST",body:JSON.stringify({razorpayOrderId:result.razorpay_order_id,razorpayPaymentId:result.razorpay_payment_id,razorpaySignature:result.razorpay_signature})});setNotice(verified.message);if(verified.paid)setSetupPayment({status:"captured",amount_paise:order.amount});}
         catch(reason){setError(reason instanceof Error?reason.message:"Payment verification is pending. Do not pay again; contact support if this message remains.");}
       }});
-      checkout.on("payment.failed",event=>setError(event.error?.description||"Payment failed. You can retry from this dashboard."));
+      checkout.on?.("payment.failed",event=>setError(event.error?.description||"Payment failed. You can retry from this dashboard."));
       checkout.open();
     }catch(reason){setError(reason instanceof Error?reason.message:"Payment could not be started.");}
     finally{setBusy(false);}
