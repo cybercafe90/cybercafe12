@@ -3854,7 +3854,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/smart-qr/dashboard", "/smart-qr/admin", "/smart-qr/login", "/smart-qr/setup", "/smart-qr/owner-setup", "/smart-qr/reset-password", "/smart-qr/forgot-password"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3878,6 +3878,10 @@ function RoutedApp() {
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
+      "/smart-qr": "BABA'S SMART QR | Merchant Registration",
+      "/smart-qr/login": "Merchant Login | BABA'S SMART QR",
+      "/smart-qr/dashboard": "Merchant Dashboard | BABA'S SMART QR",
+      "/smart-qr/admin": "Platform Administration | BABA'S SMART QR",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
