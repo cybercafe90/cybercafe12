@@ -418,8 +418,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
     if (route === "payments/create-order" && method === "POST") {
       if (env.SMART_QR_ALLOW_LIVE_PAYMENTS !== "true") return fail("Live payments are disabled in this environment. Production payment activation is pending final release approval.",503);
       if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
-      const shop = await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string}>();
+      const shop = await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option,approval_status FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string;approval_status:string}>();
       if (!shop) return fail("Shop not found.",404);
+      if (shop.approval_status==="suspended" || shop.approval_status==="rejected") return fail("This shop account is not eligible to accept payments.",403);
       if (!(await rateLimit(db,"setup-order:"+shop.id,4,60))) return fail("Please wait before requesting another payment order.",429);
       const amountByPlan:Record<string,number>={starter:49900,growth:99900,vip:199900};
       const amountPaise=amountByPlan[shop.plan_code];
@@ -470,8 +471,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
     if (route === "subscriptions/create" && method === "POST") {
       if (env.SMART_QR_ALLOW_LIVE_PAYMENTS !== "true") return fail("Live recurring billing is disabled in this environment until production release approval.",503);
       if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
-      const shop=await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option,monthly_consent_at FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string;monthly_consent_at:string|null}>();
+      const shop=await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option,monthly_consent_at,approval_status FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string;monthly_consent_at:string|null;approval_status:string}>();
       if (!shop) return fail("Shop not found.",404);
+      if (shop.approval_status==="suspended" || shop.approval_status==="rejected") return fail("This shop account is not eligible for subscription changes.",403);
       if (!shop.monthly_consent_at || shop.monthly_option==="none") return fail("No recurring subscription consent was recorded for this shop.",409);
       const setup=await db.prepare("SELECT status FROM smartqr_payments WHERE shop_id=? AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{status:string}>();
       if (setup?.status!=="captured") return fail("The one-time setup payment must be verified before monthly authorization.",409);
@@ -545,8 +547,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const input=await bodyJson(request);
       const label=text(input.label,80);
       if (label.length<2) return fail("Enter a location name.");
-      const shop=await db.prepare("SELECT id,plan_code FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string}>();
+      const shop=await db.prepare("SELECT id,plan_code,approval_status FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string;approval_status:string}>();
       if (!shop) return fail("Shop not found.",404);
+      if (shop.approval_status==="suspended" || shop.approval_status==="rejected") return fail("This shop account is not eligible for QR or location changes.",403);
       const limit=shop.plan_code==="vip"?3:1;
       const count=await db.prepare("SELECT COUNT(*) AS total FROM smartqr_locations WHERE shop_id=?").bind(shop.id).first<{total:number}>();
       if ((count?.total??0)>=limit) return fail("Your current plan's location limit has been reached.",409);
@@ -559,8 +562,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
       const input=await bodyJson(request);
       const label=text(input.label,80)||"Additional QR";
-      const shop=await db.prepare("SELECT id,plan_code FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string}>();
+      const shop=await db.prepare("SELECT id,plan_code,approval_status FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;plan_code:string;approval_status:string}>();
       if (!shop) return fail("Shop not found.",404);
+      if (shop.approval_status==="suspended" || shop.approval_status==="rejected") return fail("This shop account is not eligible for QR or location changes.",403);
       const limit=shop.plan_code==="vip"?3:1;
       const count=await db.prepare("SELECT COUNT(*) AS total FROM smartqr_qr_codes WHERE shop_id=? AND is_active=1").bind(shop.id).first<{total:number}>();
       if ((count?.total??0)>=limit) return fail("Your current plan's QR-code limit has been reached.",409);
@@ -578,6 +582,9 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
     if (route === "shop" && method === "PATCH") {
       if (!user || user.role !== "merchant") return fail("Merchant authentication required.",401);
+      const shopState=await db.prepare("SELECT approval_status FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{approval_status:string}>();
+      if (!shopState) return fail("Shop not found.",404);
+      if (shopState.approval_status==="suspended" || shopState.approval_status==="rejected") return fail("This shop profile is locked. Contact the platform owner.",403);
       const input = await bodyJson(request);
       const allowed = ["shop_name","category","description","phone","whatsapp","address_text","opening_hours","social_links","payment_url","logo_url"];
       const values: unknown[] = [];
