@@ -60,6 +60,7 @@ import {
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 import { getApiExpressLogs } from "./lib/apiExpressClient";
 import ApiExpressVerify from "./components/ApiExpressVerify";
+import ApiExpressBankVerify from "./components/ApiExpressBankVerify";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
@@ -3249,6 +3250,7 @@ function AdminPage() {
           </section>
           <WebsiteSettingsEditor />
           <ApiExpressUsagePanel />
+          <ApiExpressBankVerify />
           {active && (
             <div
               className="modal-backdrop"
