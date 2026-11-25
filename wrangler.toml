@@ -1,3 +1,21 @@
 name = "babacybercafe"
 compatibility_date = "2026-11-02"
 pages_build_output_dir = "./dist"
+
+# Preserve the existing print-preview DB binding and isolate Smart QR by environment.
+[env.preview]
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "baba-print-preview-orders"
+database_id = "f56bfe6a-0ffc-4d56-b412-4a318c9816ef"
+
+[[env.preview.d1_databases]]
+binding = "SMART_QR_DB"
+database_name = "babas-smart-qr-preview"
+database_id = "8a99f280-c685-42d2-9878-3b7be8fa3d6f"
+
+[env.production]
+[[env.production.d1_databases]]
+binding = "SMART_QR_DB"
+database_name = "babas-smart-qr-production"
+database_id = "aee21b3c-354f-4e9f-9ced-5d748c9d5229"
