@@ -18,6 +18,7 @@ function hasPositiveVerification(value: unknown): boolean {
   if (record.verified === true || record.is_valid === true || record.valid === true) return true;
   const status = typeof record.status === "string" ? record.status.toLowerCase() : "";
   if (["verified", "valid"].includes(status) && record.success !== false) return true;
+  if (status === "success" && (typeof record.owner_name === "string" || typeof record.vehicle === "string" || typeof record.pan_status === "string" || typeof record.document_status === "string")) return true;
   for (const key of ["data", "result", "details"]) {
     if (record[key] && hasPositiveVerification(record[key])) return true;
   }
