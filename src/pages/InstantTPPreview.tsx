@@ -8,7 +8,7 @@ type Application = {
   id?: string; trackingId: string; customerName: string; mobile: string; email?: string;
   vehicleRegistration: string; vehicleMakeModel: string; vehicleType: string;
   quotedAmount: number | null; insurerName: string | null; paymentStatus: "not_submitted" | "under_verification" | "paid";
-  utr: string | null; adminNote?: string; policyStatus: "processing" | "issued";
+  adminNote?: string; policyStatus: "processing" | "issued";
   policyNumber: string | null; policyUrl?: string | null; createdAt?: string;
 };
 type AdminItem = {
@@ -89,14 +89,14 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
   // This makes the payable amount and manual UPI instructions appear without requiring
   // the customer to re-enter their tracking ID and mobile number.
   useEffect(() => {
-    if (adminOnly || !application?.trackingId || !application.mobile) return;
+    if (adminOnly || !application?.trackingId || !mobile) return;
     let active = true;
     const refreshApplication = async () => {
       try {
         const result = await callFunction<{ application: Application }>("instant-tp-portal", {
           action: "customer_lookup",
           trackingId: application.trackingId,
-          mobile: application.mobile,
+          mobile,
         });
         if (active) setApplication(result.application);
       } catch {
@@ -105,7 +105,7 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
     };
     const timer = window.setInterval(() => { void refreshApplication(); }, 10000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [adminOnly, application?.trackingId, application?.mobile]);
+  }, [adminOnly, application?.trackingId, mobile]);
 
   async function submitUtr(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
@@ -232,7 +232,7 @@ export default function InstantTPPreview({ adminOnly = false }: { adminOnly?: bo
               </div>}
               <div className="tp-status-list">
                 <div className="tp-status-step done"><span><CheckCircle2 size={16}/></span><div><b>Application received</b><small>{application.trackingId}</small></div><strong>Done</strong></div>
-                <div className={application.paymentStatus==="paid"?"tp-status-step done":application.paymentStatus==="under_verification"?"tp-status-step current":"tp-status-step"}><span>{application.paymentStatus==="paid"?<CheckCircle2 size={16}/>:<Clock3 size={16}/>}</span><div><b>Payment status</b><small>{application.utr ? "UTR: "+application.utr : "Awaiting customer payment reference"}</small></div><strong>{paymentLabel[application.paymentStatus]}</strong></div>
+                <div className={application.paymentStatus==="paid"?"tp-status-step done":application.paymentStatus==="under_verification"?"tp-status-step current":"tp-status-step"}><span>{application.paymentStatus==="paid"?<CheckCircle2 size={16}/>:<Clock3 size={16}/>}</span><div><b>Payment status</b><small>{application.paymentStatus === "paid" ? "Payment verified by the owner" : application.paymentStatus === "under_verification" ? "Payment reference submitted for verification" : "Awaiting customer payment reference"}</small></div><strong>{paymentLabel[application.paymentStatus]}</strong></div>
                 <div className={application.policyStatus==="issued"?"tp-status-step done":"tp-status-step current"}><span>{application.policyStatus==="issued"?<CheckCircle2 size={16}/>:<Clock3 size={16}/>}</span><div><b>Policy document</b><small>{application.policyStatus==="issued"?"Policy PDF is ready":"Processing after payment verification"}</small></div><strong>{application.policyStatus==="issued"?"Issued":"Processing"}</strong></div>
               </div>
               {application.policyStatus==="issued" && application.policyUrl && <a className="tp-primary tp-download" href={application.policyUrl} target="_blank" rel="noreferrer"><Download size={17}/>Download issued policy PDF</a>}
