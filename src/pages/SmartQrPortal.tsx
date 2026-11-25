@@ -93,7 +93,7 @@ function AuthPage({mode}:{mode:"login"|"setup"|"reset"|"forgot"}){
   async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError("");setMessage("");try{
     if(mode==="login"){const result=await api<{user:{role:string}}>("login",{method:"POST",body:JSON.stringify({email,password})});navigate(result.user.role==="platform_admin"?"/smart-qr/admin":"/smart-qr/dashboard");return;}
     if(mode==="forgot"){const r=await api<{message:string}>("forgot-password",{method:"POST",body:JSON.stringify({email})});setMessage(r.message);}
-    if(mode==="setup"){const r=await api<{message:string}>("setup",{method:"POST",body:JSON.stringify({token,password})});setMessage(r.message);navigate("/smart-qr/dashboard");return;}
+    if(mode==="setup"){const r=await api<{message:string;user:{role:string}}>("setup",{method:"POST",body:JSON.stringify({token,password})});setMessage(r.message);navigate(r.user.role==="platform_admin"?"/smart-qr/admin":"/smart-qr/dashboard");return;}
     if(mode==="reset"){const r=await api<{message:string}>("reset-password",{method:"POST",body:JSON.stringify({token,password})});setMessage(r.message);navigate("/smart-qr/login");return;}
   }catch(reason){setError(reason instanceof Error?reason.message:"Request failed.");}finally{setBusy(false);}}
   const title=mode==="login"?"Merchant sign in":mode==="setup"?"Set your password":mode==="reset"?"Reset your password":"Recover account access";
