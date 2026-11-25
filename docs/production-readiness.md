@@ -96,3 +96,7 @@ Read-only checks were run against project `dyzyfugxzsdvboxerbxv`. No live databa
 - Cloudflare production configuration or production DNS.
 
 These settings require a separate, explicit owner decision or an approved production-change window. The prepared SQL migration must be reviewed and tested on a disposable Supabase branch before production application.
+
+- **Medium — analytics CSP mismatch:** the browser analytics loader was blocked by the deployed Content-Security-Policy. The branch now allows only the configured US PostHog script and ingestion hosts required by the existing build configuration.
+- **Medium — unverified business address in structured data:** the site enhancement script injected a street address and postal code that were not verified for BABA'S CYBER CAFE. Those address fields were removed; the schema retains the verified Srinagar service area only.
+- **Source drift — deployed Edge Functions:** five live functions were not represented in repository source. The missing print-agent source is now tracked and payload-limited. Four retired investigation endpoints and the retired customer assistant endpoint are also tracked as 410 responses, matching their deployed retired state.
