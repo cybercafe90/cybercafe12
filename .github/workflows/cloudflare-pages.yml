@@ -2,7 +2,9 @@ name: CI - Build and verify
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - security/production-readiness-2026-11
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -22,25 +24,19 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci
-
       - name: Audit all dependencies
         run: npm audit
-
       - name: Audit production dependencies
         run: npm audit --omit=dev
-
       - name: Lint
         run: npm run lint
-
       - name: Build production bundle
         run: npm run build
         env:
@@ -49,16 +45,12 @@ jobs:
           # Public PostHog browser-ingestion key; never place provider secrets here.
           VITE_POSTHOG_KEY: phc_AnW9LxtnbUJMRcjuUhMTga6HTiQPvsvv9Ywq57TvvFVC
           VITE_POSTHOG_HOST: https://us.i.posthog.com
-
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Run browser tests
         run: npm run test:e2e
-
       - name: Test shared Edge Function utilities
         run: npm run test:edge
-
       - name: Type-check Edge Functions
         run: npm run check:edge
 
