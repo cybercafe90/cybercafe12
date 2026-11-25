@@ -17,7 +17,7 @@ function hasPositiveVerification(value: unknown): boolean {
   const record = value as Record<string, unknown>;
   if (record.verified === true || record.is_valid === true || record.valid === true) return true;
   const status = typeof record.status === "string" ? record.status.toLowerCase() : "";
-  if (["verified", "valid", "success"].includes(status) && record.success !== false) return true;
+  if (["verified", "valid"].includes(status) && record.success !== false) return true;
   for (const key of ["data", "result", "details"]) {
     if (record[key] && hasPositiveVerification(record[key])) return true;
   }
