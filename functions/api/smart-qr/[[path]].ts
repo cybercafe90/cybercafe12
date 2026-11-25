@@ -20,7 +20,10 @@ function fail(message: string, status = 400) { return response({ error: message 
 async function bodyJson(request: Request): Promise<Record<string, unknown>> {
   const length = Number(request.headers.get("content-length") || 0);
   if (length > 20_000) throw new Error("Request is too large.");
-  const value = await request.json();
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > 20_000) throw new Error("Request is too large.");
+  let value: unknown;
+  try { value = JSON.parse(raw); } catch { throw new Error("Invalid JSON request body."); }
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid request body.");
   return value as Record<string, unknown>;
 }
@@ -80,7 +83,8 @@ async function sendSetupEmail(env: Env, email: string, token: string, origin: st
   if (!env.RESEND_API_KEY) throw new Error("Email delivery is not configured. Add RESEND_API_KEY as a Cloudflare secret before enabling registration.");
   const url = new URL(kind === "reset" ? "/smart-qr/reset-password" : kind === "owner" ? "/smart-qr/owner-setup" : "/smart-qr/setup", env.SMART_QR_PUBLIC_ORIGIN || origin);
   url.searchParams.set("token", token);
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#202124"><h2>BABA'S SMART QR</h2><p>Set a secure password for your ${kind} account using the one-time link below.</p><p><a href="${url.toString()}" style="display:inline-block;padding:12px 18px;background:#171717;color:#fff;text-decoration:none">Set password</a></p><p>This link expires in 30 minutes and can be used once. If you did not request it, ignore this email.</p></div>`;
+  const action = kind === "reset" ? "Reset your password" : "Set your password";
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#202124"><h2>BABA'S SMART QR</h2><p>${action} for your ${kind} account using the one-time link below.</p><p><a href="${url.toString()}" style="display:inline-block;padding:12px 18px;background:#171717;color:#fff;text-decoration:none">${action}</a></p><p>This link expires in 30 minutes and can be used once. If you did not request it, ignore this email.</p></div>`;
   const result = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
@@ -210,10 +214,14 @@ export const onRequest = async ({ request, env, params }: Context) => {
         WHERE t.token_hash=? AND t.purpose='setup'`).bind(hash).first<{user_id:string;expires_at:string;used_at:string|null}>();
       if (!row || row.used_at || Date.parse(row.expires_at)<=Date.now()) return fail("This setup link is invalid or expired.", 410);
       const stored = await passwordHash(password);
-      await db.batch([
-        db.prepare("UPDATE smartqr_users SET password_hash=?,email_verified_at=COALESCE(email_verified_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(stored.encoded,row.user_id),
-        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND used_at IS NULL").bind(hash),
+      const consumed = await db.batch([
+        db.prepare(`UPDATE smartqr_users SET password_hash=?,email_verified_at=COALESCE(email_verified_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP
+          WHERE id=? AND password_hash IS NULL AND EXISTS (
+            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP
+          )`).bind(stored.encoded,row.user_id,hash),
+        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='setup' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP").bind(hash),
       ]);
+      if (consumed[0].meta.changes !== 1 || consumed[1].meta.changes !== 1) return fail("This setup link is invalid, expired or already used.",410);
       const session = await createSession(db,row.user_id);
       return response({message:"Password created. Your merchant application is pending approval."},200,{"set-cookie":cookieHeader(session,604800)});
     }
@@ -241,11 +249,15 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const row = await db.prepare("SELECT user_id,expires_at,used_at FROM smartqr_email_tokens WHERE token_hash=? AND purpose='reset'").bind(hash).first<{user_id:string;expires_at:string;used_at:string|null}>();
       if (!row || row.used_at || Date.parse(row.expires_at)<=Date.now()) return fail("This reset link is invalid or expired.",410);
       const stored = await passwordHash(password);
-      await db.batch([
-        db.prepare("UPDATE smartqr_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(stored.encoded,row.user_id),
-        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND used_at IS NULL").bind(hash),
+      const consumed = await db.batch([
+        db.prepare(`UPDATE smartqr_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP
+          WHERE id=? AND EXISTS (
+            SELECT 1 FROM smartqr_email_tokens WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP
+          )`).bind(stored.encoded,row.user_id,hash),
+        db.prepare("UPDATE smartqr_email_tokens SET used_at=CURRENT_TIMESTAMP WHERE token_hash=? AND purpose='reset' AND used_at IS NULL AND expires_at>CURRENT_TIMESTAMP").bind(hash),
         db.prepare("DELETE FROM smartqr_sessions WHERE user_id=?").bind(row.user_id),
       ]);
+      if (consumed[0].meta.changes !== 1 || consumed[1].meta.changes !== 1) return fail("This reset link is invalid, expired or already used.",410);
       return response({message:"Password reset successfully. Sign in with your new password."});
     }
 
