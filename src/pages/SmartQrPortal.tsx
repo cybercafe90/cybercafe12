@@ -110,7 +110,7 @@ function Dashboard(){
       const order=await api<CreateOrder>("payments/create-order",{method:"POST",body:"{}"});
       await loadRazorpay();
       const Razorpay=razorpayConstructor();if(!Razorpay)throw new Error("Razorpay checkout is unavailable.");
-      const checkout=new Razorpay({key:order.keyId,amount:order.amount,currency:order.currency,name:"BABA'S SMART QR",description:"One-time merchant setup fee",order_id:order.orderId,theme:{color:"#b58a3b"},handler:async rawResult=>{const result=rawResult as CheckoutResult;
+      const checkout=new Razorpay({key:order.keyId,amount:order.amount,currency:order.currency,name:"BABA'S SMART QR",description:"One-time merchant setup fee",order_id:order.orderId,theme:{color:"#b58a3b"},handler:async (rawResult:unknown)=>{const result=rawResult as CheckoutResult;
         try{const verified=await api<{paid:boolean;message:string}>("payments/verify",{method:"POST",body:JSON.stringify({razorpayOrderId:result.razorpay_order_id,razorpayPaymentId:result.razorpay_payment_id,razorpaySignature:result.razorpay_signature})});setNotice(verified.message);if(verified.paid)setSetupPayment({status:"captured",amount_paise:order.amount});}
         catch(reason){setError(reason instanceof Error?reason.message:"Payment verification is pending. Do not pay again; contact support if this message remains.");}
       }});
