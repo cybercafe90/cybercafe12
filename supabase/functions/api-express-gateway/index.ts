@@ -61,7 +61,7 @@ function cacheDuration(service: ServiceName): number {
 function normalizedCacheData(service: ServiceName, data: unknown): unknown {
   if (service !== "telecom_operator" || !jsonObject(data)) return data;
   const source = jsonObject(data.data) ? data.data : data;
-  const allowed = ["operator", "operator_name", "circle", "circle_name", "type", "status"];
+  const allowed = ["operator", "operator_name", "circle", "circle_name", "type", "status", "connection", "ported"];
   const result: Json = {};
   for (const key of allowed) if (source[key] !== undefined) result[key] = source[key];
   return result;
@@ -78,8 +78,9 @@ function route(service: ServiceName, p: Json): { method: "GET" | "POST"; path: s
       if (!["aadhaar", "dl", "voter"].includes(type ?? "")) return "doc_type must be aadhaar, dl, or voter.";
       const doc = str(p.document_number, 24);
       if (!doc) return "A valid document_number is required.";
+      if (type === "aadhaar" && p.consent !== true) return "Explicit Aadhaar consent is required before requesting OTP verification.";
       const path = type === "aadhaar" ? "/v1/kyc/aadhaar" : type === "dl" ? "/v1/kyc/dl" : "/v1/kyc/voter";
-      return { method: "POST", path, body: { [type === "aadhaar" ? "aadhaar" : type === "dl" ? "dl_number" : "voter_id"]: doc } };
+      return { method: "POST", path, body: type === "aadhaar" ? { aadhaar: doc, consent: true } : { [type === "dl" ? "dl_number" : "voter_id"]: doc } };
     }
     case "rc_verify": {
       const rc = str(p.rc_number, 24)?.toUpperCase();
@@ -110,7 +111,7 @@ function route(service: ServiceName, p: Json): { method: "GET" | "POST"; path: s
     }
     case "fuel_price": {
       const city = str(p.city, 80); if (!city) return "city is required.";
-      return { method: "GET", path: `/v1/fuel?city=${encodeURIComponent(city)}`, cacheInput: city.toLowerCase() };
+      return { method: "GET", path: `/v1/fuel/price?city=${encodeURIComponent(city)}`, cacheInput: city.toLowerCase() };
     }
     case "commodity_price": {
       const type = str(p.type, 24)?.toLowerCase(); const city = str(p.city, 80);
@@ -122,12 +123,18 @@ function route(service: ServiceName, p: Json): { method: "GET" | "POST"; path: s
       return { method: "GET", path: `/v1/${service === "weather" ? "weather" : "aqi"}?city=${encodeURIComponent(city)}`, cacheInput: city.toLowerCase() };
     }
     case "security_risk": {
-      const subject_type = str(p.subject_type, 24);
-      const reference_id = str(p.reference_id, 100);
-      if (!subject_type || !reference_id) return "subject_type and reference_id are required.";
-      // Do not forward arbitrary PII. The provider integration must use its documented identifiers.
-      const allowed: Json = { subject_type, reference_id };
-      if (typeof p.metadata === "object" && p.metadata !== null && !Array.isArray(p.metadata)) allowed.metadata = p.metadata;
+      const email_hash = str(p.email_hash, 80);
+      const phone_hash = str(p.phone_hash, 80);
+      const device_id = str(p.device_id, 120);
+      const ip = str(p.ip, 64);
+      if (!email_hash && !phone_hash && !device_id && !ip) return "Provide at least one hashed identity, device_id, or IP risk signal.";
+      if (email_hash && !/^sha256:[a-f0-9]{64}$/i.test(email_hash)) return "email_hash must be a SHA-256 hex digest prefixed with sha256:.";
+      if (phone_hash && !/^sha256:[a-f0-9]{64}$/i.test(phone_hash)) return "phone_hash must be a SHA-256 hex digest prefixed with sha256:.";
+      const allowed: Json = {};
+      if (email_hash) allowed.email_hash = email_hash;
+      if (phone_hash) allowed.phone_hash = phone_hash;
+      if (device_id) allowed.device_id = device_id;
+      if (ip) allowed.ip = ip;
       return { method: "POST", path: "/v1/security/risk", body: allowed };
     }
   }
@@ -155,12 +162,13 @@ async function readLogs(req: Request, admin: SupabaseClient, _userId: string) {
   const { data, error } = await admin.from("api_express_logs").select("id,user_id,service_name,status,http_code,created_at").order("created_at", { ascending: false }).limit(limit);
   if (error) return reply(req, { ok: false, service: "admin_logs", error: "Could not load API logs." }, 500);
   const rows = data ?? [];
+  const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
   const [totalResult, successResult, errorResult, cacheResult, upstreamResult] = await Promise.all([
     admin.from("api_express_logs").select("id", { count: "exact", head: true }),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "success"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "error"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "cache_hit"),
-    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]).gte("created_at", monthStart.toISOString()),
   ]);
   if ([totalResult, successResult, errorResult, cacheResult, upstreamResult].some(result => result.error)) {
     return reply(req, { ok: false, service: "admin_logs", error: "Could not calculate API usage." }, 500);
