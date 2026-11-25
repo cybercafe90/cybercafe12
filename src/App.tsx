@@ -59,6 +59,7 @@ import {
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 import { getApiExpressLogs } from "./lib/apiExpressClient";
+import ApiExpressVerify from "./components/ApiExpressVerify";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
@@ -1191,6 +1192,8 @@ function ApplicationPage() {
         <label className="field"><span>Name <i>*</i></span><input value={name} onChange={(event)=>setName(event.target.value)} placeholder="Your full name" autoComplete="name" required maxLength={100}/></label>
         <label className="field"><span>Phone <i>*</i></span><input type="tel" value={mobile} onChange={(event)=>setMobile(event.target.value)} placeholder="10-digit mobile number" autoComplete="tel-national" inputMode="numeric" required maxLength={15}/></label>
         <label className="field"><span>Service <i>*</i></span><select value={service} onChange={(event)=>setService(event.target.value)} required><option value="">Choose a service</option>{serviceOptions.map((item)=><option value={item} key={item}>{item}</option>)}</select></label>
+        <ApiExpressVerify service="kyc_pan" label="Verify PAN (optional)" payloadKey="pan" placeholder="ABCDE1234F" />
+        <ApiExpressVerify service="rc_verify" label="Verify vehicle RC (optional)" payloadKey="rc_number" placeholder="Vehicle registration number" />
         <label className="field"><span>Message</span><textarea value={message} onChange={(event)=>setMessage(event.target.value)} placeholder="Tell us briefly what help you need…" rows={4} maxLength={1000}/></label>
         {error && <p className="cyber-error" role="alert">{error}</p>}
         <button className="cyber-button cyber-button-primary" type="submit"><MessageCircle size={17}/> Send enquiry on WhatsApp</button>
