@@ -31,7 +31,12 @@ Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok',{headers:cors})
   if (request.method !== 'POST') return json({error:'Method not allowed.'},405)
   try {
-    const admin = serviceClient(), body = await request.json(), action = typeof body.action === 'string' ? body.action : ''
+    const declaredLength = Number(request.headers.get('content-length') ?? 0)
+    if (declaredLength > 16_000) return json({error:'Request is too large.'},413)
+    const raw = await request.text()
+    if (raw.length > 16_000) return json({error:'Request is too large.'},413)
+    const body = JSON.parse(raw)
+    const admin = serviceClient(), action = typeof body.action === 'string' ? body.action : ''
     if (action === 'register_agent') {
       const owner = await ownerId(request,admin), deviceName = typeof body.deviceName === 'string' ? body.deviceName.trim().slice(0,100) : ''
       if (!deviceName) return json({error:'Enter a desktop device name.'},400)
