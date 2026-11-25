@@ -148,3 +148,12 @@
 .smartqr-audit-item time{text-align:right;white-space:nowrap}
 .smartqr-small-button:disabled{opacity:.5;cursor:wait}
 @media(max-width:650px){.smartqr-admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.smartqr-audit-card{padding:17px}.smartqr-audit-item{grid-template-columns:10px minmax(0,1fr)}.smartqr-audit-item time{grid-column:2;text-align:left;margin-top:-4px}}
+
+.smartqr-check-list{display:grid;gap:0;margin:20px 0;border:1px solid #e4e8f5;border-radius:14px;overflow:hidden}
+.smartqr-check-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;background:#fff;border-bottom:1px solid #edf0f7;font-size:12px}
+.smartqr-check-row:last-child{border-bottom:0}
+.smartqr-check-row>span{color:#465171;font-weight:650}
+.smartqr-check-row b{font-size:11px;white-space:nowrap}
+.smartqr-check-good{color:#13866e}
+.smartqr-check-missing{color:#c07825}
+.smartqr-form-card>.smartqr-text-link{display:inline-flex;margin-top:16px}
