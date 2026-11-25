@@ -195,6 +195,24 @@ function Admin(){
     </section>
   </Shell>;
 }
+function SystemCheck(){
+  type Health={status:string;database:boolean;schema:boolean;emailReady:boolean;paymentsReady:boolean;livePaymentsEnabled:boolean;ownerBootstrapReady:boolean};
+  const [health,setHealth]=useState<Health|null>(null);
+  const [error,setError]=useState("");
+  const [busy,setBusy]=useState(false);
+  async function load(){setBusy(true);setError("");try{setHealth(await api<Health>("health"));}catch(e){setError(e instanceof Error?e.message:"Unable to read system status.");}finally{setBusy(false);}}
+  useEffect(()=>{void load();},[]);
+  const rows=health?[["Preview database",health.database],["Required database schema",health.schema],["Email delivery secret",health.emailReady],["Razorpay credentials and webhook secret",health.paymentsReady],["Owner bootstrap secret",health.ownerBootstrapReady],["Live payments explicitly enabled",health.livePaymentsEnabled]] as [string,boolean][]:[];
+  return <Shell><section className="smartqr-auth-wrap"><div className="smartqr-form-card"><span className="smartqr-eyebrow">PRE-LAUNCH DIAGNOSTICS</span><h1>System readiness</h1><p>Check the Smart QR preview configuration without exposing any credentials.</p>{error&&<Notice error>{error}</Notice>}{health&&<><Notice>{health.status==="ready"?"Database and required tables are available.":"The system needs configuration before onboarding."}</Notice><div className="smartqr-check-list">{rows.map(([label,ok])=><div className="smartqr-check-row" key={label}><span>{label}</span><b className={ok?"smartqr-check-good":"smartqr-check-missing"}>{ok?"Ready":"Not configured"}</b></div>)}</div><p className="smartqr-help">Live payments are intentionally disabled until test transactions pass and release approval is given.</p></> }<button className="smartqr-primary" type="button" onClick={()=>void load()} disabled={busy}>{busy?"Checking…":"Refresh system check"} <ArrowRight size={16}/></button><Link className="smartqr-text-link" to="/smart-qr/owner-bootstrap">First-time owner setup</Link></div></section></Shell>;
+}
+function OwnerBootstrap(){
+  const [secret,setSecret]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState("");
+  const [message,setMessage]=useState("");
+  async function submit(event:FormEvent){event.preventDefault();setError("");setMessage("");if(secret.length<32){setError("Enter the owner bootstrap secret configured in Cloudflare.");return;}setBusy(true);try{const result=await api<{message:string}>("admin/bootstrap",{method:"POST",headers:{"x-owner-bootstrap-secret":secret},body:JSON.stringify({email:"support@babacybercafe.in"})});setMessage(result.message);setSecret("");}catch(e){setError(e instanceof Error?e.message:"Owner setup could not be started.");}finally{setBusy(false);}}
+  return <Shell><section className="smartqr-auth-wrap"><div className="smartqr-form-card"><span className="smartqr-eyebrow">RESTRICTED OWNER INITIALIZATION</span><h1>Set up platform owner</h1><p>This creates the single owner account for support@babacybercafe.in and sends a one-time password setup link to that mailbox.</p>{error&&<Notice error>{error}</Notice>}{message&&<Notice>{message}</Notice>}<form className="smartqr-form" onSubmit={submit}><label>Owner bootstrap secret<input type="password" autoComplete="off" value={secret} onChange={e=>setSecret(e.target.value)} minLength={32} required/></label><small className="smartqr-help">Enter the secret you added under Cloudflare Pages → Settings → Variables and Secrets → Preview. It is sent only to the server and is not saved in this browser.</small><button className="smartqr-primary" disabled={busy||secret.length<32}>{busy?"Starting secure setup…":"Send owner setup email"} <ShieldCheck size={16}/></button></form><Link className="smartqr-text-link" to="/smart-qr/system-check">View configuration readiness</Link></div></section></Shell>;
+}
 function PublicShop(){
   const {slug=""}=useParams();const [shop,setShop]=useState<Record<string,unknown>|null>(null);const [error,setError]=useState("");
   useEffect(()=>{void api<{shop:Record<string,unknown>}>("public/"+encodeURIComponent(slug)).then(x=>setShop(x.shop)).catch(e=>setError(e.message));},[slug]);
@@ -219,5 +237,7 @@ export default function SmartQrPortal(){
   if(path==="/smart-qr/forgot-password")return <AuthPage mode="forgot"/>;
   if(path==="/smart-qr/dashboard")return <Dashboard/>;
   if(path==="/smart-qr/admin")return <Admin/>;
+  if(path==="/smart-qr/system-check")return <SystemCheck/>;
+  if(path==="/smart-qr/owner-bootstrap")return <OwnerBootstrap/>;
   return <Register/>;
 }
