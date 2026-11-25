@@ -317,7 +317,13 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const paymentId = text(entity?.id,80);
       const payloadHash = await sha256(raw);
       const inserted = await db.prepare("INSERT OR IGNORE INTO smartqr_webhook_events(event_id,event_type,payload_hash) VALUES(?,?,?)").bind(eventId,eventType||"unknown",payloadHash).run();
-      if (inserted.meta.changes === 0) return response({received:true,duplicate:true});
+      if (inserted.meta.changes === 0 && orderId) {
+        const previous = await db.prepare("SELECT status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{status:string}>();
+        const terminal = eventType==="payment.captured" || eventType==="order.paid" ? previous?.status==="captured" : eventType==="payment.failed" ? previous?.status==="failed" : eventType==="payment.refunded" ? previous?.status==="refunded" : false;
+        if (terminal) return response({received:true,duplicate:true});
+      } else if (inserted.meta.changes === 0) {
+        return response({received:true,duplicate:true});
+      }
       if (orderId && (eventType==="payment.captured" || eventType==="order.paid" || eventType==="payment.failed" || eventType==="payment.refunded")) {
         const payment = await db.prepare("SELECT id,shop_id,amount_paise,status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{id:string;shop_id:number;amount_paise:number;status:string}>();
         if (payment && entity) {
