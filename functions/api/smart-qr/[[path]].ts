@@ -3,6 +3,9 @@ interface Env {
   RESEND_API_KEY?: string;
   SMART_QR_OWNER_BOOTSTRAP_SECRET?: string;
   SMART_QR_PUBLIC_ORIGIN?: string;
+  RAZORPAY_KEY_ID?: string;
+  RAZORPAY_KEY_SECRET?: string;
+  SMART_QR_RAZORPAY_WEBHOOK_SECRET?: string;
 }
 
 type Context = { request: Request; env: Env; params: { path?: string } };
@@ -37,6 +40,22 @@ function randomToken(bytes = 32) {
 async function sha256(value: string) {
   const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(hash), (part) => part.toString(16).padStart(2, "0")).join("");
+}
+async function hmacSha256(secret: string, value: string) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
+  return Array.from(new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(value))), part=>part.toString(16).padStart(2,"0")).join("");
+}
+async function razorpayRequest(env: Env, path: string, method: "GET"|"POST", body?: unknown) {
+  if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) throw new Error("Razorpay credentials are not configured. Add the live Razorpay secrets to the Smart QR Cloudflare environment.");
+  const auth = btoa(env.RAZORPAY_KEY_ID + ":" + env.RAZORPAY_KEY_SECRET);
+  const result = await fetch("https://api.razorpay.com/v1" + path, {
+    method,
+    headers: {authorization:"Basic " + auth, "content-type":"application/json"},
+    ...(body === undefined ? {} : {body:JSON.stringify(body)}),
+  });
+  const payload = await result.json().catch(()=>({}));
+  if (!result.ok) throw new Error("Razorpay could not process this payment request.");
+  return payload as Record<string,unknown>;
 }
 async function passwordHash(password: string, salt = randomToken(16)) {
   const material = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -143,7 +162,7 @@ export const onRequest = async ({ request, env, params }: Context) => {
   if (!env.SMART_QR_DB) return fail("Smart QR database binding is unavailable.", 503);
   const db = env.SMART_QR_DB;
   if (method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-methods": "GET,POST,PATCH,OPTIONS", "access-control-allow-headers": "content-type", "access-control-max-age": "600" } });
-  if (method !== "GET" && !assertSameOrigin(request)) return fail("Request origin could not be verified.", 403);
+  if (method !== "GET" && route !== "payments/webhook" && !assertSameOrigin(request)) return fail("Request origin could not be verified.", 403);
 
   try {
     if (route === "register" && method === "POST") {
@@ -278,6 +297,45 @@ export const onRequest = async ({ request, env, params }: Context) => {
       return response({message:"Signed out."},200,{"set-cookie":cookieHeader("",0)});
     }
 
+
+    if (route === "payments/webhook" && method === "POST") {
+      const raw = await request.text();
+      if (new TextEncoder().encode(raw).byteLength > 256_000) return fail("Webhook payload is too large.",413);
+      const secret = env.SMART_QR_RAZORPAY_WEBHOOK_SECRET || "";
+      const signature = request.headers.get("x-razorpay-signature") || "";
+      const eventId = request.headers.get("x-razorpay-event-id") || "";
+      if (!secret || !/^[a-f0-9]{64}$/i.test(signature) || !eventId) return fail("Webhook authentication failed.",401);
+      const expected = await hmacSha256(secret,raw);
+      if (!constantTimeEqual(expected,signature.toLowerCase())) return fail("Webhook authentication failed.",401);
+      const payload = JSON.parse(raw) as Record<string,unknown>;
+      const eventType = text(payload.event,80);
+      const data = payload.payload as Record<string,unknown> | undefined;
+      const paymentData = data?.payment as Record<string,unknown> | undefined;
+      const entity = paymentData?.entity as Record<string,unknown> | undefined;
+      const orderId = text(entity?.order_id,80);
+      const paymentId = text(entity?.id,80);
+      const payloadHash = await sha256(raw);
+      const inserted = await db.prepare("INSERT OR IGNORE INTO smartqr_webhook_events(event_id,event_type,payload_hash) VALUES(?,?,?)").bind(eventId,eventType||"unknown",payloadHash).run();
+      if (inserted.meta.changes === 0) return response({received:true,duplicate:true});
+      if (orderId && (eventType==="payment.captured" || eventType==="order.paid" || eventType==="payment.failed" || eventType==="payment.refunded")) {
+        const payment = await db.prepare("SELECT id,shop_id,amount_paise,status FROM smartqr_payments WHERE razorpay_order_id=? AND payment_kind='setup'").bind(orderId).first<{id:string;shop_id:number;amount_paise:number;status:string}>();
+        if (payment && entity) {
+          const amountMatches = Number(entity.amount) === payment.amount_paise && entity.currency === "INR";
+          if (eventType==="payment.captured" && entity.status==="captured" && entity.captured===true && amountMatches) {
+            await db.batch([
+              db.prepare("UPDATE smartqr_payments SET status='captured',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId,payment.id),
+              db.prepare("INSERT INTO smartqr_audit_logs(shop_id,action,detail_json) VALUES(?,?,?)").bind(payment.shop_id,"setup_payment_captured",JSON.stringify({orderId,paymentId,amountPaise:payment.amount_paise,eventId})),
+            ]);
+          } else if (eventType==="payment.failed") {
+            await db.prepare("UPDATE smartqr_payments SET status='failed',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='created'").bind(paymentId||null,payment.id).run();
+          } else if (eventType==="payment.refunded") {
+            await db.prepare("UPDATE smartqr_payments SET status='refunded',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='captured'").bind(paymentId||null,payment.id).run();
+          }
+        }
+      }
+      return response({received:true,processed:true});
+    }
+
     const user = await sessionUser(request,db);
     if (route === "me" && method === "GET") return user ? response({user}) : fail("Authentication required.",401);
 
@@ -289,7 +347,55 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!shop) return fail("Shop not found.",404);
       const locations = await db.prepare("SELECT location_code,label,address_text,phone,opening_hours,is_primary FROM smartqr_locations WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY is_primary DESC,id").bind(user.id).all();
       const qrCodes = await db.prepare("SELECT qr_code,label,is_active,created_at FROM smartqr_qr_codes WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) ORDER BY id").bind(user.id).all();
-      return response({shop,locations:locations.results,qrCodes:qrCodes.results});
+      const setupPayment = await db.prepare("SELECT status,amount_paise FROM smartqr_payments WHERE shop_id=(SELECT id FROM smartqr_shops WHERE owner_user_id=?) AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(user.id).first<{status:string;amount_paise:number}>();
+      return response({shop,locations:locations.results,qrCodes:qrCodes.results,setupPayment:setupPayment||null,user:{email:user.email,role:user.role}});
+    }
+
+
+    if (route === "payments/create-order" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const shop = await db.prepare("SELECT id,shop_code,shop_name,plan_code,monthly_option FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number;shop_code:string;shop_name:string;plan_code:string;monthly_option:string}>();
+      if (!shop) return fail("Shop not found.",404);
+      if (!(await rateLimit(db,"setup-order:"+shop.id,4,60))) return fail("Please wait before requesting another payment order.",429);
+      const amountByPlan:Record<string,number>={starter:49900,growth:99900,vip:199900};
+      const amountPaise=amountByPlan[shop.plan_code];
+      if (!amountPaise) return fail("The selected plan is invalid.",409);
+      const existing=await db.prepare("SELECT id,amount_paise,status,razorpay_order_id FROM smartqr_payments WHERE shop_id=? AND payment_kind='setup' ORDER BY created_at DESC LIMIT 1").bind(shop.id).first<{id:string;amount_paise:number;status:string;razorpay_order_id:string|null}>();
+      if (existing?.status==="captured") return fail("The setup fee has already been paid.",409);
+      if (existing?.status==="created" && existing.razorpay_order_id) return response({orderId:existing.razorpay_order_id,amount:existing.amount_paise,currency:"INR",keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
+      const order=await razorpayRequest(env,"/orders","POST",{amount:amountPaise,currency:"INR",receipt:shop.shop_code.slice(0,40),notes:{shop_code:shop.shop_code,payment_kind:"smartqr_setup",plan_code:shop.plan_code}});
+      const orderId=text(order.id,80);
+      if (!orderId || Number(order.amount)!==amountPaise || order.currency!=="INR") throw new Error("Razorpay returned an invalid order.");
+      if (existing) {
+        await db.prepare("UPDATE smartqr_payments SET amount_paise=?,status='created',plan_code=?,monthly_option=?,razorpay_order_id=?,razorpay_payment_id=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status!='captured'").bind(amountPaise,shop.plan_code,shop.monthly_option,orderId,existing.id).run();
+      } else {
+        await db.prepare("INSERT INTO smartqr_payments(id,shop_id,payment_kind,amount_paise,currency,status,plan_code,monthly_option,razorpay_order_id) VALUES(?,?,'setup',?,'INR','created',?,?,?)").bind(crypto.randomUUID(),shop.id,amountPaise,shop.plan_code,shop.monthly_option,orderId).run();
+      }
+      await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"setup_payment_order_created",JSON.stringify({orderId,amountPaise,plan:shop.plan_code})).run();
+      return response({orderId,amount:amountPaise,currency:"INR",keyId:env.RAZORPAY_KEY_ID,shopName:shop.shop_name});
+    }
+
+    if (route === "payments/verify" && method === "POST") {
+      if (!user || user.role!=="merchant") return fail("Merchant authentication required.",401);
+      const input=await bodyJson(request);
+      const orderId=text(input.razorpayOrderId,80);
+      const paymentId=text(input.razorpayPaymentId,80);
+      const signature=text(input.razorpaySignature,128).toLowerCase();
+      if (!orderId || !paymentId || !/^[a-f0-9]{64}$/.test(signature)) return fail("Payment verification details are invalid.");
+      const shop=await db.prepare("SELECT id FROM smartqr_shops WHERE owner_user_id=?").bind(user.id).first<{id:number}>();
+      if (!shop) return fail("Shop not found.",404);
+      const payment=await db.prepare("SELECT id,amount_paise,status FROM smartqr_payments WHERE shop_id=? AND payment_kind='setup' AND razorpay_order_id=?").bind(shop.id,orderId).first<{id:string;amount_paise:number;status:string}>();
+      if (!payment) return fail("Payment order not found.",404);
+      const secret=env.RAZORPAY_KEY_SECRET||"";
+      if (!secret) throw new Error("Razorpay credentials are not configured.");
+      const expected=await hmacSha256(secret,orderId+"|"+paymentId);
+      if (!constantTimeEqual(expected,signature)) return fail("The payment signature could not be verified.",400);
+      const remote=await razorpayRequest(env,"/payments/"+encodeURIComponent(paymentId),"GET");
+      if (remote.order_id!==orderId || Number(remote.amount)!==payment.amount_paise || remote.currency!=="INR") return fail("Payment details do not match the order.",409);
+      if (remote.status!=="captured" || remote.captured!==true) return response({verified:true,paid:false,message:"Payment is awaiting capture confirmation. Do not pay again."},202);
+      await db.prepare("UPDATE smartqr_payments SET status='captured',razorpay_payment_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('created','authorized')").bind(paymentId,payment.id).run();
+      await db.prepare("INSERT INTO smartqr_audit_logs(actor_user_id,shop_id,action,detail_json) VALUES(?,?,?,?)").bind(user.id,shop.id,"setup_payment_verified",JSON.stringify({orderId,paymentId,amountPaise:payment.amount_paise})).run();
+      return response({verified:true,paid:true,message:"Setup payment successfully verified."});
     }
 
     if (route === "locations" && method === "POST") {
