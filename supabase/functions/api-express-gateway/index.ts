@@ -151,9 +151,9 @@ async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{use
   if (roleError) return null;
   return { user: data.user, roles: (roleRows ?? []).map((row: {role:string}) => String(row.role)) };
 }
-async function logCall(admin: SupabaseClient, userId: string, service: string, status: string, code: number) {
+async function logCall(admin: SupabaseClient, userId: string, service: string, status: string, code: number, environment: "sandbox" | "production") {
   // Metadata only. Never log request bodies, provider bodies, PAN, Aadhaar, bank details, VPA, or mobile.
-  const { error } = await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code });
+  const { error } = await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code, environment });
   if (error) throw new Error("API audit logging is unavailable; request blocked.");
 }
 async function readLogs(req: Request, admin: SupabaseClient) {
@@ -168,7 +168,7 @@ async function readLogs(req: Request, admin: SupabaseClient) {
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "success"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "error"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "cache_hit"),
-    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]).gte("created_at", monthStart.toISOString()),
+    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]).eq("environment", "production").gte("created_at", monthStart.toISOString()),
   ]);
   if ([totalResult, successResult, errorResult, cacheResult, upstreamResult].some(result => result.error)) {
     return reply(req, { ok: false, service: "admin_logs", error: "Could not calculate API usage." }, 500);
@@ -225,16 +225,16 @@ Deno.serve(async (req: Request) => {
   if (!SERVICES.has(service)) return reply(req, { ok: false, service, error: "Unsupported service." }, 400);
   const serviceName = service as ServiceName;
   if (serviceName === "bank_verify" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
-    await logCall(admin, identity.user.id, service, "rejected", 403);
+    await logCall(admin, identity.user.id, service, "rejected", 403, environment);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
   if (serviceName === "mobile_recharge" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
-    await logCall(admin, identity.user.id, service, "rejected", 403);
+    await logCall(admin, identity.user.id, service, "rejected", 403, environment);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
   const routed = route(serviceName, payload);
   if (typeof routed === "string") {
-    await logCall(admin, identity.user.id, service, "rejected", 400);
+    await logCall(admin, identity.user.id, service, "rejected", 400, environment);
     return reply(req, { ok: false, service, error: routed }, 400);
   }
 
@@ -248,7 +248,7 @@ Deno.serve(async (req: Request) => {
     cacheKey = `apx:${serviceName}:${material}`;
     const { data: cached } = await admin.from("api_express_cache").select("response,expires_at").eq("cache_key", cacheKey).gt("expires_at", new Date().toISOString()).maybeSingle();
     if (cached?.response) {
-      await logCall(admin, identity.user.id, service, "cache_hit", 200);
+      await logCall(admin, identity.user.id, service, "cache_hit", 200, environment);
       return reply(req, { ok: true, service, data: cached.response, cached: true });
     }
   }
@@ -261,7 +261,7 @@ Deno.serve(async (req: Request) => {
     .gte("created_at", minuteAgo);
   if (rateError) return reply(req, { ok: false, service, error: "Usage protection is temporarily unavailable." }, 503);
   if ((userCalls ?? 0) >= 20) {
-    await logCall(admin, identity.user.id, service, "rejected", 429);
+    await logCall(admin, identity.user.id, service, "rejected", 429, environment);
     return reply(req, { ok: false, service, error: "Request limit reached. Please wait one minute before trying again." }, 429);
   }
 
@@ -270,10 +270,11 @@ Deno.serve(async (req: Request) => {
   const { count: totalAttempts, error: quotaError } = await admin.from("api_express_logs")
     .select("id", { count: "exact", head: true })
     .in("status", ["success", "error"])
+    .eq("environment", "production")
     .gte("created_at", quotaMonthStart.toISOString());
   if (quotaError) return reply(req, { ok: false, service, error: "API quota protection is temporarily unavailable." }, 503);
-  if ((totalAttempts ?? 0) >= configuredLimit) {
-    await logCall(admin, identity.user.id, service, "rejected", 429);
+  if (environment === "production" && (totalAttempts ?? 0) >= configuredLimit) {
+    await logCall(admin, identity.user.id, service, "rejected", 429, environment);
     return reply(req, { ok: false, service, error: "The configured API Express call allowance has been reached. Please check the provider account quota." }, 429);
   }
 
@@ -286,7 +287,7 @@ Deno.serve(async (req: Request) => {
       signal: AbortSignal.timeout(15000),
     });
   } catch {
-    await logCall(admin, identity.user.id, service, "error", 502);
+    await logCall(admin, identity.user.id, service, "error", 502, environment);
     return reply(req, { ok: false, service, error: "API Express could not be reached. Please try again later." }, 502);
   }
 
@@ -294,7 +295,7 @@ Deno.serve(async (req: Request) => {
   try { upstreamData = await upstream.json(); } catch { upstreamData = null; }
   if (!upstream.ok) {
     const invalid = isInvalidProviderError(upstreamData);
-    await logCall(admin, identity.user.id, service, "error", upstream.status);
+    await logCall(admin, identity.user.id, service, "error", upstream.status, environment);
     return reply(req, { ok: false, service, error: invalid ? "The supplied details were not found or are invalid." : "The verification provider returned an error." }, upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502);
   }
 
@@ -303,6 +304,6 @@ Deno.serve(async (req: Request) => {
     const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
     await admin.from("api_express_cache").upsert({ cache_key: cacheKey, service_name: serviceName, response: safeData, expires_at: expiresAt }, { onConflict: "cache_key" });
   }
-  await logCall(admin, identity.user.id, service, "success", upstream.status);
+  await logCall(admin, identity.user.id, service, "success", upstream.status, environment);
   return reply(req, { ok: true, service, data: safeData, cached: false });
 });
