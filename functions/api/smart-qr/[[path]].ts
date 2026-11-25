@@ -145,14 +145,21 @@ function isHttpsUrl(value: string) {
 function slugify(value: string) {
   return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48);
 }
-async function publicShop(db: D1Database, slug: string) {
+async function publicShop(db: D1Database, slug: string, qrCode: string | null = null) {
   return db.prepare(`SELECT s.shop_code,s.slug,s.shop_name,s.category,s.description,s.phone,s.whatsapp,
     s.address_text,s.opening_hours,s.social_links,s.payment_url,s.logo_url,s.plan_code,
     s.approval_status,l.location_code,l.label AS location_label,l.address_text AS location_address,
     l.phone AS location_phone,l.opening_hours AS location_hours,q.qr_code
-    FROM smartqr_shops s LEFT JOIN smartqr_locations l ON l.shop_id=s.id AND l.is_primary=1
-    LEFT JOIN smartqr_qr_codes q ON q.shop_id=s.id AND q.is_active=1
-    WHERE s.slug=? AND s.approval_status='approved' LIMIT 1`).bind(slug).first<Record<string,unknown>>();
+    FROM smartqr_shops s
+    LEFT JOIN smartqr_qr_codes q ON q.id=(
+      SELECT q2.id FROM smartqr_qr_codes q2
+      WHERE q2.shop_id=s.id AND q2.is_active=1 AND (? IS NULL OR q2.qr_code=?)
+      ORDER BY q2.id LIMIT 1
+    )
+    LEFT JOIN smartqr_locations l ON l.id=COALESCE(q.location_id,
+      (SELECT l2.id FROM smartqr_locations l2 WHERE l2.shop_id=s.id AND l2.is_primary=1 LIMIT 1))
+    WHERE s.slug=? AND s.approval_status='approved' AND (? IS NULL OR q.id IS NOT NULL) LIMIT 1`)
+    .bind(qrCode,qrCode,slug,qrCode).first<Record<string,unknown>>();
 }
 
 export const onRequest = async ({ request, env, params }: Context) => {
@@ -616,9 +623,15 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
     if (route.startsWith("qr/") && method === "GET") {
       const slug=text(route.slice(3),80);
-      const shop=await db.prepare("SELECT slug FROM smartqr_shops WHERE slug=? AND approval_status='approved'").bind(slug).first<{slug:string}>();
+      const shop=await db.prepare("SELECT id,slug FROM smartqr_shops WHERE slug=? AND approval_status='approved'").bind(slug).first<{id:number;slug:string}>();
       if (!shop) return fail("Shop not found.",404);
-      const destination=new URL("/s/"+encodeURIComponent(slug),env.SMART_QR_PUBLIC_ORIGIN||url.origin).toString();
+      const requestedCode=text(url.searchParams.get("code"),40);
+      const qr=await db.prepare(`SELECT q.qr_code FROM smartqr_qr_codes q WHERE q.shop_id=? AND q.is_active=1
+        AND (? IS NULL OR q.qr_code=?) ORDER BY q.id LIMIT 1`).bind(shop.id,requestedCode||null,requestedCode||null).first<{qr_code:string}>();
+      if (!qr) return fail("QR code not found.",404);
+      const destinationUrl=new URL("/s/"+encodeURIComponent(slug),env.SMART_QR_PUBLIC_ORIGIN||url.origin);
+      destinationUrl.searchParams.set("qr",qr.qr_code);
+      const destination=destinationUrl.toString();
       const qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=720x720&format=png&margin=18&data="+encodeURIComponent(destination);
       const image=await fetch(qrUrl,{headers:{"accept":"image/png"}});
       if (!image.ok || !image.body) return fail("QR image generation is temporarily unavailable.",503);
@@ -627,7 +640,8 @@ export const onRequest = async ({ request, env, params }: Context) => {
 
     if (route.startsWith("public/") && method === "GET") {
       const slug = text(route.slice(7),80);
-      const shop = await publicShop(db,slug);
+      const qrCode = text(url.searchParams.get("qr"),40) || null;
+      const shop = await publicShop(db,slug,qrCode);
       return shop ? response({shop},200,{"cache-control":"public, max-age=60, stale-while-revalidate=300"}) : fail("Shop not found.",404);
     }
 
@@ -640,10 +654,20 @@ export const onRequest = async ({ request, env, params }: Context) => {
       if (!ALLOWED_EVENTS.has(type)) return fail("Unsupported event type.");
       const shop = await db.prepare("SELECT id FROM smartqr_shops WHERE slug=? AND approval_status='approved'").bind(slug).first<{id:number}>();
       if (!shop) return fail("Shop not found.",404);
+      const qrCode=text(input.qrCode,40);
+      let locationId:number|null=null;
+      if(qrCode){
+        const qr=await db.prepare("SELECT location_id FROM smartqr_qr_codes WHERE shop_id=? AND qr_code=? AND is_active=1").bind(shop.id,qrCode).first<{location_id:number|null}>();
+        if(!qr) return fail("QR code not found.",404);
+        locationId=qr.location_id;
+      }else{
+        const primary=await db.prepare("SELECT id FROM smartqr_locations WHERE shop_id=? AND is_primary=1").bind(shop.id).first<{id:number}>();
+        locationId=primary?.id??null;
+      }
       const ua = (request.headers.get("user-agent") || "").slice(0,160);
       const bucket = Math.floor(Date.now()/900000);
-      const dedupe = await sha256(`${ip}|${ua}|${slug}|${type}|${bucket}`);
-      await db.prepare("INSERT INTO smartqr_events(shop_id,event_type,dedupe_hash) SELECT ?,?,? WHERE NOT EXISTS (SELECT 1 FROM smartqr_events WHERE dedupe_hash=?)").bind(shop.id,type,dedupe,dedupe).run();
+      const dedupe = await sha256(`${ip}|${ua}|${slug}|${qrCode}|${type}|${bucket}`);
+      await db.prepare("INSERT INTO smartqr_events(shop_id,location_id,event_type,dedupe_hash) SELECT ?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM smartqr_events WHERE dedupe_hash=?)").bind(shop.id,locationId,type,dedupe,dedupe).run();
       return response({recorded:true});
     }
 
@@ -654,7 +678,10 @@ export const onRequest = async ({ request, env, params }: Context) => {
       const days = shop.plan_code==="starter"?7:shop.plan_code==="growth"?365:730;
       await db.prepare("DELETE FROM smartqr_events WHERE shop_id=? AND created_at<datetime('now',?)").bind(shop.id,`-${days} days`).run();
       const stats = await db.prepare("SELECT event_type,COUNT(*) AS total FROM smartqr_events WHERE shop_id=? AND created_at>=datetime('now',?) GROUP BY event_type").bind(shop.id,`-${days} days`).all();
-      return response({retentionDays:days,stats:stats.results});
+      const byLocation=await db.prepare(`SELECT l.location_code,l.label,COUNT(e.id) AS total
+        FROM smartqr_locations l LEFT JOIN smartqr_events e ON e.location_id=l.id AND e.shop_id=l.shop_id AND e.created_at>=datetime('now',?)
+        WHERE l.shop_id=? GROUP BY l.id ORDER BY l.is_primary DESC,l.id`).bind(`-${days} days`,shop.id).all();
+      return response({retentionDays:days,stats:stats.results,byLocation:byLocation.results});
     }
 
     if (route === "admin/bootstrap" && method === "POST") {
