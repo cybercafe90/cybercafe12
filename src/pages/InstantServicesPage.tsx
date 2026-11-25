@@ -148,7 +148,7 @@ export default function InstantServicesPage() {
               <ShieldCheck size={25}/>
               <h3>{sessionReady ? "Sign in to use secure checks" : "Checking secure access…"}</h3>
               <p>To protect personal documents and prevent anonymous API use, verification requests require an authenticated customer account.</p>
-              {sessionReady && <Link className="button button-dark" to="/dashboard">Open customer sign-in <ArrowRight size={15}/></Link>}
+              {sessionReady && <Link className="button button-dark" to="/sign-in?next=/instant-services">Sign in to continue <ArrowRight size={15}/></Link>}
             </div> : <form className="instant-service-form" onSubmit={(e) => void submit(e)}>
               {selected === "kyc_pan" && <label className="field"><span>PAN number</span><input required minLength={10} maxLength={10} pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]" autoComplete="off" value={form.pan} onChange={(e) => setForm({ ...form, pan: e.target.value.toUpperCase() })} placeholder="ABCDE1234F"/></label>}
               {selected === "kyc_aadhaar_dl" && <>
