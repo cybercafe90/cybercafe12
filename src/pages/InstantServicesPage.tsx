@@ -45,7 +45,7 @@ function resultEntries(value: unknown): Array<{ label: string; value: string }> 
   visit(source, "", 0);
   return entries;
 }
-type RecentRequest = { reference: string; service: string; status: "Completed" | "Could not complete"; time: string };
+type RecentRequest = { reference: string; service: string; status: string; time: string };
 
 export default function InstantServicesPage() {
   const [form, setForm] = useState<FormState>(initial);
