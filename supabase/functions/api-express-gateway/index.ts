@@ -132,7 +132,7 @@ function route(service: ServiceName, p: Json): { method: "GET" | "POST"; path: s
     }
   }
 }
-async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{user: User; role: string} | null> {
+async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{user: User; roles: string[]} | null> {
   const auth = req.headers.get("authorization") ?? "";
   const token = auth.match(/^Bearer\s+(.+)$/i)?.[1];
   const url = Deno.env.get("SUPABASE_URL"), anon = Deno.env.get("SUPABASE_ANON_KEY");
@@ -140,16 +140,16 @@ async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{use
   const userClient = createClient(url, anon, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await userClient.auth.getUser(token);
   if (error || !data.user) return null;
-  const { data: roleRow, error: roleError } = await admin.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
-  if (roleError || !roleRow?.role) return null;
-  return { user: data.user, role: String(roleRow.role) };
+  const { data: roleRows, error: roleError } = await admin.from("user_roles").select("role").eq("user_id", data.user.id);
+  if (roleError || !roleRows?.length) return null;
+  return { user: data.user, roles: roleRows.map((row: {role:string}) => String(row.role)) };
 }
 async function logCall(admin: SupabaseClient, userId: string, service: string, status: string, code: number) {
   // Metadata only. Never log request bodies, provider bodies, PAN, Aadhaar, bank details, VPA, or mobile.
   await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code });
 }
-async function readLogs(req: Request, admin: SupabaseClient, userId: string) {
-  const limitRaw = Number(new URL(req.url).searchParams.get("limit") ?? 50);
+async function readLogs(req: Request, admin: SupabaseClient, _userId: string) {
+  const limitRaw = 50;
   const limit = Math.max(1, Math.min(100, Number.isFinite(limitRaw) ? Math.floor(limitRaw) : 50));
   const { data, error } = await admin.from("api_express_logs").select("id,user_id,service_name,status,http_code,created_at").order("created_at", { ascending: false }).limit(limit);
   if (error) return reply(req, { ok: false, service: "admin_logs", error: "Could not load API logs." }, 500);
@@ -182,16 +182,16 @@ Deno.serve(async (req: Request) => {
   const service = body.service;
   const payload = (body.payload ?? {}) as Json;
   if (service === "admin_logs") {
-    if (!["owner", "admin"].includes(identity.role)) return reply(req, { ok: false, service, error: "Owner/admin authorization required." }, 403);
+    if (!identity.roles.some(role => ["owner", "admin"].includes(role))) return reply(req, { ok: false, service, error: "Owner/admin authorization required." }, 403);
     return await readLogs(req, admin, identity.user.id);
   }
   if (!SERVICES.has(service)) return reply(req, { ok: false, service, error: "Unsupported service." }, 400);
   const serviceName = service as ServiceName;
-  if (serviceName === "bank_verify" && !["owner", "admin", "agent"].includes(identity.role)) {
+  if (serviceName === "bank_verify" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
     await logCall(admin, identity.user.id, service, "rejected", 403);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
-  if (serviceName === "mobile_recharge" && !["owner", "admin", "agent"].includes(identity.role)) {
+  if (serviceName === "mobile_recharge" && !["owner", "admin", "agent"].includes(identity.roles)) {
     await logCall(admin, identity.user.id, service, "rejected", 403);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
@@ -244,5 +244,5 @@ Deno.serve(async (req: Request) => {
     await admin.from("api_express_cache").upsert({ cache_key: cacheKey, service_name: serviceName, response: safeData, expires_at: expiresAt }, { onConflict: "cache_key" });
   }
   await logCall(admin, identity.user.id, service, "success", upstream.status);
-  return reply(req, { ok: true, service, data: upstreamData, cached: false });
+  return reply(req, { ok: true, service, data: safeData, cached: false });
 });
