@@ -191,7 +191,7 @@ Deno.serve(async (req: Request) => {
     await logCall(admin, identity.user.id, service, "rejected", 403);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
-  if (serviceName === "mobile_recharge" && !["owner", "admin", "agent"].includes(identity.roles)) {
+  if (serviceName === "mobile_recharge" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
     await logCall(admin, identity.user.id, service, "rejected", 403);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
