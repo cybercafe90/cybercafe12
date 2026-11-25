@@ -22,9 +22,30 @@ const tools: ToolDefinition[] = [
 type FormState = { pan: string; document: string; rc: string; mobile: string; city: string; commodity: "gold" | "silver"; consent: boolean };
 const initial: FormState = { pan: "", document: "", rc: "", mobile: "", city: "Srinagar", commodity: "gold", consent: false };
 
-function displayValue(value: unknown): string {
-  try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+function resultEntries(value: unknown): Array<{ label: string; value: string }> {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? (("data" in value && value.data && typeof value.data === "object") ? value.data : value)
+    : { result: value };
+  const entries: Array<{ label: string; value: string }> = [];
+  const visit = (item: unknown, path: string, depth: number) => {
+    if (entries.length >= 24) return;
+    if (item === null || item === undefined || item === "") return;
+    if (Array.isArray(item)) {
+      if (item.length && depth < 2) item.slice(0, 5).forEach((child, index) => visit(child, `${path} ${index + 1}`, depth + 1));
+      return;
+    }
+    if (typeof item === "object") {
+      Object.entries(item as Record<string, unknown>).forEach(([key, child]) => visit(child, path ? `${path} · ${key}` : key, depth + 1));
+      return;
+    }
+    const label = path.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const text = typeof item === "boolean" ? (item ? "Yes" : "No") : String(item);
+    entries.push({ label: label || "Result", value: text.length > 500 ? `${text.slice(0, 497)}…` : text });
+  };
+  visit(source, "", 0);
+  return entries;
 }
+type RecentRequest = { reference: string; service: string; status: "Completed" | "Could not complete"; time: string };
 
 export default function InstantServicesPage() {
   const [form, setForm] = useState<FormState>(initial);
@@ -36,6 +57,8 @@ export default function InstantServicesPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [query, setQuery] = useState("");
+  const [requestReference, setRequestReference] = useState("");
+  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +86,8 @@ export default function InstantServicesPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setError(""); setResult(null);
+    const reference = `BC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    setRequestReference(reference);
     let service: ApiExpressService = selected;
     let payload: Record<string, unknown> = {};
     switch (selected) {
@@ -89,10 +114,16 @@ export default function InstantServicesPage() {
     }
     try {
       const response = await callApiExpress(service, payload);
-      if (!response.ok) setError(response.error ?? "The service could not complete this request.");
-      else setResult(response.data ?? response);
+      if (!response.ok) {
+        setError(response.error ?? "The service could not complete this request.");
+        setRecentRequests((items) => [{ reference, service: selectedToolTitle, status: "Could not complete", time: new Date().toLocaleString() }, ...items].slice(0, 5));
+      } else {
+        setResult(response.data ?? response);
+        setRecentRequests((items) => [{ reference, service: selectedToolTitle, status: "Completed", time: new Date().toLocaleString() }, ...items].slice(0, 5));
+      }
     } catch {
       setError("We could not connect. Please try again or contact our service desk.");
+      setRecentRequests((items) => [{ reference, service: selectedToolTitle, status: "Could not complete", time: new Date().toLocaleString() }, ...items].slice(0, 5));
     } finally { setBusy(false); }
   }
 
@@ -167,8 +198,16 @@ export default function InstantServicesPage() {
               </button>
               <p className="instant-service-footnote">Your entry is sent securely to the service gateway. Do not share OTPs, passwords or payment PINs.</p>
             </form>}
-            {error && <div className="notice notice-error" role="alert">{error}</div>}
-            {result !== null && <div className="instant-service-result" role="status"><div><BadgeCheck size={17}/><b>Provider response received</b></div><pre>{displayValue(result)}</pre><small>Review the returned details carefully. A response is not a government approval or a guarantee of eligibility.</small></div>}
+            {error && <div className="notice notice-error" role="alert"><b>Request not completed</b><p>{error}</p>{requestReference && <small>Reference: {requestReference}</small>}</div>}
+            {result !== null && <div className="instant-service-result" role="status">
+              <div className="instant-service-result-heading"><BadgeCheck size={19}/><span><b>Result received</b><small>Your request was processed by the connected provider.</small></span></div>
+              {requestReference && <div className="instant-service-reference"><span>Request reference</span><strong>{requestReference}</strong><button type="button" onClick={() => void navigator.clipboard?.writeText(requestReference)}>Copy</button></div>}
+              <div className="instant-service-result-grid">{resultEntries(result).map((entry, index) => <div className="instant-service-result-field" key={`${entry.label}-${index}`}><small>{entry.label}</small><strong>{entry.value}</strong></div>)}</div>
+              {!resultEntries(result).length && <p>The provider returned a response without displayable details. Contact our service desk with your reference.</p>}
+              <button type="button" className="instant-service-print" onClick={() => window.print()}>Print result</button>
+              <small>Check all details carefully. This result is not a government approval or a guarantee of eligibility.</small>
+            </div>}
+            {recentRequests.length > 0 && <section className="instant-service-history" aria-label="Recent requests"><h3>Recent requests in this session</h3><p>For your privacy, this short list contains service names and references only. It is not saved as a permanent record.</p>{recentRequests.map((item) => <div className="instant-service-history-row" key={item.reference}><span><b>{item.service}</b><small>{item.time} · {item.reference}</small></span><strong className={item.status === "Completed" ? "is-complete" : "is-failed"}>{item.status}</strong></div>)}</section>}
           </section>
         </div>
       </section>
