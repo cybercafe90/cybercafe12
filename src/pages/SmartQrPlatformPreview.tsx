@@ -21,7 +21,7 @@ export default function SmartQrPlatformPreview(){
  const params=new URLSearchParams(window.location.search);
  const [shops,setShops]=useState<Shop[]>(loadShops);
  const [activeId,setActiveId]=useState(params.get("shop")||"shop-001");
- const [section,setSection]=useState<"overview"|"profile"|"qr"|"plan"|"admin">("overview");
+ const [section,setSection]=useState<"overview"|"profile"|"qr"|"plan"|"admin">(params.get("view")==="admin"?"admin":"overview");
  const [notice,setNotice]=useState("");
  const [qrColor,setQrColor]=useState("#15271d");
  const [editing,setEditing]=useState(false);
