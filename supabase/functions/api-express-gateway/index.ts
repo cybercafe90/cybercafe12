@@ -146,7 +146,8 @@ async function getUserAndRole(req: Request, admin: SupabaseClient): Promise<{use
 }
 async function logCall(admin: SupabaseClient, userId: string, service: string, status: string, code: number) {
   // Metadata only. Never log request bodies, provider bodies, PAN, Aadhaar, bank details, VPA, or mobile.
-  await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code });
+  const { error } = await admin.from("api_express_logs").insert({ user_id: userId, service_name: service, status, http_code: code });
+  if (error) throw new Error("API audit logging is unavailable; request blocked.");
 }
 async function readLogs(req: Request, admin: SupabaseClient, _userId: string) {
   const limitRaw = 50;
