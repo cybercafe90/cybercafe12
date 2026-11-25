@@ -14,8 +14,15 @@ binding = "SMART_QR_DB"
 database_name = "babas-smart-qr-preview"
 database_id = "8a99f280-c685-42d2-9878-3b7be8fa3d6f"
 
+[env.preview.vars]
+SMART_QR_ALLOW_LIVE_PAYMENTS = "false"
+
 [env.production]
 [[env.production.d1_databases]]
 binding = "SMART_QR_DB"
 database_name = "babas-smart-qr-production"
 database_id = "aee21b3c-354f-4e9f-9ced-5d748c9d5229"
+
+[env.production.vars]
+SMART_QR_PUBLIC_ORIGIN = "https://babacybercafe.in"
+SMART_QR_ALLOW_LIVE_PAYMENTS = "false"
