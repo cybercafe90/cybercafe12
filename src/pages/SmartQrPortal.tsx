@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BarChart3, CheckCircle2, Clock3, ExternalLink, LogOut, MapPin, MessageCircle, Phone, QrCode, ShieldCheck, Store, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, BarChart3, CheckCircle2, ExternalLink, LogOut, MapPin, MessageCircle, Phone, QrCode, ShieldCheck, Store, Wallet } from "lucide-react";
 import "../smart-qr.css";
 
 type ApiError = { error?: string; message?: string };
@@ -30,7 +30,7 @@ function safeUrl(value:string|undefined){
 function jsonValue(value:string|undefined):Record<string,string>{
   try { const parsed=JSON.parse(value||"{}"); return parsed&&typeof parsed==="object"?parsed:{}; } catch { return {}; }
 }
-function Shell({children,title="BABA'S SMART QR"}:{children:React.ReactNode;title?:string}){
+function Shell({children,title="BABA'S SMART QR"}:{children:ReactNode;title?:string}){
   return <main className="smartqr-shell"><header className="smartqr-header"><Link to="/smart-qr" className="smartqr-brand"><span className="smartqr-brand-mark"><QrCode size={22}/></span><span><b>{title}</b><small>BY BABA'S CYBER CAFE</small></span></Link><Link className="smartqr-back" to="/"><ArrowLeft size={15}/> Main website</Link></header>{children}<footer className="smartqr-footer">Secure shop discovery · No customer app required · Srinagar, J&amp;K</footer></main>;
 }
 function Notice({children,error=false}:{children:string;error?:boolean}){
