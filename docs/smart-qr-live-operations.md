@@ -13,8 +13,9 @@ Migration order for a fresh D1 database:
 1. `migrations/smartqr-live-d1.sql`
 2. `migrations/smartqr-reconcile-live.sql`
 3. `migrations/smartqr-subscription-plan.sql`
+4. `migrations/smartqr-location-analytics.sql`
 
-The preview database has the reconciliation schema and `razorpay_plan_id` column. The production database currently contains only the baseline Smart QR tables; do not release until the two additive migrations are reviewed and applied to production.
+The preview database has the reconciliation schema, `razorpay_plan_id` column, and location-aware event attribution (`smartqr_events.location_id`). The production database currently contains only the baseline Smart QR tables; do not release until the two additive migrations are reviewed and applied to production.
 
 ## Cloudflare Pages secrets
 
@@ -71,7 +72,7 @@ The permanent QR destination is `/s/{slug}`. PNG generation is served through th
 2. Confirm `/smart-qr/system-check` reports email, payment and owner-bootstrap configuration as ready. D1 readiness should already pass.
 3. Set `SMART_QR_ALLOW_LIVE_PAYMENTS=true` in Preview only while all Razorpay credentials are TEST credentials; this existing gate enables checkout and recurring authorization regardless of credential mode.
 4. Configure a separate Razorpay TEST webhook to the current Preview host at `/api/smart-qr/payments/webhook`, using the matching TEST webhook secret and the events listed above.
-5. Test merchant registration and setup email, password creation, login, test setup payment, webhook confirmation, owner review, QR download, public scan and analytics. Also test a monthly mandate only if the merchant explicitly opted in.
+5. Test merchant registration and setup email, password creation, login, test setup payment, webhook confirmation, owner review, QR download, public scan and analytics. For VIP, create two additional locations and QR codes, verify each QR opens the correct branch details, and confirm events appear against the matching location. Also test a monthly mandate only if the merchant explicitly opted in.
 6. Return `SMART_QR_ALLOW_LIVE_PAYMENTS` to unset/false after testing. Production remains untouched.
 
 Preview deployment is for review only; the custom production domain is unchanged. The production D1 binding and full reconciliation schema must be confirmed before any release. Live end-to-end billing and email have not been certified until these tests pass.
