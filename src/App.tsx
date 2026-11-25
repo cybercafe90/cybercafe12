@@ -58,6 +58,7 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
+import { getApiExpressLogs } from "./lib/apiExpressClient";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
@@ -1862,6 +1863,46 @@ function AdminFeedbackOverview() {
   );
 }
 
+
+function ApiExpressUsagePanel() {
+  const [report, setReport] = useState<Awaited<ReturnType<typeof getApiExpressLogs>> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function refresh() {
+    setBusy(true); setError("");
+    try { setReport(await getApiExpressLogs(50)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "API usage could not be loaded."); }
+    finally { setBusy(false); }
+  }
+  useEffect(() => { void refresh(); }, []);
+  return (
+    <section className="admin-section">
+      <div className="admin-section-head">
+        <div><span className="eyebrow">INTEGRATION MONITOR</span><h2>API Express usage &amp; audit logs</h2><p>Cached responses do not consume an upstream call. Confirm actual quota in your API Express account.</p></div>
+        <button type="button" className="button button-outline" onClick={() => void refresh()} disabled={busy}>{busy ? "Refreshing…" : "Refresh usage"}</button>
+      </div>
+      {error && <div className="notice notice-error" role="alert">{error}</div>}
+      {report && (
+        <>
+          <div className="field-grid">
+            <div className="settings-group"><span className="eyebrow">ESTIMATED UPSTREAM ATTEMPTS</span><h3>{report.quota.estimated_upstream_attempts} / {report.quota.configured_limit}</h3></div>
+            <div className="settings-group"><span className="eyebrow">REMAINING ESTIMATE</span><h3>{report.quota.remaining_estimate}</h3></div>
+            <div className="settings-group"><span className="eyebrow">CACHE HITS</span><h3>{report.counts.cache_hits}</h3></div>
+            <div className="settings-group"><span className="eyebrow">ERRORS</span><h3>{report.counts.errors}</h3></div>
+          </div>
+          <p className="form-footnote">{report.quota.note}</p>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Time</th><th>Service</th><th>Status</th><th>HTTP</th><th>User ID</th></tr></thead>
+              <tbody>{report.items.map(item => <tr key={item.id}><td>{new Date(item.created_at).toLocaleString("en-IN")}</td><td>{item.service_name}</td><td>{item.status}</td><td>{item.http_code}</td><td>{item.user_id}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function AdminPage() {
   const adminCategories = useCategoryList(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -3204,6 +3245,7 @@ function AdminPage() {
             </div>
           </section>
           <WebsiteSettingsEditor />
+          <ApiExpressUsagePanel />
           {active && (
             <div
               className="modal-backdrop"
