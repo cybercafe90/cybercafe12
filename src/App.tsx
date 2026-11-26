@@ -266,7 +266,6 @@ function Header() {
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
           <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
-          <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
           <NavLink to="/about" onClick={close}>About Us</NavLink>
