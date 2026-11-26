@@ -168,17 +168,14 @@ test("retired investigation route no longer exposes a portal", async ({ page }) 
 });
 
 
-test("challan portal links to the official Parivahan service and offers tracked assistance", async ({ page }) => {
-  await page.goto("/challan");
-  await expect(page.getByRole("heading", { name: "Check your traffic challan." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open official eChallan/ })).toHaveAttribute(
-    "href",
-    "https://echallan.parivahan.nic.in/",
-  );
-  await expect(page.getByRole("heading", { name: "Let us help with your challan enquiry." })).toBeVisible();
-  await expect(page.getByLabel("Vehicle registration number *")).toBeVisible();
-  await expect(page.getByText(/independent assistance business, not a government office/i)).toBeVisible();
-  const submitButton = page.getByRole("button", { name: /Submit assistance request/ });
-  if (backendConfigured) await expect(submitButton).toBeEnabled();
-  else await expect(submitButton).toBeDisabled();
+test("vehicle challan lookup is listed inside Instant Services", async ({ page }) => {
+  await page.goto("/instant-services");
+  await expect(page.getByRole("heading", { name: "Choose your service" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search Instant API services" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Search Instant API services" }).fill("Vehicle Challan Check");
+  await expect(page.getByRole("heading", { name: "Vehicle Challan Check" })).toBeVisible();
+  await expect(page.getByText("₹30")).toBeVisible();
+  await page.getByRole("button", { name: /Continue/ }).click();
+  await expect(page.getByLabel("Vehicle registration number")).toBeVisible();
+  await expect(page.getByText(/private service, not a government portal/i)).toBeVisible();
 });
