@@ -57,11 +57,6 @@ create policy "instant_api_services_owner_manage"
   using ((select public.is_owner()))
   with check ((select public.is_owner()));
 
-drop policy if exists "instant_api_services_public_catalog_read" on public.instant_api_services;
-create policy "instant_api_services_public_catalog_read"
-  on public.instant_api_services for select to anon, authenticated
-  using (is_enabled = true and authorization_verified = true);
-
 drop trigger if exists instant_api_services_updated_at on public.instant_api_services;
 create trigger instant_api_services_updated_at
   before update on public.instant_api_services
@@ -74,11 +69,11 @@ create trigger audit_instant_api_services
 
 revoke all privileges on table public.instant_api_services from public, anon, authenticated;
 grant select, insert, update, delete on table public.instant_api_services to authenticated;
-grant select (slug, name, description, customer_price, is_featured, sort_order)
-  on public.instant_api_services to anon, authenticated;
 
+-- This view intentionally runs with its owner privileges and exposes only safe public catalogue columns.
+-- The base table remains owner-only under RLS; provider costs, endpoints and secret names never enter this view.
 create or replace view public.instant_api_service_catalog
-with (security_invoker = true) as
+as
 select slug, name, description, customer_price, is_featured, sort_order
 from public.instant_api_services
 where is_enabled = true and authorization_verified = true;
