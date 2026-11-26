@@ -59,7 +59,6 @@ import {
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
-const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
@@ -3858,7 +3857,7 @@ function RoutedApp() {
   const location = useLocation();
   useEffect(() => {
     const path = location.pathname;
-    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin", "/smart-qr/dashboard", "/smart-qr/admin", "/smart-qr/login", "/smart-qr/setup", "/smart-qr/owner-setup", "/smart-qr/reset-password", "/smart-qr/forgot-password", "/smart-qr/system-check", "/smart-qr/owner-bootstrap"].some(
+    const privateRoute = ["/admin", "/dashboard", "/apply", "/track", "/pay", "/payment-portal", "/grievance/admin"].some(
       (prefix) => path === prefix || path.startsWith(`${prefix}/`),
     );
     const categorySlug = path.startsWith("/services/")
@@ -3883,12 +3882,6 @@ function RoutedApp() {
       "/grievance": "Grievance Redressal | BABA'S CYBER CAFE",
       "/grievance/admin": "Grievance Management | BABA'S CYBER CAFE",
       "/feedback": "Customer Feedback | BABA'S CYBER CAFE",
-      "/smart-qr": "BABA'S SMART QR | Merchant Registration",
-      "/smart-qr/login": "Merchant Login | BABA'S SMART QR",
-      "/smart-qr/dashboard": "Merchant Dashboard | BABA'S SMART QR",
-      "/smart-qr/admin": "Platform Administration | BABA'S SMART QR",
-      "/smart-qr/system-check": "System Readiness | BABA'S SMART QR",
-      "/smart-qr/owner-bootstrap": "Owner Setup | BABA'S SMART QR",
     };
     document.title = category
       ? `${category.name} Assistance | BABA'S CYBER CAFE`
@@ -3923,16 +3916,6 @@ function RoutedApp() {
     });
     return () => { cancelled = true; };
   }, [location.pathname]);
-  if (location.pathname.startsWith("/smart-qr") || location.pathname.startsWith("/s/")) return (
-    <div className="smartqr-standalone">
-      <Suspense fallback={<main className="smartqr-shell" role="status">Loading Smart QR…</main>}>
-        <Routes>
-          <Route path="/smart-qr/*" element={<SmartQrPortal />} />
-          <Route path="/s/:slug" element={<SmartQrPortal />} />
-        </Routes>
-      </Suspense>
-    </div>
-  );
   if (location.pathname === "/payment-portal") return (
     <div className="payment-standalone"><Suspense fallback={<main className="payment-page"><div className="payment-shell">Loading secure payment portal…</div></main>}><Routes><Route path="/payment-portal" element={<PaymentPortal />} /></Routes></Suspense><FloatingWhatsApp /></div>
   );
