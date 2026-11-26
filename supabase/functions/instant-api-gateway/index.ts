@@ -46,6 +46,18 @@ async function decrypt(value: string) {
   return JSON.parse(new TextDecoder().decode(plain));
 }
 function randomToken() { return b64(crypto.getRandomValues(new Uint8Array(32))); }
+async function consumeRateLimit(admin: ReturnType<typeof client>, request: Request, purpose: string, identifier: string, limit: number, windowMinutes: number) {
+  const secret = Deno.env.get("TRACK_RATE_SECRET");
+  if (!secret) throw new Error("Rate-limit protection is not configured.");
+  const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "unknown";
+  const value = secret + ":" + purpose + ":" + ip + ":" + identifier;
+  const scopeHash = await sha(value);
+  const windowMs = windowMinutes * 60_000;
+  const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs).toISOString();
+  const { data, error } = await admin.rpc("consume_rate_limit", { p_scope_hash: scopeHash, p_window_start: windowStart, p_limit: limit });
+  if (error) throw new Error("Rate-limit storage is unavailable.");
+  return data === true;
+}
 function client() {
   const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) throw new Error("Supabase backend is not configured.");
@@ -170,6 +182,11 @@ Deno.serve(async (request: Request) => {
     const body = JSON.parse(raw);
     const action = typeof body.action === "string" ? body.action : "";
     const admin = client();
+    if (action !== "process_webhook") {
+      const identifier = action === "create_order" && typeof body.serviceSlug === "string" ? body.serviceSlug : "public";
+      const limit = action === "create_order" ? 5 : action === "verify_payment" ? 15 : action === "retrieve_order" ? 40 : 60;
+      if (!await consumeRateLimit(admin, request, "instant-api-" + action, identifier, limit, 15)) return reply(request, { error: "Too many attempts. Please wait and try again." }, 429);
+    }
 
     if (action === "catalog") {
       const { data, error } = await admin.from("instant_api_services").select("slug,name,description,customer_price,is_featured,sort_order,is_enabled,authorization_verified").eq("is_enabled", true).eq("authorization_verified", true).order("sort_order");
