@@ -1,0 +1,253 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+
+const ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in"]);
+const BASE_HOST = "api.smmtopserver.shop";
+const encoder = new TextEncoder();
+
+function cors(request: Request) {
+  const origin = request.headers.get("origin") || "";
+  let allowed = ORIGINS.has(origin);
+  try { const u = new URL(origin); allowed ||= u.protocol === "https:" && (u.hostname === "babacybercafe.pages.dev" || u.hostname.endsWith(".babacybercafe.pages.dev")); } catch { /* no origin */ }
+  return {
+    "Access-Control-Allow-Origin": allowed ? origin : "https://babacybercafe.in",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-idempotency-key",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin",
+  };
+}
+function reply(request: Request, data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { ...cors(request), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
+}
+function hex(buf: ArrayBuffer) { return [...new Uint8Array(buf)].map(v => v.toString(16).padStart(2, "0")).join(""); }
+function b64(bytes: Uint8Array) { let s = ""; for (const b of bytes) s += String.fromCharCode(b); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, ""); }
+function unb64(value: string) { const s = atob(value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4)); return Uint8Array.from(s, c => c.charCodeAt(0)); }
+async function sha(value: string) { return hex(await crypto.subtle.digest("SHA-256", encoder.encode(value))); }
+async function hmac(secret: string, value: string) {
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return hex(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
+}
+function equal(a: string, b: string) { if (a.length !== b.length) return false; let n = 0; for (let i = 0; i < a.length; i++) n |= a.charCodeAt(i) ^ b.charCodeAt(i); return n === 0; }
+async function encryptionKey() {
+  const secret = Deno.env.get("INSTANT_API_DATA_ENCRYPTION_KEY");
+  if (!secret || secret.length < 32) throw new Error("INSTANT_API_DATA_ENCRYPTION_KEY is missing or too short.");
+  const raw = await crypto.subtle.digest("SHA-256", encoder.encode(secret));
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+async function encrypt(value: unknown) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await encryptionKey(), encoder.encode(JSON.stringify(value)));
+  return b64(iv) + "." + b64(new Uint8Array(cipher));
+}
+async function decrypt(value: string) {
+  const [iv, cipher] = value.split(".");
+  if (!iv || !cipher) throw new Error("Encrypted record is invalid.");
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(iv) }, await encryptionKey(), unb64(cipher));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+function randomToken() { return b64(crypto.getRandomValues(new Uint8Array(32))); }
+function client() {
+  const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) throw new Error("Supabase backend is not configured.");
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+async function razorpay(path: string, method: string, body?: unknown) {
+  const id = Deno.env.get("RAZORPAY_KEY_ID"), secret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  if (!id || !secret) throw new Error("Razorpay is not configured.");
+  const response = await fetch("https://api.razorpay.com/v1" + path, {
+    method, headers: { Authorization: "Basic " + btoa(id + ":" + secret), "Content-Type": "application/json" },
+    ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(15000),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error("Razorpay request failed with status " + response.status);
+  return json;
+}
+type Service = { slug: string; endpoint_url: string; http_method: string; api_key_secret_name: string; customer_price: number; provider_cost: number | null; is_enabled: boolean; authorization_verified: boolean };
+function validateInput(slug: string, input: Record<string, unknown>) {
+  const fields: Record<string, string[]> = {
+    "voter-mobile-link": ["epic_no", "mobile_no"],
+    "aadhaar-to-pan": ["aadhaar_number"],
+    "pan-verification": ["pan"],
+    "vehicle-rc-pdf": ["rcno"],
+    "number-details": ["mobileNumber"],
+    "driving-licence-hd-pdf": ["dl", "dob"],
+    "vahan-to-mobile": ["vrn"],
+    "voter-status": ["epic"],
+  };
+  const required = fields[slug];
+  if (!required) throw new Error("Unsupported service.");
+  const output: Record<string, string> = {};
+  for (const field of required) {
+    const value = input[field];
+    if (typeof value !== "string" || value.trim().length < 2 || value.trim().length > 64) throw new Error("Please enter valid " + field.replaceAll("_", " ") + ".");
+    output[field] = value.trim();
+  }
+  if (slug === "aadhaar-to-pan" && !/^\d{12}$/.test(output.aadhaar_number)) throw new Error("Enter a valid 12-digit Aadhaar number.");
+  if (slug === "pan-verification" && !/^[A-Z]{5}\d{4}[A-Z]$/.test(output.pan.toUpperCase())) throw new Error("Enter a valid PAN format.");
+  if (slug === "voter-mobile-link" && !/^\d{10}$/.test(output.mobile_no.replace(/\D/g, ""))) throw new Error("Enter a valid 10-digit mobile number.");
+  if (slug === "number-details" && !/^\d{10}$/.test(output.mobileNumber.replace(/\D/g, ""))) throw new Error("Enter a valid 10-digit mobile number.");
+  if (slug === "driving-licence-hd-pdf" && !/^\d{2}-\d{2}-\d{4}$/.test(output.dob)) throw new Error("Date of birth must be DD-MM-YYYY.");
+  if (slug === "vehicle-rc-pdf" && input.cardtype != null) output.cardtype = String(input.cardtype).slice(0, 30);
+  if (slug === "vehicle-rc-pdf" && input.chiptype != null) output.chiptype = String(input.chiptype).slice(0, 30);
+  if (slug === "vahan-to-mobile" && !/^[A-Z0-9 -]{5,15}$/i.test(output.vrn)) throw new Error("Enter a valid vehicle registration number.");
+  return output;
+}
+async function callProvider(service: Service, input: Record<string, string>) {
+  const endpoint = new URL(service.endpoint_url);
+  if (endpoint.protocol !== "https:" || endpoint.hostname !== BASE_HOST || endpoint.username || endpoint.password) throw new Error("Provider endpoint is not on the approved host.");
+  const apiKey = Deno.env.get(service.api_key_secret_name);
+  if (!apiKey) throw new Error("Provider credential is missing: " + service.api_key_secret_name);
+  const params = new URLSearchParams(input);
+  const headers = new Headers({ Accept: "application/json" });
+  let url = endpoint.toString();
+  let body: string | undefined;
+  if (service.slug === "voter-mobile-link") {
+    params.set("api_key", apiKey);
+    headers.set("Content-Type", "application/x-www-form-urlencoded");
+    body = params.toString();
+  } else if (service.slug === "aadhaar-to-pan" || service.slug === "number-details") {
+    params.set("api_key", apiKey);
+    url += "?" + params.toString();
+  } else {
+    headers.set("Authorization", "Bearer " + apiKey);
+    if (service.slug === "pan-verification") params.set("api_key", apiKey);
+    url += "?" + params.toString();
+  }
+  const response = await fetch(url, { method: service.http_method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(25000), redirect: "error" });
+  const contentType = response.headers.get("content-type") || "";
+  const raw = await response.text();
+  if (raw.length > 2_000_000) throw new Error("Provider response exceeded the permitted size.");
+  let result: unknown;
+  if (contentType.includes("application/json") || /^[\s]*[\[{]/.test(raw)) {
+    try { result = JSON.parse(raw); } catch { result = { raw_text: raw.slice(0, 2000) }; }
+  } else {
+    result = { content_type: contentType, response_text: raw.slice(0, 2000) };
+  }
+  if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
+  if (result && typeof result === "object") {
+    const record = result as Record<string, unknown>;
+    if (record.success === false || record.status === false || record.error) throw new Error("Provider reported that the request failed.");
+  }
+  return result;
+}
+async function fulfill(admin: ReturnType<typeof client>, order: Record<string, any>) {
+  const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
+  if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
+  const input = await decrypt(order.request_ciphertext) as Record<string, string>;
+  await admin.from("instant_api_orders").update({ status: "processing" }).eq("id", order.id).eq("status", "paid");
+  try {
+    const result = await callProvider(service as Service, input);
+    const cipher = await encrypt(result);
+    const { error } = await admin.from("instant_api_orders").update({
+      status: "succeeded", result_ciphertext: cipher, provider_cost_actual: service.provider_cost,
+      fulfilled_at: new Date().toISOString(), provider_error_code: null,
+    }).eq("id", order.id).eq("status", "processing");
+    if (error) throw error;
+    return { status: "succeeded" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Provider request failed.";
+    await admin.from("instant_api_orders").update({
+      status: "fulfillment_unknown", provider_error_code: message.slice(0, 80),
+    }).eq("id", order.id).eq("status", "processing");
+    return { status: "fulfillment_unknown" };
+  }
+}
+
+Deno.serve(async (request: Request) => {
+  if (request.method === "OPTIONS") return new Response("ok", { headers: cors(request) });
+  if (request.method !== "POST") return reply(request, { error: "Method not allowed." }, 405);
+  const origin = request.headers.get("origin");
+  if (origin && cors(request)["Access-Control-Allow-Origin"] !== origin) return reply(request, { error: "Origin not allowed." }, 403);
+  try {
+    const raw = await request.text();
+    if (raw.length > 12000) return reply(request, { error: "Request too large." }, 413);
+    const body = JSON.parse(raw);
+    const action = typeof body.action === "string" ? body.action : "";
+    const admin = client();
+
+    if (action === "catalog") {
+      const { data, error } = await admin.from("instant_api_services").select("slug,name,description,customer_price,is_featured,sort_order,is_enabled,authorization_verified").eq("is_enabled", true).eq("authorization_verified", true).order("sort_order");
+      if (error) throw error;
+      return reply(request, { services: data ?? [] });
+    }
+
+    if (action === "create_order") {
+      if (body.consent !== true || body.authorisedUse !== true) return reply(request, { error: "Please confirm consent and that you are authorised to request this record." }, 400);
+      if (typeof body.lawfulPurpose !== "string" || body.lawfulPurpose.trim().length < 8 || body.lawfulPurpose.length > 300) return reply(request, { error: "Please provide a brief lawful purpose." }, 400);
+      const slug = typeof body.serviceSlug === "string" ? body.serviceSlug : "";
+      const input = validateInput(slug, body.input && typeof body.input === "object" ? body.input : {});
+      const { data: service, error } = await admin.from("instant_api_services").select("*").eq("slug", slug).eq("is_enabled", true).eq("authorization_verified", true).maybeSingle();
+      if (error) throw error;
+      if (!service) return reply(request, { error: "This service is not currently available." }, 409);
+      const secret = Deno.env.get(service.api_key_secret_name);
+      if (!secret) return reply(request, { error: "Service credentials are not configured. Please contact support." }, 503);
+      if (!Deno.env.get("RAZORPAY_KEY_ID") || !Deno.env.get("RAZORPAY_KEY_SECRET")) return reply(request, { error: "Payment gateway is not configured." }, 503);
+      const idem = request.headers.get("x-idempotency-key") || body.idempotencyKey;
+      if (typeof idem !== "string" || idem.length < 16 || idem.length > 128) return reply(request, { error: "A valid idempotency key is required." }, 400);
+      const idemHash = await sha(idem);
+      const { data: existing } = await admin.from("instant_api_orders").select("*").eq("idempotency_key_hash", idemHash).maybeSingle();
+      if (existing) {
+        const token = await decrypt(existing.retrieval_token_ciphertext);
+        return reply(request, { orderId: existing.id, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount: Math.round(Number(existing.customer_price) * 100), currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), reused: true });
+      }
+      const token = randomToken();
+      const requestCipher = await encrypt({ ...input, lawfulPurpose: body.lawfulPurpose.trim() });
+      const tokenCipher = await encrypt(token);
+      const { data: order, error: insertError } = await admin.from("instant_api_orders").insert({
+        service_slug: slug, customer_price: service.customer_price, provider_cost_at_order: service.provider_cost,
+        status: "payment_pending", idempotency_key_hash: idemHash, request_ciphertext: requestCipher,
+        retrieval_token_hash: await sha(token), retrieval_token_ciphertext: tokenCipher,
+      }).select("*").single();
+      if (insertError) throw insertError;
+      try {
+        const amount = Math.round(Number(service.customer_price) * 100);
+        if (!Number.isSafeInteger(amount) || amount < 100) throw new Error("Invalid service price.");
+        const rp = await razorpay("/orders", "POST", { amount, currency: "INR", receipt: order.id, notes: { instant_api_order_id: order.id, service_slug: slug } });
+        if (typeof rp.id !== "string" || rp.amount !== amount || rp.currency !== "INR") throw new Error("Payment gateway returned an invalid order.");
+        const { error: saveError } = await admin.from("instant_api_orders").update({ razorpay_order_id: rp.id }).eq("id", order.id);
+        if (saveError) throw saveError;
+        return reply(request, { orderId: order.id, retrievalToken: token, razorpayOrderId: rp.id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID") });
+      } catch (error) {
+        await admin.from("instant_api_orders").update({ status: "failed", provider_error_code: "payment_order_creation_failed" }).eq("id", order.id);
+        throw error;
+      }
+    }
+
+    if (action === "verify_payment") {
+      const orderId = typeof body.orderId === "string" ? body.orderId : "";
+      const token = typeof body.retrievalToken === "string" ? body.retrievalToken : "";
+      const rpOrder = typeof body.razorpayOrderId === "string" ? body.razorpayOrderId : "";
+      const paymentId = typeof body.razorpayPaymentId === "string" ? body.razorpayPaymentId : "";
+      const signature = typeof body.razorpaySignature === "string" ? body.razorpaySignature : "";
+      if (!/^[0-9a-f-]{36}$/i.test(orderId) || !token || !rpOrder || !paymentId || !/^[a-f0-9]{64}$/i.test(signature)) return reply(request, { error: "Payment verification data is invalid." }, 400);
+      const { data: order, error } = await admin.from("instant_api_orders").select("*").eq("id", orderId).maybeSingle();
+      if (error) throw error;
+      if (!order || !equal(await sha(token), order.retrieval_token_hash) || order.razorpay_order_id !== rpOrder) return reply(request, { error: "Order could not be verified." }, 404);
+      if (order.status === "succeeded") return reply(request, { verified: true, status: "succeeded" });
+      const secret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      if (!secret || !equal(await hmac(secret, rpOrder + "|" + paymentId), signature.toLowerCase())) return reply(request, { error: "Payment signature is invalid." }, 400);
+      const remote = await razorpay("/payments/" + encodeURIComponent(paymentId), "GET");
+      if (remote.order_id !== rpOrder || Number(remote.amount) !== Math.round(Number(order.customer_price) * 100) || remote.currency !== "INR" || remote.status !== "captured" || remote.captured !== true) return reply(request, { error: "Payment is not captured or amount does not match." }, 409);
+      const { data: updated, error: updateError } = await admin.from("instant_api_orders").update({ status: "paid", razorpay_payment_id: paymentId, paid_at: new Date().toISOString() }).eq("id", order.id).in("status", ["payment_pending", "paid"]).select("*").maybeSingle();
+      if (updateError) throw updateError;
+      const current = updated || order;
+      const result = await fulfill(admin, current);
+      return reply(request, { verified: true, orderId, ...result });
+    }
+
+    if (action === "retrieve_order") {
+      const orderId = typeof body.orderId === "string" ? body.orderId : "";
+      const token = typeof body.retrievalToken === "string" ? body.retrievalToken : "";
+      const { data: order, error } = await admin.from("instant_api_orders").select("id,status,result_ciphertext,result_expires_at,created_at").eq("id", orderId).maybeSingle();
+      if (error) throw error;
+      if (!order || !token || !equal(await sha(token), (await admin.from("instant_api_orders").select("retrieval_token_hash").eq("id", orderId).single()).data?.retrieval_token_hash || "")) return reply(request, { error: "Order not found." }, 404);
+      if (new Date(order.result_expires_at).getTime() < Date.now()) return reply(request, { error: "This result has expired. Contact support for assistance." }, 410);
+      const result = order.result_ciphertext ? await decrypt(order.result_ciphertext) : null;
+      return reply(request, { orderId: order.id, status: order.status, result });
+    }
+    return reply(request, { error: "Unsupported action." }, 400);
+  } catch (error) {
+    console.error("instant-api-gateway:", error instanceof Error ? error.message.slice(0, 120) : "unknown");
+    return reply(request, { error: "Instant API is temporarily unavailable. Please try again later." }, 503);
+  }
+});
