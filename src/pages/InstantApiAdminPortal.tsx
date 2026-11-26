@@ -48,7 +48,7 @@ export default function InstantApiAdminPortal() {
     setLoading(true);
     setError("");
     try {
-      const { data, error: queryError } = await supabase.from("instant_api_services").select("*").order("sort_order");
+      const { data, error: queryError } = await supabase.rpc("owner_list_instant_api_services");
       if (queryError) throw queryError;
       const rows = (data ?? []) as InstantService[];
       setItems(rows);
@@ -129,7 +129,19 @@ export default function InstantApiAdminPortal() {
         is_featured: draft.is_featured,
         authorization_verified: draft.authorization_verified,
       };
-      const { error: updateError } = await supabase.from("instant_api_services").update(payload).eq("slug", draft.slug);
+      const { error: updateError } = await supabase.rpc("owner_update_instant_api_service", {
+        p_slug: draft.slug,
+        p_name: payload.name,
+        p_description: payload.description,
+        p_provider_name: payload.provider_name,
+        p_endpoint_url: payload.endpoint_url,
+        p_http_method: payload.http_method,
+        p_provider_cost: payload.provider_cost,
+        p_customer_price: payload.customer_price,
+        p_is_enabled: payload.is_enabled,
+        p_is_featured: payload.is_featured,
+        p_authorization_verified: payload.authorization_verified,
+      });
       if (updateError) throw updateError;
       await load();
       setNotice("Settings saved. Provider credentials remain outside the database.");
