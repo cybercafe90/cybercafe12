@@ -133,10 +133,15 @@ async function callProvider(service: Service, input: Record<string, string>) {
 async function fulfill(admin: ReturnType<typeof client>, order: Record<string, any>) {
   const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
   if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
-  const input = await decrypt(order.request_ciphertext) as Record<string, string>;
-  await admin.from("instant_api_orders").update({ status: "processing" }).eq("id", order.id).eq("status", "paid");
+  const stored = await decrypt(order.request_ciphertext) as { providerInput: Record<string, string> };
+  const { data: claimed, error: claimError } = await admin.from("instant_api_orders").update({ status: "processing" }).eq("id", order.id).eq("status", "paid").select("id").maybeSingle();
+  if (claimError) throw claimError;
+  if (!claimed) {
+    const { data: latest } = await admin.from("instant_api_orders").select("status").eq("id", order.id).maybeSingle();
+    return { status: latest?.status || "processing" };
+  }
   try {
-    const result = await callProvider(service as Service, input);
+    const result = await callProvider(service as Service, stored.providerInput);
     const cipher = await encrypt(result);
     const { error } = await admin.from("instant_api_orders").update({
       status: "succeeded", result_ciphertext: cipher, provider_cost_actual: service.provider_cost,
@@ -191,7 +196,7 @@ Deno.serve(async (request: Request) => {
         return reply(request, { orderId: existing.id, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount: Math.round(Number(existing.customer_price) * 100), currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), reused: true });
       }
       const token = randomToken();
-      const requestCipher = await encrypt({ ...input, lawfulPurpose: body.lawfulPurpose.trim() });
+      const requestCipher = await encrypt({ providerInput: input, lawfulPurpose: body.lawfulPurpose.trim() });
       const tokenCipher = await encrypt(token);
       const { data: order, error: insertError } = await admin.from("instant_api_orders").insert({
         service_slug: slug, customer_price: service.customer_price, provider_cost_at_order: service.provider_cost,
