@@ -267,6 +267,7 @@ function Header() {
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
@@ -3869,6 +3870,7 @@ function RoutedApp() {
       "/about": "About Us | BABA'S CYBER CAFE",
       "/faq": "FAQs & Customer Help | BABA'S CYBER CAFE",
       "/services": "Service Directory | BABA'S CYBER CAFE",
+      "/instant-services": "Instant Digital Services | BABA'S CYBER CAFE",
       "/apply": "New Enquiry | BABA'S CYBER CAFE",
       "/track": "Track Application | BABA'S CYBER CAFE",
       "/dashboard": "Customer Dashboard | BABA'S CYBER CAFE",
