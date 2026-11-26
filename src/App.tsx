@@ -68,6 +68,8 @@ const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
+const InstantApiAdminPortal = lazy(() => import("./pages/InstantApiAdminPortal"));
+const InstantApiCustomerPortal = lazy(() => import("./pages/InstantApiCustomerPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 import "./App.css";
 import "./cyber-theme.css";
@@ -265,6 +267,7 @@ function Header() {
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
@@ -2578,6 +2581,7 @@ function AdminPage() {
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/instant-tp-admin"><ShieldCheck size={14} /> Instant third-party insurance desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/print/admin">Print orders &amp; phone printing <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/admin/instant-api"><ShieldCheck size={14} /> Instant API services &amp; pricing <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/feedback">Customer feedback centre <ArrowUpRight size={14} /></Link>
             </div>
           )}
@@ -3866,6 +3870,7 @@ function RoutedApp() {
       "/about": "About Us | BABA'S CYBER CAFE",
       "/faq": "FAQs & Customer Help | BABA'S CYBER CAFE",
       "/services": "Service Directory | BABA'S CYBER CAFE",
+      "/instant-services": "Instant Digital Services | BABA'S CYBER CAFE",
       "/apply": "New Enquiry | BABA'S CYBER CAFE",
       "/track": "Track Application | BABA'S CYBER CAFE",
       "/dashboard": "Customer Dashboard | BABA'S CYBER CAFE",
@@ -3956,6 +3961,8 @@ function RoutedApp() {
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/pay" element={<PaymentPortal />} />
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
+        <Route path="/instant-services" element={<InstantApiCustomerPortal />} />
+        <Route path="/admin/instant-api" element={<InstantApiAdminPortal />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/grievance" element={<GrievancePage />} />
