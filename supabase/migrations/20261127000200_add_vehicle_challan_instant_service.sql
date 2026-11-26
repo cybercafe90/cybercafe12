@@ -7,7 +7,7 @@ values
   ('vehicle-challan-check', 'Vehicle Challan Check',
    'Check available traffic challan details for a vehicle registration number. Independent third-party lookup; not a government portal.',
    'SMM Top Server', 'https://api.smmtopserver.shop/api/challan-details.php', 'GET',
-   'INSTANT_API_VEHICLE_CHALLAN_KEY', null, 30.00, true, true, true, 9)
+   'INSTANT_API_VEHICLE_CHALLAN_KEY', null, 30.00, true, true, false, 9)
 on conflict (slug) do update set
   name = excluded.name,
   description = excluded.description,
@@ -18,7 +18,7 @@ on conflict (slug) do update set
   customer_price = excluded.customer_price,
   is_enabled = true,
   is_featured = true,
-  authorization_verified = true,
+  authorization_verified = false,
   sort_order = excluded.sort_order;
 
 commit;
