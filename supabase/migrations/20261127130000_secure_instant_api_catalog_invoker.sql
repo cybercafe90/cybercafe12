@@ -23,6 +23,11 @@ create policy instant_api_services_public_catalog_read
   to anon, authenticated
   using (is_enabled = true and authorization_verified = true);
 
+-- The owner console now uses owner-checked SECURITY DEFINER RPCs, so direct
+-- owner table policies are no longer needed and cannot create duplicate SELECT paths.
+drop policy if exists "instant_api_services_owner_read" on public.instant_api_services;
+drop policy if exists "instant_api_services_owner_manage" on public.instant_api_services;
+
 -- Enforce the same activation rule in the database, not only in the UI.
 do $$
 begin
@@ -104,6 +109,19 @@ begin
   end if;
 end;
 $function$;
+
+-- Cover nullable foreign keys used by owner operations and audit history.
+create index if not exists instant_tp_applications_payment_verified_by_idx
+  on public.instant_tp_applications (payment_verified_by)
+  where payment_verified_by is not null;
+
+create index if not exists instant_tp_applications_policy_issued_by_idx
+  on public.instant_tp_applications (policy_issued_by)
+  where policy_issued_by is not null;
+
+create index if not exists instant_tp_audit_events_actor_id_idx
+  on public.instant_tp_audit_events (actor_id)
+  where actor_id is not null;
 
 revoke all on function public.owner_list_instant_api_services() from public, anon, authenticated;
 revoke all on function public.owner_update_instant_api_service(text, text, text, text, text, text, numeric, numeric, boolean, boolean, boolean) from public, anon, authenticated;
