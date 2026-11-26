@@ -2579,6 +2579,7 @@ function AdminPage() {
               <Link className="button button-outline" to="/insurance/admin">Insurance quotation desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/instant-tp-admin"><ShieldCheck size={14} /> Instant third-party insurance desk <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/print/admin">Print orders &amp; phone printing <ArrowUpRight size={14} /></Link>
+              <Link className="button button-outline" to="/admin/instant-api"><ShieldCheck size={14} /> Instant API services &amp; pricing <ArrowUpRight size={14} /></Link>
               <Link className="button button-outline" to="/feedback">Customer feedback centre <ArrowUpRight size={14} /></Link>
             </div>
           )}
