@@ -34,7 +34,7 @@ alter table public.instant_api_orders enable row level security;
 drop policy if exists instant_api_orders_owner_read on public.instant_api_orders;
 create policy instant_api_orders_owner_read
   on public.instant_api_orders for select to authenticated
-  using ((select public.is_owner()));
+  using ((select private.is_owner()));
 
 revoke all privileges on table public.instant_api_orders from public, anon, authenticated;
 grant select on table public.instant_api_orders to authenticated;
