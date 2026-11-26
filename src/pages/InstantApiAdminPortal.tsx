@@ -146,9 +146,18 @@ export default function InstantApiAdminPortal() {
   return (
     <main className="ia-admin">
       <header className="ia-top"><Link to="/admin" className="ia-brand"><ShieldCheck size={23}/> BABA'S CYBER CAFE <small>INSTANT API CONTROL</small></Link><div><span className="ia-owner"><ShieldCheck size={14}/> OWNER VERIFIED</span><Link to="/admin" className="ia-back"><ArrowLeft size={15}/> Main admin</Link></div></header>
+      <nav className="ia-admin-nav" aria-label="Instant API administration">
+        <a href="#ia-overview">Overview</a>
+        <a href="#ia-services" aria-current="page">Services &amp; Pricing</a>
+        <button type="button" disabled title="Available after order gateway integration">Orders</button>
+        <button type="button" disabled title="Available after gateway health checks are implemented">API Health</button>
+        <button type="button" disabled title="Available after payment and provider reconciliation is implemented">Reconciliation</button>
+        <button type="button" disabled title="Available after audit event integration is implemented">Audit Logs</button>
+        <button type="button" disabled title="Available after refund workflow integration is implemented">Refunds</button>
+      </nav>
       <div className="ia-layout">
-        <aside className="ia-sidebar"><span className="ia-eyebrow">SERVICE MANAGEMENT</span><h2>Instant API</h2><p>Configure provider endpoints, selling prices and activation controls.</p><div className="ia-side-stats"><span>Configured services</span><b>{items.length}</b><span>Enabled for customers</span><b>{items.filter(item => item.is_enabled && item.authorization_verified).length}</b></div><button className="ia-button ia-button-muted" onClick={() => setShowSetup(value => !value)}><KeyRound size={15}/> API key setup guide</button></aside>
-        <section className="ia-main">
+        <aside className="ia-sidebar" id="ia-overview"><span className="ia-eyebrow">SERVICE MANAGEMENT</span><h2>Instant API</h2><p>Configure provider endpoints, selling prices and activation controls.</p><div className="ia-side-stats"><span>Configured services</span><b>{items.length}</b><span>Enabled for customers</span><b>{items.filter(item => item.is_enabled && item.authorization_verified).length}</b></div><button className="ia-button ia-button-muted" onClick={() => setShowSetup(value => !value)}><KeyRound size={15}/> API key setup guide</button></aside>
+        <section className="ia-main" id="ia-services">
           <div className="ia-heading"><div><span className="ia-eyebrow">OWNER CONSOLE / API CATALOGUE</span><h1>Instant Services Control</h1><p>Set provider cost, customer price, endpoint and activation status.</p></div><button className="ia-button ia-button-muted" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> {loading ? "Refreshing…" : "Refresh"}</button></div>
           {error && <div className="ia-alert ia-error" role="alert"><CircleAlert size={16}/>{error}</div>}
           {notice && <div className="ia-alert ia-success" role="status"><Check size={16}/>{notice}</div>}
