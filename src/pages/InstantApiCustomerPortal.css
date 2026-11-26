@@ -21,3 +21,6 @@
 .ia-result{border:1px solid #dbe4ef;border-radius:12px;padding:14px;overflow:hidden}
 .ia-result pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;font-size:.8rem;background:#f8fafc;padding:12px;border-radius:8px;color:#1e293b}
 @media(max-width:520px){.ia-modal{padding:18px;border-radius:16px}.ia-modal>header h2{font-size:1.25rem}}
+
+.ia-pdf-download{display:inline-flex;align-items:center;justify-content:center;margin:8px 8px 10px 0;padding:10px 14px;border-radius:9px;background:#087fba;color:#fff;text-decoration:none;font-weight:700;font-size:.88rem}
+.ia-pdf-download:hover{background:#056a9d}
