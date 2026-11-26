@@ -58,6 +58,9 @@ import {
   type ServiceRecord,
 } from "./data";
 import { callFunction, clearPasswordRecoveryPending, hasPendingPasswordRecovery, isSupabaseConfigured, supabase } from "./lib/supabase";
+import { getApiExpressLogs } from "./lib/apiExpressClient";
+import ApiExpressVerify from "./components/ApiExpressVerify";
+import ApiExpressBankVerify from "./components/ApiExpressBankVerify";
 const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const SmartQrPortal = lazy(() => import("./pages/SmartQrPortal"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
@@ -74,6 +77,8 @@ import "./cyber-theme.css";
 import "./portal-experience.css";
 import "./performance-mobile.css";
 import "./vip-experience.css";
+import InstantServicesPage from "./pages/InstantServicesPage";
+import CustomerSignInPage from "./pages/CustomerSignInPage";
 import FreeEnhancements from "./components/FreeEnhancements";
 import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
 
@@ -265,6 +270,8 @@ function Header() {
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
+          <NavLink to="/sign-in" onClick={close}>Customer Sign In</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
           <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
@@ -1190,6 +1197,8 @@ function ApplicationPage() {
         <label className="field"><span>Name <i>*</i></span><input value={name} onChange={(event)=>setName(event.target.value)} placeholder="Your full name" autoComplete="name" required maxLength={100}/></label>
         <label className="field"><span>Phone <i>*</i></span><input type="tel" value={mobile} onChange={(event)=>setMobile(event.target.value)} placeholder="10-digit mobile number" autoComplete="tel-national" inputMode="numeric" required maxLength={15}/></label>
         <label className="field"><span>Service <i>*</i></span><select value={service} onChange={(event)=>setService(event.target.value)} required><option value="">Choose a service</option>{serviceOptions.map((item)=><option value={item} key={item}>{item}</option>)}</select></label>
+        <ApiExpressVerify service="kyc_pan" label="Verify PAN (optional)" payloadKey="pan" placeholder="ABCDE1234F" />
+        <ApiExpressVerify service="rc_verify" label="Verify vehicle RC (optional)" payloadKey="rc_number" placeholder="Vehicle registration number" />
         <label className="field"><span>Message</span><textarea value={message} onChange={(event)=>setMessage(event.target.value)} placeholder="Tell us briefly what help you need…" rows={4} maxLength={1000}/></label>
         {error && <p className="cyber-error" role="alert">{error}</p>}
         <button className="cyber-button cyber-button-primary" type="submit"><MessageCircle size={17}/> Send enquiry on WhatsApp</button>
@@ -1858,6 +1867,46 @@ function AdminFeedbackOverview() {
         {!loading && !error && (overview?.items.length ?? 0) === 0 && <p className="table-empty">No customer feedback has been submitted yet.</p>}
         {!loading && !error && (overview?.items.length ?? 0) > 0 && <p className="form-footnote">Showing the latest feedback available in this dashboard preview.</p>}
       </div>
+    </section>
+  );
+}
+
+
+function ApiExpressUsagePanel() {
+  const [report, setReport] = useState<Awaited<ReturnType<typeof getApiExpressLogs>> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function refresh() {
+    setBusy(true); setError("");
+    try { setReport(await getApiExpressLogs(50)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "API usage could not be loaded."); }
+    finally { setBusy(false); }
+  }
+  useEffect(() => { void refresh(); }, []);
+  return (
+    <section className="admin-section">
+      <div className="admin-section-head">
+        <div><span className="eyebrow">INTEGRATION MONITOR</span><h2>API Express usage &amp; audit logs</h2><p>Cached responses do not consume an upstream call. Confirm actual quota in your API Express account.</p></div>
+        <button type="button" className="button button-outline" onClick={() => void refresh()} disabled={busy}>{busy ? "Refreshing…" : "Refresh usage"}</button>
+      </div>
+      {error && <div className="notice notice-error" role="alert">{error}</div>}
+      {report && (
+        <>
+          <div className="field-grid">
+            <div className="settings-group"><span className="eyebrow">ESTIMATED UPSTREAM ATTEMPTS</span><h3>{report.quota.estimated_upstream_attempts} / {report.quota.configured_limit}</h3></div>
+            <div className="settings-group"><span className="eyebrow">REMAINING ESTIMATE</span><h3>{report.quota.remaining_estimate}</h3></div>
+            <div className="settings-group"><span className="eyebrow">CACHE HITS</span><h3>{report.counts.cache_hits}</h3></div>
+            <div className="settings-group"><span className="eyebrow">ERRORS</span><h3>{report.counts.errors}</h3></div>
+          </div>
+          <p className="form-footnote">{report.quota.note}</p>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead><tr><th>Time</th><th>Service</th><th>Status</th><th>HTTP</th><th>User ID</th></tr></thead>
+              <tbody>{report.items.map(item => <tr key={item.id}><td>{new Date(item.created_at).toLocaleString("en-IN")}</td><td>{item.service_name}</td><td>{item.status}</td><td>{item.http_code}</td><td>{item.user_id}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -3204,6 +3253,8 @@ function AdminPage() {
             </div>
           </section>
           <WebsiteSettingsEditor />
+          <ApiExpressUsagePanel />
+          <ApiExpressBankVerify />
           {active && (
             <div
               className="modal-backdrop"
@@ -3940,6 +3991,8 @@ function RoutedApp() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<VipFaqPage />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/instant-services" element={<InstantServicesPage />} />
+        <Route path="/sign-in" element={<CustomerSignInPage />} />
         <Route path="/services/:category" element={<CategoryRoute />} />
         <Route path="/insurance" element={<InsurancePortal />} />
         <Route path="/instant-tp-preview" element={<InstantTPPreview />} />

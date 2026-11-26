@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2, RefreshCw, ShieldCheck } from "lucide-react";
 import { callFunction, supabase } from "../lib/supabase";
+import ApiExpressVerify from "../components/ApiExpressVerify";
 import "../insurance-portal.css";
 
 type InsuranceRequest = {
@@ -293,7 +294,8 @@ export default function InsurancePortal({ admin = false }: { admin?: boolean }) 
             <label>Variant (optional)<input maxLength={120} value={form.variant} onChange={(event) => setForm({ ...form, variant: event.target.value })}/></label>
             <label>Registration year<input required type="number" min="1980" max={new Date().getFullYear() + 1} value={form.registrationYear} onChange={(event) => setForm({ ...form, registrationYear: event.target.value })}/></label>
             <label>Fuel type<select value={form.fuelType} onChange={(event) => setForm({ ...form, fuelType: event.target.value })}>{["petrol", "diesel", "cng", "electric", "other"].map((type) => <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>)}</select></label>
-            <label>Registration number (optional)<input maxLength={20} value={form.registrationNumber} onChange={(event) => setForm({ ...form, registrationNumber: event.target.value.toUpperCase() })}/></label>
+            <ApiExpressVerify service="rc_verify" label="Verify vehicle RC (optional)" payloadKey="rc_number" placeholder="e.g. JK01AB1234" value={form.registrationNumber ?? ""} onChange={(value) => setForm({ ...form, registrationNumber: value.toUpperCase() })}/>
+            <ApiExpressVerify service="kyc_pan" label="Verify PAN (optional)" payloadKey="pan" placeholder="ABCDE1234F"/>
             <label>Cover requested<select value={form.policyType} onChange={(event) => setForm({ ...form, policyType: event.target.value })}><option value="third_party">Third-party</option><option value="comprehensive">Comprehensive</option><option value="standalone_od">Standalone own-damage</option><option value="renewal">Renewal</option></select></label>
             <label>Previous insurer (optional)<input maxLength={120} value={form.previousInsurer} onChange={(event) => setForm({ ...form, previousInsurer: event.target.value })}/></label>
             <label>Current policy expiry (optional)<input type="date" value={form.policyExpiry} onChange={(event) => setForm({ ...form, policyExpiry: event.target.value })}/></label>
