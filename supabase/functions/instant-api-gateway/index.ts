@@ -130,7 +130,7 @@ async function callProvider(service: Service, input: Record<string, string>) {
   }
   return result;
 }
-async function fulfill(admin: ReturnType<typeof client>, order: Record<string, any>) {
+type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string };\nasync function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
   const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
   if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
   const stored = await decrypt(order.request_ciphertext) as { providerInput: Record<string, string> };
