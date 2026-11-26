@@ -62,7 +62,6 @@ const GrievancePage = lazy(() => import("./pages/GrievancePage"));
 const AdminGrievancePage = lazy(() => import("./pages/AdminGrievancePage"));
 const FeedbackCentre = lazy(() => import("./pages/FeedbackCentre"));
 const PaymentPortal = lazy(() => import("./pages/PaymentPortal"));
-const ChallanPortal = lazy(() => import("./pages/ChallanPortal"));
 const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
@@ -298,7 +297,6 @@ function Footer() {
         <div>
           <h3>Explore</h3>
           <Link to="/services">All services</Link>
-          <Link to="/challan">Check traffic challan</Link>
           <Link to="/services/insurance">Insurance services</Link>
           <Link to="/insurance">Request an insurance quotation</Link>
           <Link to="/about">About us</Link>
@@ -3936,7 +3934,6 @@ function RoutedApp() {
         <Route path="/print/admin" element={<PrintAdminPortal />} />
         <Route path="/insurance/admin" element={<InsurancePortal admin />} />
         <Route path="/apply" element={<ApplicationPage />} />
-        <Route path="/challan" element={<ChallanPortal />} />
         <Route path="/track" element={<TrackPage />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
         <Route path="/contact" element={<ContactPage />} />
