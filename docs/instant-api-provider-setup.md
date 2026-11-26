@@ -19,7 +19,7 @@ The eight configured provider credentials are:
 
 Provider host: `https://api.smmtopserver.shop`.
 
-All eight secrets are independent. The API key must be read with `Deno.env.get()` inside the server-side Edge Function only. For Voter Mobile Link, Aadhaar to PAN and Mobile Number Details, the provider specification uses an `api_key` form/query parameter. For PAN Verification, Vehicle RC PDF, Vahan to Mobile, DL HD PDF and Voter Status, the provider specification uses a Bearer Authorization header. Do not place a key in a URL that can be logged; construct and redact provider requests carefully.
+All eight provider secrets are independent. The API key must be read with `Deno.env.get()` inside the server-side Edge Function only. The gateway's encrypted order/result storage will also require one additional independent secret named `INSTANT_API_DATA_ENCRYPTION_KEY` (at least 32 random characters). This is an encryption key, not a provider API key; add it to Supabase Edge Function Secrets before enabling encrypted request/result retention. For Voter Mobile Link, Aadhaar to PAN and Mobile Number Details, the provider specification uses an `api_key` form/query parameter. For PAN Verification, Vehicle RC PDF, Vahan to Mobile, DL HD PDF and Voter Status, the provider specification uses a Bearer Authorization header. Do not place a key in a URL that can be logged; construct and redact provider requests carefully.
 
 Open [Supabase Edge Function Secrets](https://supabase.com/dashboard/project/dyzyfugxzsdvboxerbxv/functions/secrets) to manage values. Never paste secret values into GitHub, SQL, browser code, `VITE_*` variables, support messages or chat. Do not send secret values to anyone. Rotate any key that has been exposed.
 
