@@ -63,7 +63,7 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   ).toBeVisible();
   await expect(page.locator('input[autocomplete="name"]')).toBeVisible();
   await expect(page.locator('input[autocomplete="tel-national"]')).toBeVisible();
-  await expect(page.locator("select").filter({ has: page.locator('option[value]:not([value=""])') }).first()).toBeVisible();
+  await expect(page.locator(".quick-whatsapp-form select")).toBeVisible();
   const submitButton = page.getByRole("button", { name: "Submit securely" });
   await expect(submitButton).toBeEnabled();
   const viewportWidth = await page.evaluate(
