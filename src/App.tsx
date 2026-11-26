@@ -1180,12 +1180,21 @@ function ApplicationPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [submission, setSubmission] = useState<{ trackingId: string; emailSent: boolean; emailWarning?: string } | null>(null);
-  const serviceOptions = [...new Set(seedServices.map((item) => item.name))].sort((a,b) => a.localeCompare(b));
-  const selectedService = seedServices.find((item) => item.name === service);
+  const [catalogueServices, setCatalogueServices] = useState<Array<{ name: string; category_slug: string }>>([]);
+  useEffect(() => {
+    if (!supabase) return;
+    let current = true;
+    void supabase.from("services").select("name, category_slug").eq("is_active", true).order("name")
+      .then(({ data, error: catalogueError }) => {
+        if (current && !catalogueError && data) setCatalogueServices(data as Array<{ name: string; category_slug: string }>);
+      });
+    return () => { current = false; };
+  }, []);
+  const availableServices = catalogueServices.length ? catalogueServices : seedServices;
+  const serviceOptions = [...new Set(availableServices.map((item) => item.name))].sort((a,b) => a.localeCompare(b));
+  const selectedService = availableServices.find((item) => item.name === service);
   const category = selectedService?.category_slug ?? params.get("department") ?? "other";
-  const documents = selectedService?.required_documents?.length
-    ? selectedService.required_documents
-    : getServiceRequirement(service).documents;
+  const documents = getServiceRequirement(service).documents;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1217,7 +1226,7 @@ function ApplicationPage() {
         category,
         service,
         description: message.trim(),
-        requiredDocuments: documents.join(", "),
+        requiredDocuments: documents.join(", ").slice(0, 1000),
         consent: true,
       });
       setSubmission(result);
