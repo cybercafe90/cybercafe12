@@ -49,13 +49,13 @@ alter table public.instant_api_services enable row level security;
 drop policy if exists "instant_api_services_owner_read" on public.instant_api_services;
 create policy "instant_api_services_owner_read"
   on public.instant_api_services for select to authenticated
-  using ((select public.is_owner()));
+  using ((select private.is_owner()));
 
 drop policy if exists "instant_api_services_owner_manage" on public.instant_api_services;
 create policy "instant_api_services_owner_manage"
   on public.instant_api_services for all to authenticated
-  using ((select public.is_owner()))
-  with check ((select public.is_owner()));
+  using ((select private.is_owner()))
+  with check ((select private.is_owner()));
 
 drop trigger if exists instant_api_services_updated_at on public.instant_api_services;
 create trigger instant_api_services_updated_at
