@@ -16,6 +16,14 @@ The authoritative schema is the ordered SQL migrations in `supabase/migrations/`
 - Category/service triggers prevent activating a service in an inactive category and prevent category deactivation while active services remain.
 - B-tree and trigram indexes support category, featured, date and text searches. The application queries use bounded ranges instead of loading the whole catalogue.
 
+
+## Instant API catalogue
+
+- `instant_api_services` stores provider configuration, provider cost and activation controls. Provider credentials remain in Supabase Edge Function secrets; they are never stored in this table.
+- `instant_api_service_catalog` is a security-invoker view. Anonymous and authenticated clients receive only the public catalogue columns, and RLS exposes only enabled services with verified provider authorization.
+- Direct client access to provider endpoints, API secret names and provider costs is revoked. The owner console uses `owner_list_instant_api_services()` and `owner_update_instant_api_service(...)`, which verify the authenticated owner role inside the database.
+- A database constraint prevents activating a service without an HTTPS endpoint and verified provider authorization. Edge Functions continue to use the service role for server-side fulfilment.
+
 ## Customer requests
 
 - `applications` owns the PII and service request. `tracking_id` is unique, opaque and server-generated. `user_id` is nullable so a customer can submit without an account; only requests linked to the verified signed-in customer appear in the account dashboard.
