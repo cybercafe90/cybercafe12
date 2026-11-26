@@ -240,6 +240,18 @@ Deno.serve(async (request: Request) => {
       return reply(request, { verified: true, orderId, ...result });
     }
 
+    if (action === "process_webhook") {
+      const internalKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      if (!internalKey || request.headers.get("x-internal-gateway-key") !== internalKey) return reply(request, { error: "Not authorised." }, 401);
+      const orderId = typeof body.orderId === "string" ? body.orderId : "";
+      const { data: order, error } = await admin.from("instant_api_orders").select("*").eq("id", orderId).maybeSingle();
+      if (error) throw error;
+      if (!order) return reply(request, { error: "Order not found." }, 404);
+      if (order.status === "succeeded") return reply(request, { status: "succeeded", duplicate: true });
+      if (order.status !== "paid") return reply(request, { status: order.status, duplicate: true });
+      return reply(request, await fulfill(admin, order));
+    }
+
     if (action === "retrieve_order") {
       const orderId = typeof body.orderId === "string" ? body.orderId : "";
       const token = typeof body.retrievalToken === "string" ? body.retrievalToken : "";
