@@ -84,7 +84,7 @@ insert into public.instant_api_services
   (slug, name, description, provider_name, endpoint_url, http_method, api_key_secret_name, provider_cost, customer_price, is_enabled, is_featured, authorization_verified, sort_order)
 values
   ('voter-mobile-link', 'Voter Mobile Link', 'Voter mobile-link service; availability subject to provider authorization.', null, null, 'POST', 'INSTANT_API_VOTER_MOBILE_LINK_KEY', 13.00, 80.00, false, true, false, 1),
-  ('aadhaar-to-pan', 'Aadhaar to PAN', 'Aadhaar-to-PAN service; consent and provider authorization required.', null, null, 'POST', 'INSTANT_API_AADHAAR_TO_PAN_KEY', 9.00, 50.00, false, true, false, 2),
+  ('aadhaar-to-pan', 'Aadhaar to PAN', 'Aadhaar-to-PAN service; consent and provider authorization required.', 'Saif Online Zone', 'https://api.smmtopserver.shop/api/aadhaar-to-pan.php', 'POST', 'INSTANT_API_AADHAAR_TO_PAN_KEY', 9.00, 50.00, false, true, false, 2),
   ('pan-verification', 'PAN Verification', 'PAN verification service; availability subject to provider authorization.', null, null, 'POST', 'INSTANT_API_PAN_VERIFICATION_KEY', 10.00, 60.00, false, true, false, 3),
   ('number-details', 'Number Details', 'Number-details service; lawful purpose and provider authorization required.', null, null, 'POST', 'INSTANT_API_NUMBER_DETAILS_KEY', 6.00, 70.00, false, true, false, 4),
   ('vehicle-rc-pdf', 'Vehicle RC PDF', 'Vehicle registration document service; access subject to provider authorization.', null, null, 'POST', 'INSTANT_API_VEHICLE_RC_PDF_KEY', 10.00, 90.00, false, true, false, 5),
