@@ -138,7 +138,14 @@ async function callProvider(service: Service, input: Record<string, string>) {
   if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   if (result && typeof result === "object") {
     const record = result as Record<string, unknown>;
-    if (record.success === false || record.status === false || record.error) throw new Error("Provider reported that the request failed.");
+    if (record.status !== true) {
+      const state = typeof record.status === "string" ? record.status.toLowerCase() : "";
+      const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+      if (["pending", "processing", "queued"].includes(state) || /pending|processing|queued|in progress/.test(message)) {
+        return { __provider_pending: true, provider_order_id: typeof record.order_id === "string" ? record.order_id : null };
+      }
+      return { __provider_failed: true, provider_error: typeof record.message === "string" ? record.message.slice(0, 120) : "Provider did not confirm success." };
+    }
   }
   return result;
 }
@@ -154,10 +161,36 @@ async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
     return { status: latest?.status || "processing" };
   }
   try {
-    const result = await callProvider(service as Service, stored.providerInput);
+    const result = await callProvider(service as Service, stored.providerInput) as Record<string, unknown>;
+    if (result.__provider_pending === true) {
+      await admin.from("instant_api_orders").update({
+        status: "fulfillment_unknown",
+        provider_order_id: typeof result.provider_order_id === "string" ? result.provider_order_id : null,
+        provider_error_code: "provider_pending",
+      }).eq("id", order.id).eq("status", "processing");
+      return { status: "fulfillment_unknown", message: "Provider accepted the request but has not confirmed completion. Do not submit it again." };
+    }
+    if (result.__provider_failed === true) {
+      await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "provider_rejected" }).eq("id", order.id).eq("status", "processing");
+      try {
+        if (!order.razorpay_payment_id) throw new Error("Captured payment reference is missing.");
+        const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
+          amount: Math.round(Number(order.customer_price) * 100),
+          notes: { instant_api_order_id: order.id, reason: "provider_rejected" },
+        });
+        const finalStatus = refund.status === "processed" ? "refunded" : "refund_pending";
+        await admin.from("instant_api_orders").update({ status: finalStatus, provider_error_code: finalStatus === "refunded" ? "provider_rejected_refunded" : "refund_processing" }).eq("id", order.id).eq("status", "refund_pending");
+        return { status: finalStatus, message: finalStatus === "refunded" ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
+      } catch {
+        await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "refund_request_failed" }).eq("id", order.id);
+        return { status: "refund_pending", message: "The provider could not complete the request. Your refund needs reconciliation; contact support if it is not reflected." };
+      }
+    }
     const cipher = await encrypt(result);
+    const actualCost = typeof result.cost_deducted === "number" && Number.isFinite(result.cost_deducted) ? result.cost_deducted : service.provider_cost;
     const { error } = await admin.from("instant_api_orders").update({
-      status: "succeeded", result_ciphertext: cipher, provider_cost_actual: service.provider_cost,
+      status: "succeeded", result_ciphertext: cipher, provider_cost_actual: actualCost,
+      provider_order_id: typeof result.order_id === "string" ? result.order_id : null,
       fulfilled_at: new Date().toISOString(), provider_error_code: null,
     }).eq("id", order.id).eq("status", "processing");
     if (error) throw error;
