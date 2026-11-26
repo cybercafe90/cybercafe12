@@ -118,7 +118,7 @@ async function callProvider(service: Service, input: Record<string, string>) {
   const raw = await response.text();
   if (raw.length > 2_000_000) throw new Error("Provider response exceeded the permitted size.");
   let result: unknown;
-  if (contentType.includes("application/json") || /^[\s]*[\[{]/.test(raw)) {
+  if (contentType.includes("application/json") || raw.trimStart().startsWith("{") || raw.trimStart().startsWith("[")) {
     try { result = JSON.parse(raw); } catch { result = { raw_text: raw.slice(0, 2000) }; }
   } else {
     result = { content_type: contentType, response_text: raw.slice(0, 2000) };
