@@ -84,8 +84,6 @@ export default function InstantApiAdminPortal() {
     void load().catch(reason => setError(reason instanceof Error ? reason.message : "Could not load API service settings."));
   }, [access, load]);
 
-  const active = useMemo(() => items.find(item => item.slug === selectedSlug) ?? null, [items, selectedSlug]);
-
   function choose(item: InstantService) {
     setSelectedSlug(item.slug);
     setDraft({ ...item });
@@ -125,7 +123,7 @@ export default function InstantApiAdminPortal() {
         provider_name: draft.provider_name?.trim() || null,
         endpoint_url: draft.endpoint_url?.trim() || null,
         http_method: draft.http_method,
-        provider_cost: draft.provider_cost === null || draft.provider_cost === ("" as unknown as number) ? null : Number(draft.provider_cost),
+        provider_cost: draft.provider_cost === null ? null : Number(draft.provider_cost),
         customer_price: Number(draft.customer_price),
         is_enabled: draft.is_enabled,
         is_featured: draft.is_featured,
