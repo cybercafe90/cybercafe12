@@ -104,8 +104,8 @@ function validateInput(slug: string, input: Record<string, unknown>) {
   if (slug === "vehicle-rc-pdf" && input.chiptype != null) output.chiptype = String(input.chiptype).slice(0, 30);
   if (slug === "vahan-to-mobile" && !/^[A-Z0-9 -]{5,15}$/i.test(output.vrn)) throw new Error("Enter a valid vehicle registration number.");
   if (slug === "vehicle-challan-check") {
-    output.vehicle_number = output.vehicle_number.toUpperCase().replace(/\\s+/g, "");
-    if (!/^(?:[A-Z]{2}\\d{1,2}[A-Z]{0,3}\\d{1,4}|\\d{2}BH\\d{4}[A-Z]{1,2})$/.test(output.vehicle_number)) throw new Error("Enter a valid Indian vehicle registration number.");
+    output.vehicle_number = output.vehicle_number.toUpperCase().replace(/\s+/g, "");
+    if (!/^(?:[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{1,4}|\d{2}BH\d{4}[A-Z]{1,2})$/.test(output.vehicle_number)) throw new Error("Enter a valid Indian vehicle registration number.");
   }
   return output;
 }
