@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import "./customer-sign-in.css";
+import "../customer-sign-in.css";
 
 type Mode = "signin" | "signup";
 
