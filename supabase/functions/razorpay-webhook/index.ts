@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
             status: 'paid', razorpay_payment_id: paymentId, paid_at: new Date().toISOString(),
           }).eq('id', instantOrder.id).eq('status', 'payment_pending').eq('razorpay_order_id', orderId).select('id').maybeSingle()
           if (instantUpdateError) throw instantUpdateError
-          if (paidInstant) {
+          if (paidInstant || instantOrder.status === 'paid') {
             const supabaseUrl = Deno.env.get('SUPABASE_URL')
             const internalKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
             if (!supabaseUrl || !internalKey) throw new Error('Instant API internal gateway is not configured.')
