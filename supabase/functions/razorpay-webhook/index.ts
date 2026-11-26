@@ -59,8 +59,10 @@ Deno.serve(async (request) => {
       metadata: { order_id: orderId || null, event_type: eventType },
     })
     if (insertError) {
-      if (insertError.code === '23505') return response(request, { received: true, duplicate: true }, 200)
-      throw insertError
+      if (insertError.code === '23505') {
+        const { data: prior } = await admin.from('razorpay_webhook_events').select('processed').eq('event_id', eventId).maybeSingle()
+        if (prior?.processed) return response(request, { received: true, duplicate: true }, 200)
+      } else throw insertError
     }
 
     if (eventType === 'payment.captured' || eventType === 'order.paid') {
@@ -73,6 +75,35 @@ Deno.serve(async (request) => {
         .eq('razorpay_order_id', orderId).maybeSingle()
       if (lookupError) throw lookupError
       if (!paymentOrder) {
+        const { data: instantOrder, error: instantLookupError } = await admin.from('instant_api_orders')
+          .select('id, customer_price, status, razorpay_order_id')
+          .eq('razorpay_order_id', orderId).maybeSingle()
+        if (instantLookupError) throw instantLookupError
+        if (instantOrder) {
+          const expectedInstantPaise = Math.round(Number(instantOrder.customer_price) * 100)
+          if (Number(entity.amount) !== expectedInstantPaise || entity.currency !== 'INR') {
+            await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, rejected: 'Instant API amount or currency mismatch.' } }).eq('event_id', eventId)
+            return response(request, { received: true, processed: false }, 200)
+          }
+          const { data: paidInstant, error: instantUpdateError } = await admin.from('instant_api_orders').update({
+            status: 'paid', razorpay_payment_id: paymentId, paid_at: new Date().toISOString(),
+          }).eq('id', instantOrder.id).eq('status', 'payment_pending').eq('razorpay_order_id', orderId).select('id').maybeSingle()
+          if (instantUpdateError) throw instantUpdateError
+          if (paidInstant) {
+            const supabaseUrl = Deno.env.get('SUPABASE_URL')
+            const internalKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+            if (!supabaseUrl || !internalKey) throw new Error('Instant API internal gateway is not configured.')
+            const fulfilResponse = await fetch(supabaseUrl + '/functions/v1/instant-api-gateway', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': internalKey, 'x-internal-gateway-key': internalKey },
+              body: JSON.stringify({ action: 'process_webhook', orderId: instantOrder.id }),
+              signal: AbortSignal.timeout(30000),
+            })
+            if (!fulfilResponse.ok) throw new Error('Instant API fulfilment could not be started.')
+          }
+          await admin.from('razorpay_webhook_events').update({ processed: true, metadata: { order_id: orderId, instant_api_order_id: instantOrder.id, paid: Boolean(paidInstant) } }).eq('event_id', eventId)
+          return response(request, { received: true, processed: true, instant_api_order: instantOrder.id }, 200)
+        }
         const { data: printJob, error: printLookupError } = await admin.from('print_jobs')
           .select('id, job_number, payment_amount, payment_status, status, razorpay_order_id')
           .eq('razorpay_order_id', orderId).maybeSingle()
