@@ -1175,28 +1175,103 @@ function ApplicationPage() {
   const [params] = useSearchParams();
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
   const [service, setService] = useState(params.get("service") ?? "");
   const [message, setMessage] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [submission, setSubmission] = useState<{ trackingId: string; emailSent: boolean; emailWarning?: string } | null>(null);
   const serviceOptions = [...new Set(seedServices.map((item) => item.name))].sort((a,b) => a.localeCompare(b));
-  function submit(event: FormEvent<HTMLFormElement>) {
+  const selectedService = seedServices.find((item) => item.name === service);
+  const category = selectedService?.category_slug ?? params.get("department") ?? "other";
+  const documents = selectedService?.required_documents?.length
+    ? selectedService.required_documents
+    : getServiceRequirement(service).documents;
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    if (!/^\d{10}$/.test(mobile.replace(/\D/g, ""))) { setError("Please enter a valid 10-digit mobile number."); return; }
-    const text = ["New customer enquiry — BABA'S CYBER CAFE", `Name: ${name.trim()}`, `Phone: +91 ${mobile.replace(/\D/g, "")}`, `Service: ${service}`, `Message: ${message.trim() || "Please contact me with the next steps."}`].join("\n");
-    window.open(`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    setSubmission(null);
+    const normalizedMobile = mobile.replace(/\D/g, "");
+    if (!/^\d{10}$/.test(normalizedMobile)) {
+      setError("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    if (message.trim().length < 10) {
+      setError("Please describe the help you need in at least 10 characters.");
+      return;
+    }
+    if (!consent) {
+      setError("Please confirm consent before submitting your enquiry.");
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      setError("Online submission is temporarily unavailable. Please call or WhatsApp the cafe for assistance.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await callFunction<{ trackingId: string; emailSent: boolean; emailWarning?: string }>("create-application", {
+        fullName: name.trim(),
+        mobile: normalizedMobile,
+        email: emailAddress.trim(),
+        category,
+        service,
+        description: message.trim(),
+        requiredDocuments: documents.join(", "),
+        consent: true,
+      });
+      setSubmission(result);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "We could not save your enquiry. Please try again or contact the cafe.");
+    } finally {
+      setBusy(false);
+    }
   }
+
+  if (submission) {
+    return (
+      <main className="content-page narrow-page">
+        <section className="application-success" role="status" aria-live="polite">
+          <span className="application-success-icon"><BadgeCheck size={30}/></span>
+          <span className="eyebrow">ENQUIRY SAVED SUCCESSFULLY</span>
+          <h1>Your request is in our system.</h1>
+          <p>Keep this tracking reference safe. You can use it with your registered mobile number to check updates.</p>
+          <div className="application-reference">
+            <small>YOUR TRACKING REFERENCE</small>
+            <strong>{submission.trackingId}</strong>
+            <button type="button" className="button button-outline" onClick={() => { void navigator.clipboard?.writeText(submission.trackingId); }}>Copy reference</button>
+          </div>
+          <div className="notice notice-info">
+            {submission.emailSent ? "A confirmation email was sent to your email address." : "Your enquiry has been saved. Email delivery could not be confirmed."}
+            {submission.emailWarning ? ` ${submission.emailWarning}` : ""}
+          </div>
+          <div className="application-success-actions">
+            <Link className="button button-dark" to="/track" state={{ trackingId: submission.trackingId }}>Track application <ArrowRight size={16}/></Link>
+            <button type="button" className="button button-outline" onClick={() => { setSubmission(null); setName(""); setMobile(""); setEmailAddress(""); setService(""); setMessage(""); setConsent(false); }}>Submit another enquiry</button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="content-page narrow-page">
-      <PageIntro eyebrow="QUICK ENQUIRY" title="Tell us what you need." copy="Fill in four short details. WhatsApp will open with your message ready to send to our team." />
+      <PageIntro eyebrow="SECURE ONLINE ENQUIRY" title="Tell us what you need." copy="Submit your request securely and receive a tracking reference. WhatsApp remains available if you prefer personal assistance." />
+      {!isSupabaseConfigured && <ConfigurationNote />}
       <form className="form-panel quick-whatsapp-form" onSubmit={submit}>
-        <label className="field"><span>Name <i>*</i></span><input value={name} onChange={(event)=>setName(event.target.value)} placeholder="Your full name" autoComplete="name" required maxLength={100}/></label>
-        <label className="field"><span>Phone <i>*</i></span><input type="tel" value={mobile} onChange={(event)=>setMobile(event.target.value)} placeholder="10-digit mobile number" autoComplete="tel-national" inputMode="numeric" required maxLength={15}/></label>
+        <label className="field"><span>Full name <i>*</i></span><input value={name} onChange={(event)=>setName(event.target.value)} placeholder="Your full name" autoComplete="name" required minLength={2} maxLength={120}/></label>
+        <label className="field"><span>Mobile number <i>*</i></span><input type="tel" value={mobile} onChange={(event)=>setMobile(event.target.value)} placeholder="10-digit mobile number" autoComplete="tel-national" inputMode="numeric" required maxLength={15}/></label>
+        <label className="field"><span>Email address <i>*</i></span><input type="email" value={emailAddress} onChange={(event)=>setEmailAddress(event.target.value)} placeholder="you@example.com" autoComplete="email" required maxLength={254}/><small className="field-helper">Used for your application confirmation and important updates.</small></label>
         <label className="field"><span>Service <i>*</i></span><select value={service} onChange={(event)=>setService(event.target.value)} required><option value="">Choose a service</option>{serviceOptions.map((item)=><option value={item} key={item}>{item}</option>)}</select></label>
-        <label className="field"><span>Message</span><textarea value={message} onChange={(event)=>setMessage(event.target.value)} placeholder="Tell us briefly what help you need…" rows={4} maxLength={1000}/></label>
+        {service && <div className="document-checklist"><strong>Documents to prepare</strong><ul>{documents.slice(0,8).map((item,index)=><li key={index}>{item}</li>)}</ul><small>Requirements are indicative. The responsible authority may require additional or updated documents.</small></div>}
+        <label className="field"><span>How can we help? <i>*</i></span><textarea value={message} onChange={(event)=>setMessage(event.target.value)} placeholder="Briefly describe your request (at least 10 characters)…" rows={4} minLength={10} maxLength={2000} required/></label>
+        <label className="consent-check"><input type="checkbox" checked={consent} onChange={(event)=>setConsent(event.target.checked)} required/><span>I confirm these details are accurate and consent to BABA'S CYBER CAFE using them to respond to this enquiry. I will not submit passwords, PINs or OTPs.</span></label>
         {error && <p className="cyber-error" role="alert">{error}</p>}
-        <button className="cyber-button cyber-button-primary" type="submit"><MessageCircle size={17}/> Send enquiry on WhatsApp</button>
-        <p className="field-helper">Your message is sent only after you review and press Send in WhatsApp. Do not share passwords, PINs or OTPs.</p>
+        <button className="cyber-button cyber-button-primary" type="submit" disabled={busy || !isSupabaseConfigured || !consent}>{busy ? "Saving your request…" : "Submit securely"} <ArrowRight size={17}/></button>
+        <a className="service-doc-whatsapp" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent("Hi, I need help with an enquiry on the BABA'S CYBER CAFE website.")}`} target="_blank" rel="noreferrer"><MessageCircle size={15}/> Prefer WhatsApp? Chat with our team</a>
+        <p className="field-helper security-helper">Your request is saved only after the secure service confirms it. A tracking reference appears after successful submission. Never share passwords, payment PINs or one-time passcodes.</p>
       </form>
     </main>
   );
