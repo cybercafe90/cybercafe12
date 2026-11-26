@@ -188,7 +188,6 @@ const serviceNames: Record<string, string[]> = {
     "RC-related Services",
     "NOC Assistance",
     "Permit Assistance",
-    "Challan Information Assistance",
   ],
   central: [
     "PAN Card Assistance",

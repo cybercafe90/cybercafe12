@@ -168,17 +168,23 @@ test("retired investigation route no longer exposes a portal", async ({ page }) 
 });
 
 
-test("challan portal links to the official Parivahan service and offers tracked assistance", async ({ page }) => {
-  await page.goto("/challan");
-  await expect(page.getByRole("heading", { name: "Check your traffic challan." })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open official eChallan/ })).toHaveAttribute(
-    "href",
-    "https://echallan.parivahan.nic.in/",
-  );
-  await expect(page.getByRole("heading", { name: "Let us help with your challan enquiry." })).toBeVisible();
-  await expect(page.getByLabel("Vehicle registration number *")).toBeVisible();
-  await expect(page.getByText(/independent assistance business, not a government office/i)).toBeVisible();
-  const submitButton = page.getByRole("button", { name: /Submit assistance request/ });
-  if (backendConfigured) await expect(submitButton).toBeEnabled();
-  else await expect(submitButton).toBeDisabled();
+test("vehicle challan lookup is listed inside Instant Services", async ({ page }) => {
+  test.skip(!backendConfigured, "Supabase client configuration is required for the Instant Services catalogue.");
+  await page.route("**/functions/v1/instant-api-gateway", async route => {
+    const body = route.request().postDataJSON();
+    if (body?.action === "catalog") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ services: [{ slug: "vehicle-challan-check", name: "Vehicle Challan Check", description: "Live vehicle challan lookup.", customer_price: 30, is_enabled: true, is_featured: true, sort_order: 9 }] }) });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto("/instant-services");
+  await expect(page.getByRole("heading", { name: "Choose your service" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search Instant API services" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Search Instant API services" }).fill("Vehicle Challan Check");
+  await expect(page.getByRole("heading", { name: "Vehicle Challan Check" })).toBeVisible();
+  await expect(page.getByText("₹30")).toBeVisible();
+  await page.getByRole("button", { name: /Continue/ }).click();
+  await expect(page.getByLabel("Vehicle registration number")).toBeVisible();
+  await expect(page.getByText(/private service, not a government portal/i)).toBeVisible();
 });

@@ -4,7 +4,7 @@ const publicRoutes = [
   "/",
   "/services",
   "/services/insurance",
-  "/challan",
+  "/instant-services",
   "/insurance",
   "/apply",
   "/track",

@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 
 const signatureServices = [
   { icon: Landmark, title: "Revenue & civic services", copy: "Guidance for certificates, records, municipal and public-service applications.", href: "/services/revenue", tag: "DOCUMENT SUPPORT" },
-  { icon: CarFront, title: "RTO & vehicle desk", copy: "Help with vehicle-related enquiries, challan checks and documentation.", href: "/challan", tag: "VEHICLE SERVICES" },
+  { icon: CarFront, title: "RTO & vehicle desk", copy: "Vehicle registration services and instant challan lookups.", href: "/instant-services", tag: "VEHICLE SERVICES" },
   { icon: ShieldCheck, title: "Insurance centre", copy: "Motor insurance enquiries, policy guidance and quotation assistance.", href: "/insurance", tag: "INSURANCE" },
   { icon: FileCheck2, title: "Digital documentation", copy: "Support with PAN, ABHA, MSME, licences and other online service requests.", href: "/services", tag: "ONLINE APPLICATIONS" },
 ];

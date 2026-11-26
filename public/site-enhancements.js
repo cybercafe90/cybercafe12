@@ -25,12 +25,6 @@
     document.head.appendChild(node);
   }
 
-  function fixChallanTitle() {
-    if (location.pathname === "/challan" && document.title !== "Check Traffic Challan | BABA'S CYBER CAFE") {
-      document.title = "Check Traffic Challan | BABA'S CYBER CAFE";
-    }
-  }
-
   function serviceDirectory() {
     if (location.pathname !== "/services") return;
     const toolbar = document.querySelector(".catalog-toolbar");
@@ -106,7 +100,7 @@
     });
   }
 
-  function run() { mobileBar(); localBusinessSchema(); fixChallanTitle(); serviceDirectory(); preselectService(); }
+  function run() { mobileBar(); localBusinessSchema(); serviceDirectory(); preselectService(); }
   run();
   const observer = new MutationObserver(run);
   observer.observe(document.documentElement, {childList:true,subtree:true});
