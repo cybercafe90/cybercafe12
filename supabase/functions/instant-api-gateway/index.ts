@@ -84,6 +84,7 @@ function validateInput(slug: string, input: Record<string, unknown>) {
     "number-details": ["mobileNumber"],
     "driving-licence-hd-pdf": ["dl", "dob"],
     "vahan-to-mobile": ["vrn"],
+    "vehicle-challan-check": ["vehicle_number"],
     "voter-status": ["epic"],
   };
   const required = fields[slug];
@@ -102,6 +103,10 @@ function validateInput(slug: string, input: Record<string, unknown>) {
   if (slug === "vehicle-rc-pdf" && input.cardtype != null) output.cardtype = String(input.cardtype).slice(0, 30);
   if (slug === "vehicle-rc-pdf" && input.chiptype != null) output.chiptype = String(input.chiptype).slice(0, 30);
   if (slug === "vahan-to-mobile" && !/^[A-Z0-9 -]{5,15}$/i.test(output.vrn)) throw new Error("Enter a valid vehicle registration number.");
+  if (slug === "vehicle-challan-check") {
+    output.vehicle_number = output.vehicle_number.toUpperCase().replace(/\\s+/g, "");
+    if (!/^(?:[A-Z]{2}\\d{1,2}[A-Z]{0,3}\\d{1,4}|\\d{2}BH\\d{4}[A-Z]{1,2})$/.test(output.vehicle_number)) throw new Error("Enter a valid Indian vehicle registration number.");
+  }
   return output;
 }
 async function callProvider(service: Service, input: Record<string, string>) {
@@ -138,13 +143,19 @@ async function callProvider(service: Service, input: Record<string, string>) {
   if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   if (result && typeof result === "object") {
     const record = result as Record<string, unknown>;
-    if (record.status !== true) {
-      const state = typeof record.status === "string" ? record.status.toLowerCase() : "";
-      const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
-      if (["pending", "processing", "queued"].includes(state) || /pending|processing|queued|in progress/.test(message)) {
-        return { __provider_pending: true, provider_order_id: typeof record.order_id === "string" ? record.order_id : null };
-      }
+    const state = typeof record.status === "string" ? record.status.toLowerCase() : "";
+    const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+    if (["pending", "processing", "queued"].includes(state) || /pending|processing|queued|in progress/.test(message)) {
+      return { __provider_pending: true, provider_order_id: typeof record.order_id === "string" ? record.order_id : null };
+    }
+    const explicitFailure = record.status === false || record.success === false || ["failed", "failure", "error", "rejected"].includes(state) || record.error != null;
+    if (explicitFailure) {
       return { __provider_failed: true, provider_error: typeof record.message === "string" ? record.message.slice(0, 120) : "Provider did not confirm success." };
+    }
+    const explicitStatus = record.status != null || record.success != null;
+    const explicitSuccess = record.status === true || record.success === true || ["success", "successful", "ok", "completed"].includes(state);
+    if (explicitStatus && !explicitSuccess) {
+      return { __provider_failed: true, provider_error: typeof record.message === "string" ? record.message.slice(0, 120) : "Provider returned an unrecognised status." };
     }
   }
   return result;
