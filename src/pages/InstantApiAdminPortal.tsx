@@ -48,7 +48,15 @@ export default function InstantApiAdminPortal() {
     setLoading(true);
     setError("");
     try {
-      const { data, error: queryError } = await supabase.rpc("owner_list_instant_api_services");
+      let { data, error: queryError } = await supabase.rpc("owner_list_instant_api_services");
+      // The branch preview may run against the current database before the
+      // migration is applied. Keep the existing owner-RLS path only for that
+      // missing-function case; never fall back on authorization or runtime errors.
+      if (queryError?.code === "PGRST202") {
+        const legacy = await supabase.from("instant_api_services").select("*").order("sort_order");
+        data = legacy.data;
+        queryError = legacy.error;
+      }
       if (queryError) throw queryError;
       const rows = (data ?? []) as InstantService[];
       setItems(rows);
@@ -129,7 +137,7 @@ export default function InstantApiAdminPortal() {
         is_featured: draft.is_featured,
         authorization_verified: draft.authorization_verified,
       };
-      const { error: updateError } = await supabase.rpc("owner_update_instant_api_service", {
+      const rpcResult = await supabase.rpc("owner_update_instant_api_service", {
         p_slug: draft.slug,
         p_name: payload.name,
         p_description: payload.description,
@@ -142,7 +150,12 @@ export default function InstantApiAdminPortal() {
         p_is_featured: payload.is_featured,
         p_authorization_verified: payload.authorization_verified,
       });
-      if (updateError) throw updateError;
+      if (rpcResult.error?.code === "PGRST202") {
+        const { error: legacyError } = await supabase.from("instant_api_services").update(payload).eq("slug", draft.slug);
+        if (legacyError) throw legacyError;
+      } else if (rpcResult.error) {
+        throw rpcResult.error;
+      }
       await load();
       setNotice("Settings saved. Provider credentials remain outside the database.");
     } catch (reason) {
