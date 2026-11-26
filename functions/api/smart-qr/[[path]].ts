@@ -9,7 +9,7 @@ interface Env {
   SMART_QR_ALLOW_LIVE_PAYMENTS?: string;
 }
 
-type Context = { request: Request; env: Env; params: { path?: string } };
+type Context = { request: Request; env: Env; params: { path?: string | string[] } };
 type SessionUser = { id: string; email: string; full_name: string; role: "merchant" | "platform_admin" };
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
@@ -164,7 +164,9 @@ async function publicShop(db: D1Database, slug: string, qrCode: string | null = 
 
 export const onRequest = async ({ request, env, params }: Context) => {
   const url = new URL(request.url);
-  const path = (params.path || "").split("/").filter(Boolean);
+  const path = Array.isArray(params.path)
+    ? params.path.filter(Boolean)
+    : (params.path || "").split("/").filter(Boolean);
   const route = path.join("/");
   const method = request.method.toUpperCase();
   if (!env.SMART_QR_DB) return fail("Smart QR database binding is unavailable.", 503);
