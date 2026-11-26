@@ -9,10 +9,22 @@ const SERVICES = new Set([
 type ServiceName = "kyc_pan" | "kyc_aadhaar_dl" | "rc_verify" | "bank_verify" | "telecom_operator" | "mobile_recharge" | "fuel_price" | "commodity_price" | "weather" | "air_quality" | "security_risk";
 type Json = Record<string, unknown>;
 
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "https:" &&
+      (parsed.hostname === "babacybercafe.pages.dev" || parsed.hostname.endsWith(".babacybercafe.pages.dev"));
+  } catch {
+    return false;
+  }
+}
+
 function corsHeaders(req: Request): HeadersInit {
-  const origin = req.headers.get("origin") ?? "";
+  const origin = req.headers.get("origin");
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://babacybercafe.in",
+    "Access-Control-Allow-Origin": origin && isAllowedOrigin(origin) ? origin : "https://babacybercafe.in",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
@@ -198,9 +210,9 @@ async function readLogs(req: Request, admin: SupabaseClient) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   const origin = req.headers.get("origin");
-  if (origin && !ALLOWED_ORIGINS.has(origin)) return reply(req, { ok: false, service: "unknown", error: "Origin not allowed." }, 403);
+  if (!isAllowedOrigin(origin)) return reply(req, { ok: false, service: "unknown", error: "Origin not allowed." }, 403);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   if (req.method !== "POST") return reply(req, { ok: false, service: "unknown", error: "POST required." }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
