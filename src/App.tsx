@@ -1192,8 +1192,10 @@ function ApplicationPage() {
   }, []);
   const availableServices = catalogueServices.length ? catalogueServices : seedServices;
   const serviceOptions = [...new Set(availableServices.map((item) => item.name))].sort((a,b) => a.localeCompare(b));
-  const selectedService = availableServices.find((item) => item.name === service);
-  const category = selectedService?.category_slug ?? params.get("department") ?? "other";
+  const requestedCategory = params.get("department");
+  const selectedService = availableServices.find((item) => item.name === service && (!requestedCategory || item.category_slug === requestedCategory))
+    ?? availableServices.find((item) => item.name === service);
+  const category = selectedService?.category_slug ?? requestedCategory ?? "other";
   const documents = getServiceRequirement(service).documents;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
