@@ -266,15 +266,13 @@ function Header() {
           {open ? <X /> : <Menu />}
         </button>
         <nav className={open ? "main-nav is-open" : "main-nav"} aria-label="Main navigation">
-          <NavLink to="/services" onClick={close}>Services Hub</NavLink>
+          <NavLink to="/services" onClick={close}>Services</NavLink>
           <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
-          <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
-          <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
-          <NavLink to="/track" onClick={close}>Track Reference</NavLink>
-          <NavLink to="/about" onClick={close}>About Us</NavLink>
-          <NavLink to="/faq" onClick={close}>FAQ</NavLink>
-          <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
-          <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
+          <NavLink to="/track" onClick={close}>Track Application</NavLink>
+          <NavLink to="/print" onClick={close}>Online Printing</NavLink>
+          <NavLink to="/insurance" onClick={close}>Insurance</NavLink>
+          <NavLink to="/contact" onClick={close}>Contact & Help</NavLink>
+          <Link className="nav-button" to="/apply" onClick={close}>Start an Enquiry <ArrowUpRight size={15}/></Link>
           <Link className="owner-entry-link" to="/admin/login" onClick={close}><LockKeyhole size={14}/> Owner Login</Link>
         </nav>
       </header>
