@@ -24,3 +24,6 @@
 
 .ia-pdf-download{display:inline-flex;align-items:center;justify-content:center;margin:8px 8px 10px 0;padding:10px 14px;border-radius:9px;background:#087fba;color:#fff;text-decoration:none;font-weight:700;font-size:.88rem}
 .ia-pdf-download:hover{background:#056a9d}
+
+.ia-report-heading{border-bottom:1px solid #dbe4ef;padding-bottom:12px;margin-bottom:12px}.ia-report-heading>strong{display:block;color:#0b1329;font-size:16px;letter-spacing:.08em}.ia-report-heading>span{display:block;color:#64748b;font-size:9px;letter-spacing:.15em;margin-top:3px}.ia-report-heading h3{margin:14px 0 5px}.ia-report-heading small,.ia-report-heading p{color:#64748b;font-size:11px}.ia-print-button{border:0;cursor:pointer}
+@media print{body *{visibility:hidden!important}.ia-result,.ia-result *{visibility:visible!important}.ia-result{position:absolute!important;inset:0!important;width:100%!important;border:0!important;padding:18mm!important;overflow:visible!important;background:#fff!important;color:#111!important}.ia-result pre{max-height:none!important;overflow:visible!important;white-space:pre-wrap!important;word-break:break-word!important;background:#fff!important;color:#111!important}.ia-print-button,.ia-pdf-download{display:none!important}.ia-report-heading p{font-size:10px!important}}
