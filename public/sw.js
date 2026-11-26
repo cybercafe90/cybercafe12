@@ -1,4 +1,4 @@
-const CACHE_NAME = "babas-cyber-cafe-static-v3";
+const CACHE_NAME = "babas-cyber-cafe-static-v4";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [OFFLINE_URL, "/favicon.svg", "/manifest.webmanifest"];
 
