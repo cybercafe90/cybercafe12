@@ -17,7 +17,7 @@ test("public navigation and service search work with either backend mode", async
     await menuToggle.click();
     await expect(menuToggle).toHaveAttribute("aria-expanded", "true");
   }
-  await page.getByRole("link", { name: "Services Hub", exact: true }).click();
+  await page.getByRole("link", { name: "Services", exact: true }).click();
   await expect(page).toHaveURL(/\/services$/);
   await expect(
     page.getByRole("heading", { name: "Find the right assistance." }),
@@ -61,10 +61,10 @@ test("service pages and enquiry controls remain usable on mobile", async ({
   await expect(
     page.getByRole("heading", { name: "Tell us what you need." }),
   ).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Name" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Phone" })).toBeVisible();
-  await expect(page.getByLabel("Service *")).toBeVisible();
-  const submitButton = page.getByRole("button", { name: "Send enquiry on WhatsApp" });
+  await expect(page.locator('input[autocomplete="name"]')).toBeVisible();
+  await expect(page.locator('input[autocomplete="tel-national"]')).toBeVisible();
+  await expect(page.locator("select").filter({ has: page.locator('option[value]:not([value=""])') }).first()).toBeVisible();
+  const submitButton = page.getByRole("button", { name: "Submit securely" });
   await expect(submitButton).toBeEnabled();
   const viewportWidth = await page.evaluate(
     () => document.documentElement.clientWidth,
@@ -73,6 +73,49 @@ test("service pages and enquiry controls remain usable on mobile", async ({
     () => document.documentElement.scrollWidth,
   );
   expect(documentWidth).toBeLessThanOrEqual(viewportWidth);
+});
+
+test("secure enquiry stores the request and displays its backend tracking reference", async ({ page }) => {
+  test.skip(!backendConfigured, "requires configured Supabase client");
+  let submittedBody: Record<string, unknown> | null = null;
+  await page.route("**/functions/v1/create-application", async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "POST, OPTIONS",
+        "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+      }});
+      return;
+    }
+    submittedBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify({ trackingId: "BABA-TEST000001", emailSent: true }),
+    });
+  });
+
+  await page.goto("/apply");
+  await page.locator('input[autocomplete="name"]').fill("Test Customer");
+  await page.locator('input[autocomplete="tel-national"]').fill("9876543210");
+  await page.locator('input[type="email"]').fill("test@example.com");
+  const service = page.locator("select").first();
+  await expect(service.locator("option").nth(1)).toBeAttached();
+  await service.selectOption({ index: 1 });
+  await page.locator("textarea").fill("Please help me complete this application request.");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Submit securely" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your request is in our system." })).toBeVisible();
+  await expect(page.getByText("BABA-TEST000001")).toBeVisible();
+  expect(submittedBody).toMatchObject({
+    fullName: "Test Customer",
+    mobile: "9876543210",
+    email: "test@example.com",
+    consent: true,
+  });
+  expect(String(submittedBody?.description)).toContain("Please help me");
 });
 
 test("tracking follows backend configuration and admin remains owner-only", async ({
