@@ -18,6 +18,7 @@ const fields: Record<string, { name: string; label: string; placeholder: string;
   "number-details": [{ name: "mobileNumber", label: "Mobile number", placeholder: "10-digit mobile number", type: "tel" }],
   "driving-licence-hd-pdf": [{ name: "dl", label: "Driving licence number", placeholder: "Enter DL number" }, { name: "dob", label: "Date of birth", placeholder: "DD-MM-YYYY" }],
   "vahan-to-mobile": [{ name: "vrn", label: "Vehicle registration number", placeholder: "Enter vehicle number" }],
+  "vehicle-challan-check": [{ name: "vehicle_number", label: "Vehicle registration number", placeholder: "e.g. JK01AB1234" }],
   "voter-status": [{ name: "epic", label: "Voter EPIC number", placeholder: "Enter EPIC number" }],
 };
 
@@ -71,6 +72,8 @@ export default function InstantApiCustomerPortal() {
     const term = query.trim().toLowerCase();
     return services.filter(item => !term || [item.name, item.description, item.slug].join(" ").toLowerCase().includes(term));
   }, [query, services]);
+
+  function printResult() { window.print(); }
 
   function openService(service: Service) {
     setSelected(service); setInput({}); setConsent(false); setLawfulPurpose(""); setError(""); setResult(null); setOrderStatus(""); setOrderRef("");
@@ -144,7 +147,7 @@ export default function InstantApiCustomerPortal() {
           <header><div><span className="iac-eyebrow">SECURE SERVICE REQUEST</span><h2 id="ia-modal-title">{selected.name}</h2><p>{money(Number(selected.customer_price))} · Payment through Razorpay</p></div><button type="button" aria-label="Close" onClick={() => setSelected(null)} disabled={busy}><X size={20}/></button></header>
           {error && <div className="ia-alert ia-error" role="alert">{error}</div>}
           {orderRef && <div className="ia-alert ia-success" role="status">Order reference: <b>{orderRef}</b> · Status: {orderStatus}</div>}
-          {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfBase64 && <a className="ia-pdf-download" href={`data:application/pdf;base64,${pdfBase64}`} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key))) : result, null, 2)}</pre></div> :
+          {result !== null ? <div className="ia-result"><div className="ia-report-heading"><strong>BABA'S CYBER CAFE</strong><span>YOUR TRUST, OUR SERVICE.</span><h3>{selected.name} — Result Report</h3><small>Order reference: {orderRef || "Not available"}</small><p>Independent third-party lookup report. Not a government-issued certificate.</p></div><button type="button" className="ia-pdf-download ia-print-button" onClick={printResult}>Print / Save as PDF</button>{pdfBase64 && <a className="ia-pdf-download" href={`data:application/pdf;base64,${pdfBase64}`} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key))) : result, null, 2)}</pre></div> :
           <form onSubmit={checkout}>
             {(fields[selected.slug] || []).map(field => <label className="ia-field" key={field.name}><span>{field.label}</span><input required={!field.label.includes("optional")} type={field.type || "text"} autoComplete="off" value={input[field.name] || ""} placeholder={field.placeholder} onChange={event => setInput(current => ({ ...current, [field.name]: event.target.value }))}/></label>)}
             <label className="ia-field"><span>Purpose of request</span><textarea required minLength={8} maxLength={300} value={lawfulPurpose} onChange={event => setLawfulPurpose(event.target.value)} placeholder="Briefly explain why you are requesting this record"/></label>
