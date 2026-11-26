@@ -68,6 +68,7 @@ const InsurancePortal = lazy(() => import("./pages/InsurancePortal"));
 const InstantTPPreview = lazy(() => import("./pages/InstantTPPreview"));
 const PrintPortal = lazy(() => import("./pages/PrintPortal"));
 const PrintAdminPortal = lazy(() => import("./pages/PrintAdminPortal"));
+const InstantApiAdminPortal = lazy(() => import("./pages/InstantApiAdminPortal"));
 const CustomerChatAssistant = lazy(() => import("./components/CustomerChatAssistant"));
 import "./App.css";
 import "./cyber-theme.css";
@@ -3956,6 +3957,7 @@ function RoutedApp() {
         <Route path="/terms" element={<LegalPage />} />
         <Route path="/pay" element={<PaymentPortal />} />
         <Route path="/admin/payments" element={<PaymentPortal admin />} />
+        <Route path="/admin/instant-api" element={<InstantApiAdminPortal />} />
         <Route path="/admin/login" element={<AdminPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/grievance" element={<GrievancePage />} />
