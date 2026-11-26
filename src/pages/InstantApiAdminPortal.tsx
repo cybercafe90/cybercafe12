@@ -63,7 +63,7 @@ export default function InstantApiAdminPortal() {
   }, []);
 
   useEffect(() => {
-    if (!supabase) { setAccess("unavailable"); return; }
+    if (!supabase) { queueMicrotask(() => setAccess("unavailable")); return; }
     let active = true;
     const verify = async (userId: string | null) => {
       if (!userId) { if (active) setAccess("signed-out"); return; }
@@ -81,7 +81,7 @@ export default function InstantApiAdminPortal() {
 
   useEffect(() => {
     if (access !== "owner") return;
-    void load().catch(reason => setError(reason instanceof Error ? reason.message : "Could not load API service settings."));
+    queueMicrotask(() => void load().catch(reason => setError(reason instanceof Error ? reason.message : "Could not load API service settings.")));
   }, [access, load]);
 
   function choose(item: InstantService) {
