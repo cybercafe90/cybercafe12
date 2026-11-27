@@ -17,11 +17,18 @@ Deno.test("customer result uses an explicit allowlist recursively", () => {
 });
 
 Deno.test("customer result bounds depth, arrays and oversized strings", () => {
-  const deep = { data: { result: { details: { records: { items: { data: { result: { details: { records: { items: { data: { result: "too deep" } } } } } } } } } } };
-  const output = customerSafeResult({ records: Array.from({ length: 120 }, (_, i) => ({ name: "Customer " + i, unknown_provider_field: "private" })), message: "x".repeat(20_010), data: deep }) as Record<string, unknown>;
+  let deep: Record<string, unknown> = { result: "too deep" };
+  for (let i = 0; i < 12; i++) deep = { data: deep };
+  const output = customerSafeResult({
+    records: Array.from({ length: 120 }, (_, i) => ({ name: "Customer " + i, unknown_provider_field: "private" })),
+    message: "x".repeat(20_010),
+    data: deep,
+  }) as Record<string, unknown>;
   assertEquals((output.records as unknown[]).length, 100);
   assertEquals((output.message as string).length, 20_000);
-  assertEquals((output.data as Record<string, unknown>).data, null);
+  let nested = output.data as Record<string, unknown>;
+  for (let i = 0; i < 10; i++) nested = nested.data as Record<string, unknown>;
+  assertEquals(nested.data, null);
 });
 
 Deno.test("customer result preserves safe vehicle data and strips unknown nested keys", () => {
