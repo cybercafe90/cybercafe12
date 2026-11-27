@@ -61,6 +61,23 @@ async function consumeRateLimit(admin: ReturnType<typeof client>, request: Reque
   if (error) throw new Error("Rate-limit storage is unavailable.");
   return data === true;
 }
+async function verifyOwner(request: Request, admin: ReturnType<typeof client>) {
+  const token = request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!token || !anonKey || !url) throw new Error("Unauthorized.");
+  const userClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: "Bearer " + token } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+  if (authError || !user) throw new Error("Unauthorized.");
+  const { data: role, error: roleError } = await admin.from("user_roles")
+    .select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
+  if (roleError || role?.role !== "owner") throw new Error("Owner authorization required.");
+  return user;
+}
+
 function client() {
   const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) throw new Error("Supabase backend is not configured.");
