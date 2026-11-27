@@ -147,6 +147,94 @@ export default function InstantApiOperations() {
   }
 
   return <section className="ia-operations" aria-label="Instant API operational modules">
+    <style>{`
+      /* Keep the light Operations Centre independent from the dark owner shell. */
+      .ia-operations {
+        isolation: isolate;
+        color-scheme: light;
+        color: #0f172a !important;
+      }
+      .ia-operations .ia-ops-section {
+        color: #0f172a !important;
+        background: #ffffff !important;
+      }
+      .ia-operations .ia-ops-table {
+        width: 100%;
+        color: #0f172a !important;
+        background: #ffffff !important;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .ia-operations .ia-ops-table thead th {
+        color: #334155 !important;
+        background: #f1f5f9 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        font-weight: 700;
+      }
+      .ia-operations .ia-ops-table tbody td {
+        color: #0f172a !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        opacity: 1 !important;
+      }
+      .ia-operations .ia-ops-table tbody tr:nth-child(even) td {
+        background: #f8fafc !important;
+      }
+      .ia-operations .ia-ops-table tbody tr:hover td {
+        background: #eff6ff !important;
+      }
+      .ia-operations .ia-ops-table td small {
+        color: #475569 !important;
+        opacity: 1 !important;
+      }
+      .ia-operations .ia-ops-table td code {
+        color: #1e293b !important;
+        background: #f1f5f9 !important;
+      }
+      .ia-operations .ia-ops-search {
+        color: #475569 !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .ia-operations .ia-ops-search input,
+      .ia-operations .ia-ops-search input:focus {
+        color: #0f172a !important;
+        background: #ffffff !important;
+        caret-color: #0f172a;
+        -webkit-text-fill-color: #0f172a !important;
+        opacity: 1 !important;
+      }
+      .ia-operations .ia-ops-search input::placeholder {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+        opacity: 1 !important;
+      }
+      .ia-operations .ia-ops-filter-label select {
+        color: #0f172a !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      .ia-operations .ia-ops-status {
+        opacity: 1 !important;
+        filter: none !important;
+      }
+      .ia-operations .ia-ops-table-wrap {
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        -webkit-overflow-scrolling: touch;
+        background: #ffffff !important;
+      }
+      @media (max-width: 760px) {
+        .ia-operations .ia-ops-table {
+          min-width: 760px;
+        }
+        .ia-operations .ia-ops-table th,
+        .ia-operations .ia-ops-table td {
+          white-space: nowrap;
+        }
+      }
+    `}</style>
     <div className="ia-ops-head">
       <div><span className="ia-eyebrow">LIVE OPERATIONS · OWNER ONLY</span><h2>API Operations Centre</h2><p>Order and financial references only. Customer input fields and encrypted request/result payloads are never loaded into this screen.</p></div>
       <button className="ia-button ia-button-muted" onClick={() => void refresh()} disabled={loading}><RefreshCw size={15}/>{loading ? "Refreshing…" : "Refresh all"}</button>
