@@ -74,7 +74,6 @@ export default function InstantApiCustomerPortal() {
       .filter(([key]) => !hidden.test(key) && !financial.test(key))
       .map(([key, item]) => [key, customerDisplayValue(item)]));
   }
-  const resultObject = result && typeof result === "object" && !Array.isArray(result) ? result as Record<string, unknown> : null;
   function findDocument(value: unknown, keys: RegExp, depth = 0): string | undefined {
     if (depth > 7 || !value || typeof value !== "object") return undefined;
     const entries = Array.isArray(value) ? value.map((item, index) => [String(index), item] as const) : Object.entries(value as Record<string, unknown>);
