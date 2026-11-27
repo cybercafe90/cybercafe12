@@ -157,7 +157,7 @@ async function callProvider(service: Service, input: Record<string, string>) {
   }
   return result;
 }
-type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null };
+type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null; result_ciphertext?: string | null; result_expires_at?: string | null };
 async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
   // Provider work is completed before checkout. This function only releases a paid,
   // unexpired, privately stored result; it must never call the provider again.
@@ -250,7 +250,6 @@ Deno.serve(async (request: Request) => {
       try {
         providerResult = await callProvider(service as Service, input) as Record<string, unknown>;
       } catch (providerError) {
-        const message = providerError instanceof Error ? providerError.message : "Provider outcome could not be confirmed.";
         await admin.from("instant_api_orders").update({
           status: "fulfillment_unknown",
           provider_error_code: "provider_outcome_unknown",
