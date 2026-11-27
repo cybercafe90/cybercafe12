@@ -33,25 +33,31 @@ test("all public and restricted portal routes avoid horizontal overflow", async 
   }
 });
 
-
-test("floating WhatsApp support stays on the left edge on desktop and mobile", async ({ page }) => {
+test("floating WhatsApp and Ask Assistant controls stay on opposite edges on desktop and mobile", async ({ page }) => {
   await page.goto("/");
   const whatsapp = page.locator(".floating-whatsapp");
+  const assistant = page.locator(".customer-chat-launcher");
   await expect(whatsapp).toBeVisible();
-  const desktopPosition = await whatsapp.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    return { left: rect.left, viewportWidth: window.innerWidth };
-  });
-  expect(desktopPosition.left).toBeGreaterThanOrEqual(0);
-  expect(desktopPosition.left).toBeLessThan(40);
-  expect(desktopPosition.left).toBeLessThan(desktopPosition.viewportWidth / 2);
+  await expect(assistant).toBeVisible();
 
+  const assertOppositeEdges = async () => {
+    const positions = await page.evaluate(() => {
+      const wa = document.querySelector(".floating-whatsapp")?.getBoundingClientRect();
+      const chat = document.querySelector(".customer-chat-launcher")?.getBoundingClientRect();
+      return {
+        viewportWidth: window.innerWidth,
+        whatsapp: wa ? { left: wa.left, right: wa.right } : null,
+        assistant: chat ? { left: chat.left, right: chat.right } : null,
+      };
+    });
+    expect(positions.whatsapp).not.toBeNull();
+    expect(positions.assistant).not.toBeNull();
+    expect(positions.whatsapp!.left).toBeLessThan(positions.viewportWidth / 2);
+    expect(positions.assistant!.right).toBeGreaterThan(positions.viewportWidth / 2);
+    expect(positions.whatsapp!.right).toBeLessThan(positions.assistant!.left);
+  };
+
+  await assertOppositeEdges();
   await page.setViewportSize({ width: 390, height: 844 });
-  const mobilePosition = await whatsapp.evaluate((element) => {
-    const rect = element.getBoundingClientRect();
-    return { left: rect.left, viewportWidth: window.innerWidth };
-  });
-  expect(mobilePosition.left).toBeGreaterThanOrEqual(0);
-  expect(mobilePosition.left).toBeLessThan(30);
-  expect(mobilePosition.left).toBeLessThan(mobilePosition.viewportWidth / 2);
+  await assertOppositeEdges();
 });
