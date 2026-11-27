@@ -189,11 +189,20 @@ async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
           amount: Math.round(Number(order.customer_price) * 100),
           notes: { instant_api_order_id: order.id, reason: "provider_rejected" },
         });
-        const finalStatus = refund.status === "processed" ? "refunded" : "refund_pending";
-        await admin.from("instant_api_orders").update({ status: finalStatus, provider_error_code: finalStatus === "refunded" ? "provider_rejected_refunded" : "refund_processing" }).eq("id", order.id).eq("status", "refund_pending");
+        const isProcessed = refund.status === "processed";
+        const finalStatus = isProcessed ? "refunded" : "refund_pending";
+        await admin.from("instant_api_orders").update({
+          status: finalStatus,
+          refund_status: isProcessed ? "refunded" : "processing",
+          refund_amount: order.customer_price,
+          refund_id: typeof refund.id === "string" ? refund.id : null,
+          refund_reference: typeof refund.id === "string" ? refund.id : null,
+          refund_processed_at: isProcessed ? new Date().toISOString() : null,
+          provider_error_code: isProcessed ? "provider_rejected_refunded" : "refund_processing",
+        }).eq("id", order.id).eq("status", "refund_pending");
         return { status: finalStatus, message: finalStatus === "refunded" ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
       } catch {
-        await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "refund_request_failed" }).eq("id", order.id);
+        await admin.from("instant_api_orders").update({ status: "refund_pending", refund_status: "requested", refund_amount: order.customer_price, provider_error_code: "refund_request_failed" }).eq("id", order.id);
         return { status: "refund_pending", message: "The provider could not complete the request. Your refund needs reconciliation; contact support if it is not reflected." };
       }
     }
@@ -255,7 +264,7 @@ Deno.serve(async (request: Request) => {
       const { data: existing } = await admin.from("instant_api_orders").select("*").eq("idempotency_key_hash", idemHash).maybeSingle();
       if (existing) {
         const token = await decrypt(existing.retrieval_token_ciphertext);
-        return reply(request, { orderId: existing.id, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount: Math.round(Number(existing.customer_price) * 100), currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), reused: true });
+        return reply(request, { orderId: existing.id, serviceReference: existing.service_reference, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount: Math.round(Number(existing.customer_price) * 100), currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), reused: true });
       }
       const token = randomToken();
       const requestCipher = await encrypt({ providerInput: input, lawfulPurpose: body.lawfulPurpose.trim() });
@@ -273,7 +282,7 @@ Deno.serve(async (request: Request) => {
         if (typeof rp.id !== "string" || rp.amount !== amount || rp.currency !== "INR") throw new Error("Payment gateway returned an invalid order.");
         const { error: saveError } = await admin.from("instant_api_orders").update({ razorpay_order_id: rp.id }).eq("id", order.id);
         if (saveError) throw saveError;
-        return reply(request, { orderId: order.id, retrievalToken: token, razorpayOrderId: rp.id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID") });
+        return reply(request, { orderId: order.id, serviceReference: order.service_reference, retrievalToken: token, razorpayOrderId: rp.id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID") });
       } catch (error) {
         await admin.from("instant_api_orders").update({ status: "failed", provider_error_code: "payment_order_creation_failed" }).eq("id", order.id);
         throw error;
@@ -299,7 +308,7 @@ Deno.serve(async (request: Request) => {
       if (updateError) throw updateError;
       const current = updated || order;
       const result = await fulfill(admin, current);
-      return reply(request, { verified: true, orderId, ...result });
+      return reply(request, { verified: true, orderId, serviceReference: order.service_reference, ...result });
     }
 
     if (action === "process_webhook") {
@@ -317,12 +326,12 @@ Deno.serve(async (request: Request) => {
     if (action === "retrieve_order") {
       const orderId = typeof body.orderId === "string" ? body.orderId : "";
       const token = typeof body.retrievalToken === "string" ? body.retrievalToken : "";
-      const { data: order, error } = await admin.from("instant_api_orders").select("id,status,result_ciphertext,result_expires_at,created_at").eq("id", orderId).maybeSingle();
+      const { data: order, error } = await admin.from("instant_api_orders").select("id,service_reference,status,result_ciphertext,result_expires_at,created_at").eq("id", orderId).maybeSingle();
       if (error) throw error;
       if (!order || !token || !equal(await sha(token), (await admin.from("instant_api_orders").select("retrieval_token_hash").eq("id", orderId).single()).data?.retrieval_token_hash || "")) return reply(request, { error: "Order not found." }, 404);
       if (new Date(order.result_expires_at).getTime() < Date.now()) return reply(request, { error: "This result has expired. Contact support for assistance." }, 410);
       const result = order.result_ciphertext ? customerSafeResult(await decrypt(order.result_ciphertext)) : null;
-      return reply(request, { orderId: order.id, status: order.status, result });
+      return reply(request, { orderId: order.id, serviceReference: order.service_reference, status: order.status, result });
     }
     return reply(request, { error: "Unsupported action." }, 400);
   } catch (error) {

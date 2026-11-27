@@ -3,9 +3,10 @@ import { ArrowRight, BadgeCheck, CarFront, CheckCircle2, CircleHelp, CreditCard,
 import { Link } from "react-router-dom";
 import { callFunction } from "../lib/supabase";
 import "./InstantApiCustomerPortal.css";
+import InstantApiCustomerCaseDesk from "./InstantApiCustomerCaseDesk";
 
 type Service = { slug: string; name: string; description: string; customer_price: number; is_enabled: boolean; is_featured?: boolean; sort_order?: number };
-type GatewayResult = { services?: Service[]; orderId?: string; retrievalToken?: string; razorpayOrderId?: string; amount?: number; currency?: string; keyId?: string; status?: string; result?: unknown; error?: string };
+type GatewayResult = { services?: Service[]; orderId?: string; serviceReference?: string; retrievalToken?: string; razorpayOrderId?: string; amount?: number; currency?: string; keyId?: string; status?: string; result?: unknown; error?: string };
 declare global { interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void }; } }
 
 const iconFor = (slug: string) => slug.includes("voter") ? Vote : slug.includes("vehicle") || slug.includes("vahan") ? CarFront : slug.includes("pan") ? CreditCard : slug.includes("licence") ? IdCard : FileCheck2;
@@ -45,6 +46,7 @@ export default function InstantApiCustomerPortal() {
   const [lawfulPurpose, setLawfulPurpose] = useState("");
   const [busy, setBusy] = useState(false);
   const [orderRef, setOrderRef] = useState("");
+  const [retrievalToken, setRetrievalToken] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState("");
@@ -73,7 +75,7 @@ export default function InstantApiCustomerPortal() {
   }, [query, services]);
 
   function openService(service: Service) {
-    setSelected(service); setInput({}); setConsent(false); setLawfulPurpose(""); setError(""); setResult(null); setOrderStatus(""); setOrderRef("");
+    setSelected(service); setInput({}); setConsent(false); setLawfulPurpose(""); setError(""); setResult(null); setOrderStatus(""); setOrderRef(""); setRetrievalToken("");
   }
 
   async function checkout(event: React.FormEvent<HTMLFormElement>) {
@@ -88,6 +90,9 @@ export default function InstantApiCustomerPortal() {
         authorisedUse: true, lawfulPurpose, idempotencyKey,
       });
       if (!created.orderId || !created.retrievalToken || !created.razorpayOrderId || !created.keyId || !created.amount) throw new Error("The payment order could not be prepared.");
+      setOrderRef(created.serviceReference || created.orderId!);
+      setOrderStatus("payment_pending");
+      setRetrievalToken(created.retrievalToken);
       await loadRazorpay();
       if (!window.Razorpay) throw new Error("Secure payment checkout is unavailable.");
       const checkout = new window.Razorpay({
@@ -102,12 +107,12 @@ export default function InstantApiCustomerPortal() {
               razorpayOrderId: payment.razorpay_order_id, razorpayPaymentId: payment.razorpay_payment_id,
               razorpaySignature: payment.razorpay_signature,
             });
-            setOrderRef(created.orderId!); setOrderStatus(verified.status || "processing");
+            setOrderRef(verified.serviceReference || created.serviceReference || created.orderId!); setOrderStatus(verified.status || "processing");
             if (verified.status === "succeeded") {
               const fetched = await callFunction<GatewayResult>("instant-api-gateway", { action: "retrieve_order", orderId: created.orderId, retrievalToken: created.retrievalToken });
               setResult(fetched.result ?? null);
             } else setNotice("Payment was verified. Your request is being checked; keep your order reference.");
-          } catch (reason) { setError(reason instanceof Error ? reason.message : "Payment verification is pending. Do not pay again."); setOrderRef(created.orderId!); }
+          } catch (reason) { setError(reason instanceof Error ? reason.message : "Payment verification is pending. Do not pay again."); setOrderRef(created.serviceReference || created.orderId!); setRetrievalToken(created.retrievalToken!); }
           finally { setBusy(false); }
         },
         modal: { ondismiss: () => setBusy(false) },
@@ -122,7 +127,7 @@ export default function InstantApiCustomerPortal() {
     <main className="ia-customer">
       <section className="iac-hero"><div className="iac-shell">
         <div className="iac-brand"><span className="iac-mark"><ShieldCheck size={22}/></span><span>BABA'S CYBER CAFE<small>INSTANT DIGITAL SERVICES</small></span><span className="iac-secure"><BadgeCheck size={14}/> Secure service desk</span></div>
-        <div className="iac-hero-copy"><span className="iac-eyebrow">SIMPLE · CLEAR · SECURE</span><h1>Digital services,<br/><em>made simpler.</em></h1><p>Choose a service, review the price and requirements, and follow your request from one place.</p><div className="iac-hero-actions"><a href="#instant-catalogue" className="iac-primary">Explore services <ArrowRight size={16}/></a><Link to="/track" className="iac-secondary">Track an application</Link></div></div>
+        <div className="iac-hero-copy"><span className="iac-eyebrow">SIMPLE · CLEAR · SECURE</span><h1>Digital services,<br/><em>made simpler.</em></h1><p>Choose a service, review the price and requirements, and follow your request from one place.</p><div className="iac-hero-actions"><a href="#instant-catalogue" className="iac-primary">Explore services <ArrowRight size={16}/></a><Link to="/track" className="iac-secondary">Track an application</Link><a href="#instant-api-case-desk" className="iac-secondary">Track E-Service / Refund</a></div></div>
         <div className="iac-search-wrap"><Search size={19}/><input aria-label="Search Instant API services" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search PAN, vehicle, voter, licence services…"/></div>
       </div></section>
       <section className="iac-shell iac-content" id="instant-catalogue">
@@ -138,12 +143,14 @@ export default function InstantApiCustomerPortal() {
         <section className="iac-steps"><div><span className="iac-eyebrow">HOW IT WORKS</span><h2>Five clear steps</h2></div><div className="iac-step-grid">{[{n:"01",t:"Choose a service",d:"Select the service you need."},{n:"02",t:"Enter details",d:"Provide only the required information."},{n:"03",t:"Review and consent",d:"Confirm your authorised use."},{n:"04",t:"Pay securely",d:"Complete Razorpay checkout."},{n:"05",t:"Receive your result",d:"View your result securely for a limited time."}].map(step => <div className="iac-step" key={step.n}><b>{step.n}</b><strong>{step.t}</strong><span>{step.d}</span></div>)}</div></section>
         <section className="iac-privacy"><ShieldCheck size={20}/><div><b>Your information deserves care</b><p>Only submit information you are authorised to use. Never share OTPs, passwords, UPI PINs or payment PINs. This is an independent private service and is not a government website.</p></div></section>
         <div className="iac-bottom-actions"><Link to="/track"><Search size={17}/> Track an existing application</Link><a href="https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20help%20with%20Instant%20Services." target="_blank" rel="noreferrer"><MessageCircle size={17}/> WhatsApp support</a></div>
+        <div id="instant-api-case-desk"><InstantApiCustomerCaseDesk /></div>
       </section>
       {selected && <div className="ia-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !busy) setSelected(null); }}>
         <section className="ia-modal" role="dialog" aria-modal="true" aria-labelledby="ia-modal-title">
           <header><div><span className="iac-eyebrow">SECURE SERVICE REQUEST</span><h2 id="ia-modal-title">{selected.name}</h2><p>{money(Number(selected.customer_price))} · Payment through Razorpay</p></div><button type="button" aria-label="Close" onClick={() => setSelected(null)} disabled={busy}><X size={20}/></button></header>
           {error && <div className="ia-alert ia-error" role="alert">{error}</div>}
-          {orderRef && <div className="ia-alert ia-success" role="status">Order reference: <b>{orderRef}</b> · Status: {orderStatus}</div>}
+          {orderRef && <div className="ia-alert ia-success" role="status">E-Service ID: <b>{orderRef}</b> · Status: {orderStatus || "payment verification pending"}{retrievalToken && <><br/>Secure tracking code: <b>{retrievalToken}</b> · Save both details for future queries.</>}</div>}
+          {orderRef && retrievalToken && <InstantApiCustomerCaseDesk initialReference={orderRef} initialToken={retrievalToken} />}
           {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfBase64 && <a className="ia-pdf-download" href={`data:application/pdf;base64,${pdfBase64}`} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key) && !/(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i.test(key))) : result, null, 2)}</pre></div> :
           <form onSubmit={checkout}>
             {(fields[selected.slug] || []).map(field => <label className="ia-field" key={field.name}><span>{field.label}</span><input required={!field.label.includes("optional")} type={field.type || "text"} autoComplete="off" value={input[field.name] || ""} placeholder={field.placeholder} onChange={event => setInput(current => ({ ...current, [field.name]: event.target.value }))}/></label>)}
