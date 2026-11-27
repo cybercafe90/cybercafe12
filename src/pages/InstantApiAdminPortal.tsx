@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Check, CircleAlert, ExternalLink, KeyRound, RefreshCw, Save, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, ExternalLink, KeyRound, Power, RefreshCw, Save, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import "./InstantApiAdminPortal.css";
@@ -40,6 +40,7 @@ export default function InstantApiAdminPortal() {
   const [draft, setDraft] = useState<InstantService | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showSetup, setShowSetup] = useState(false);
@@ -94,6 +95,40 @@ export default function InstantApiAdminPortal() {
 
   function update<K extends keyof InstantService>(key: K, value: InstantService[K]) {
     setDraft(current => current ? { ...current, [key]: value } : current);
+  }
+
+  async function toggleService(item: InstantService) {
+    if (!supabase || togglingSlug) return;
+    const nextEnabled = !item.is_enabled;
+    if (nextEnabled && (!item.endpoint_url || !safeEndpoint(item.endpoint_url) || !item.authorization_verified)) {
+      setSelectedSlug(item.slug);
+      setDraft({ ...item });
+      setError("Cannot enable " + item.name + ": save a valid HTTPS endpoint and verify provider authorization first.");
+      setNotice("");
+      return;
+    }
+    setTogglingSlug(item.slug);
+    setError("");
+    setNotice("");
+    try {
+      const { data, error: updateError } = await supabase
+        .from("instant_api_services")
+        .update({ is_enabled: nextEnabled })
+        .eq("slug", item.slug)
+        .select("slug,is_enabled")
+        .maybeSingle();
+      if (updateError) throw updateError;
+      if (!data || data.is_enabled !== nextEnabled) {
+        throw new Error("No service setting was changed. Confirm owner database permissions and refresh.");
+      }
+      setItems(current => current.map(row => row.slug === item.slug ? { ...row, is_enabled: nextEnabled } : row));
+      setDraft(current => current?.slug === item.slug ? { ...current, is_enabled: nextEnabled } : current);
+      setNotice(item.name + (nextEnabled ? " is now enabled for customers." : " has been disabled for customers."));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not change this service availability.");
+    } finally {
+      setTogglingSlug(null);
+    }
   }
 
   async function save() {
@@ -164,7 +199,20 @@ export default function InstantApiAdminPortal() {
           {notice && <div className="ia-alert ia-success" role="status"><Check size={16}/>{notice}</div>}
           {showSetup && <section className="ia-setup"><h2><KeyRound size={18}/> Secure API key setup</h2><ol><li>Open your Supabase project dashboard and select <b>Edge Functions → Secrets</b>.</li><li>Add the exact secret name shown for each service below.</li><li>Paste the provider API key in the Supabase secret value field, then save. Never add keys to this website, GitHub, SQL or a public environment variable.</li><li>Use a different key for each provider/service where the provider issues separate keys. Rotate any key previously pasted into a chat or source file.</li></ol><a href="https://supabase.com/dashboard/project/dyzyfugxzsdvboxerbxv/functions/secrets" target="_blank" rel="noreferrer">Open Supabase Edge Function secrets <ExternalLink size={13}/></a><p>Adding a secret does not activate a service. The API gateway must be deployed and tested against that provider's documented request format first.</p></section>}
           <div className="ia-grid">
-            <nav className="ia-list" aria-label="Instant API services">{items.map(item => <button key={item.slug} className={item.slug === selectedSlug ? "ia-service is-selected" : "ia-service"} onClick={() => choose(item)}><span>{item.name}</span><small>{money(item.customer_price)} · Cost {money(item.provider_cost)}</small><em className={item.is_enabled && item.authorization_verified ? "ia-live" : "ia-off"}>{item.is_enabled && item.authorization_verified ? "Customer enabled" : "Not live"}</em></button>)}</nav>
+            <nav className="ia-list" aria-label="Instant API services">{items.map(item => {
+              const canEnable = Boolean(item.endpoint_url && safeEndpoint(item.endpoint_url) && item.authorization_verified);
+              const busy = togglingSlug === item.slug;
+              return <div className="ia-service-row" key={item.slug}>
+                <button type="button" className={item.slug === selectedSlug ? "ia-service is-selected" : "ia-service"} onClick={() => choose(item)} aria-current={item.slug === selectedSlug ? "true" : undefined}>
+                  <span>{item.name}</span>
+                  <small>{money(item.customer_price)} · Cost {money(item.provider_cost)}</small>
+                  <em className={item.is_enabled && item.authorization_verified ? "ia-live" : "ia-off"}>{item.is_enabled && item.authorization_verified ? "Customer enabled" : "Disabled / not ready"}</em>
+                </button>
+                <button type="button" className={item.is_enabled ? "ia-service-toggle is-enabled" : "ia-service-toggle"} onClick={() => void toggleService(item)} disabled={busy || (!item.is_enabled && !canEnable)} aria-label={(item.is_enabled ? "Disable " : "Enable ") + item.name} title={!item.is_enabled && !canEnable ? "Add a valid HTTPS endpoint and verify provider authorization before enabling" : item.is_enabled ? "Disable this service for customers" : "Enable this service for customers"}>
+                  <Power size={14}/>{busy ? "Saving…" : item.is_enabled ? "Disable" : "Enable"}
+                </button>
+              </div>;
+            })}</nav>
             {draft && <section className="ia-editor"><div className="ia-editor-head"><div><span className="ia-eyebrow">SERVICE CONFIGURATION</span><h2>{draft.name}</h2><p>Reference: <code>{draft.slug}</code></p></div><span className="ia-lock"><ShieldCheck size={15}/> Owner only</span></div>
               <div className="ia-form-grid">
                 <label>Provider name<input value={draft.provider_name ?? ""} onChange={e => update("provider_name", e.target.value || null)} placeholder="API provider / vendor"/></label>
