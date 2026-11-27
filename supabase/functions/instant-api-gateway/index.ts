@@ -196,19 +196,75 @@ async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
       return { status: "fulfillment_unknown", message: "Provider accepted the request but has not confirmed completion. Do not submit it again." };
     }
     if (result.__provider_failed === true) {
-      await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "provider_rejected" }).eq("id", order.id).eq("status", "processing");
+      const expectedAmount = Math.round(Number(order.customer_price) * 100);
+      const idempotencyKey = "instant-api-refund-" + order.id;
+      await admin.from("instant_api_orders").update({
+        status: "refund_pending",
+        provider_error_code: "provider_rejected",
+        refund_idempotency_key: idempotencyKey,
+        refund_status: "pending",
+        refund_requested_at: new Date().toISOString(),
+      }).eq("id", order.id).eq("status", "processing");
       try {
-        if (!order.razorpay_payment_id) throw new Error("Captured payment reference is missing.");
+        if (!order.razorpay_payment_id || !Number.isSafeInteger(expectedAmount) || expectedAmount < 100) {
+          throw new Error("Captured payment reference or refund amount is invalid.");
+        }
+        const payment = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id), "GET");
+        if (payment.status !== "captured" || payment.captured !== true || payment.currency !== "INR" ||
+            Number(payment.amount) !== expectedAmount) {
+          throw new Error("Captured payment validation failed; refund requires reconciliation.");
+        }
+        const refundList = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refunds", "GET");
+        const refunds = Array.isArray(refundList.items) ? refundList.items : [];
+        const matched = refunds.find((item: Record<string, unknown>) =>
+          Number(item.amount) === expectedAmount &&
+          item.notes && typeof item.notes === "object" &&
+          (item.notes as Record<string, unknown>).instant_api_order_id === order.id
+        );
+        if (matched && typeof matched.id === "string") {
+          const processed = matched.status === "processed";
+          const finalStatus = processed ? "refunded" : "refund_pending";
+          const { error: syncError } = await admin.from("instant_api_orders").update({
+            razorpay_refund_id: matched.id,
+            refund_status: processed ? "processed" : "pending",
+            status: finalStatus,
+            refund_processed_at: processed ? new Date().toISOString() : null,
+            provider_error_code: processed ? "provider_rejected_refunded" : "refund_processing",
+          }).eq("id", order.id);
+          if (syncError) throw syncError;
+          return { status: finalStatus, message: processed ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
+        }
+        if (Number(payment.amount_refunded || 0) > 0) {
+          await admin.from("instant_api_orders").update({
+            refund_status: "failed",
+            provider_error_code: "refund_manual_reconciliation_required",
+          }).eq("id", order.id);
+          return { status: "refund_pending", message: "A partial or unrelated refund already exists. Support must reconcile this payment before taking further action." };
+        }
         const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
-          amount: Math.round(Number(order.customer_price) * 100),
+          amount: expectedAmount,
           notes: { instant_api_order_id: order.id, reason: "provider_rejected" },
-        });
-        const finalStatus = refund.status === "processed" ? "refunded" : "refund_pending";
-        await admin.from("instant_api_orders").update({ status: finalStatus, provider_error_code: finalStatus === "refunded" ? "provider_rejected_refunded" : "refund_processing" }).eq("id", order.id).eq("status", "refund_pending");
-        return { status: finalStatus, message: finalStatus === "refunded" ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
+        }, { "X-Refund-Idempotency": idempotencyKey });
+        if (typeof refund.id !== "string") throw new Error("Razorpay did not return a refund reference.");
+        const processed = refund.status === "processed";
+        const finalStatus = processed ? "refunded" : "refund_pending";
+        const { error: saveError } = await admin.from("instant_api_orders").update({
+          razorpay_refund_id: refund.id,
+          refund_status: processed ? "processed" : "pending",
+          status: finalStatus,
+          refund_processed_at: processed ? new Date().toISOString() : null,
+          provider_error_code: processed ? "provider_rejected_refunded" : "refund_processing",
+        }).eq("id", order.id);
+        if (saveError) throw saveError;
+        return { status: finalStatus, message: processed ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
       } catch {
-        await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "refund_request_failed" }).eq("id", order.id);
-        return { status: "refund_pending", message: "The provider could not complete the request. Your refund needs reconciliation; contact support if it is not reflected." };
+        await admin.from("instant_api_orders").update({
+          status: "refund_pending",
+          refund_status: "pending",
+          refund_idempotency_key: idempotencyKey,
+          provider_error_code: "refund_reconciliation_required",
+        }).eq("id", order.id);
+        return { status: "refund_pending", message: "The provider could not complete the request. Your refund is pending secure reconciliation." };
       }
     }
     const cipher = await encrypt(result);
