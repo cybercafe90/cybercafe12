@@ -62,7 +62,7 @@ async function consumeRateLimit(admin: ReturnType<typeof client>, request: Reque
   return data === true;
 }
 async function verifyOwner(request: Request, admin: ReturnType<typeof client>) {
-  const token = request.headers.get("authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const url = Deno.env.get("SUPABASE_URL");
   if (!token || !anonKey || !url) throw new Error("Unauthorized.");
