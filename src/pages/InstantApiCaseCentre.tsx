@@ -5,7 +5,7 @@ import "./InstantApiCaseDesk.css";
 
 type ApiCase = {
   id: string; case_reference: string; order_id: string; case_type: string; customer_message: string; status: string; admin_note: string | null; created_at: string;
-  instant_api_orders: { service_reference: string; service_slug: string; customer_price: number; status: string; refund_status: string; refund_amount: number | null; refund_id: string | null; refund_reference: string | null; razorpay_payment_id: string | null; paid_at: string | null; created_at: string } | null;
+  instant_api_orders: { service_reference: string; service_slug: string; customer_price: number; status: string; refund_status: string; refund_amount: number | null; refund_id: string | null; refund_reference: string | null; razorpay_payment_id: string | null; razorpay_order_id: string | null; paid_at: string | null; created_at: string } | null;
 };
 
 const money = (amount: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(amount);
@@ -74,7 +74,8 @@ export default function InstantApiCaseCentre() {
           <div><small>E-Service ID</small><b>{order?.service_reference ?? "—"}</b></div>
           <div><small>Service</small><b>{order?.service_slug ?? "—"}</b></div>
           <div><small>Amount</small><b>{order ? money(Number(order.customer_price)) : "—"}</b></div>
-          <div><small>Payment</small><b>{order?.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 14) + "…" : "Not verified"}</b></div>
+          <div><small>Razorpay payment</small><b>{order?.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 14) + "…" : "Not verified"}</b></div>
+          <div><small>Razorpay order</small><b>{order?.razorpay_order_id ? order.razorpay_order_id : "Not created"}</b></div>
           <div><small>Service / refund</small><b>{order ? label(order.status) + " / " + label(order.refund_status) : "Order unavailable"}</b></div>
           <div><small>Raised</small><b>{new Date(item.created_at).toLocaleString("en-IN")}</b></div>
         </div>
@@ -84,7 +85,7 @@ export default function InstantApiCaseCentre() {
         <div className="ia-case-admin-actions">
           <button type="button" onClick={() => void updateCase(item, "under_review")} disabled={busyId === item.id}><ClipboardCheck size={14}/> Mark under review</button>
           <button type="button" onClick={() => void updateCase(item, "awaiting_customer")} disabled={busyId === item.id}>Awaiting customer</button>
-          <button type="button" onClick={() => void updateCase(item, "rejected")} disabled={busyId === item.id}>Reject with reason</button>
+          <button type="button" onClick={() => void updateCase(item, "rejected")} disabled={busyId === item.id || (notes[item.id] ?? item.admin_note ?? "").trim().length < 8}>Reject with reason</button>
           {canRefund && <button type="button" className="refund" onClick={() => void approveRefund(item)} disabled={busyId === item.id}><ShieldCheck size={14}/> {busyId === item.id ? "Processing…" : "Approve & process refund"}</button>}
           {order?.refund_status === "processing" && <span className="ia-case-processing">Refund submitted; verify Razorpay status before closing.</span>}
           {item.status === "resolved" && <span className="ia-case-resolved">Resolved</span>}
