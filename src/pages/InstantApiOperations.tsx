@@ -40,7 +40,7 @@ type Audit = {
 const inr = (value: number | null | undefined) => value == null ? "—" : new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(Number(value));
 const stamp = (value: string | null) => value ? new Date(value).toLocaleString("en-IN") : "—";
 const shortId = (value: string) => value.slice(0, 8).toUpperCase();
-const capturedStatuses = new Set(["paid", "processing", "succeeded", "fulfillment_unknown", "refund_pending", "refunded"]);
+const capturedStatuses = new Set(["paid", "processing", "succeeded", "failed", "fulfillment_unknown", "refund_pending", "refunded"]);
 
 export default function InstantApiOperations() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -127,6 +127,7 @@ export default function InstantApiOperations() {
   const pendingRefunds = orders.filter(order => order.status === "refund_pending");
   const unknownOrders = orders.filter(order => order.status === "fulfillment_unknown");
   const completedRefunds = orders.filter(order => order.status === "refunded");
+  const failedPaidOrders = orders.filter(order => order.status === "failed" && Boolean(order.razorpay_payment_id));
   const missingPaymentRefs = orders.filter(order => capturedStatuses.has(order.status) && !order.razorpay_payment_id);
   const filteredAudit = audit.filter(entry => !auditQuery.trim() || [entry.action, entry.entity_type, entry.entity_id ?? "", entry.actor_id ?? ""].join(" ").toLowerCase().includes(auditQuery.trim().toLowerCase()));
 
@@ -338,10 +339,10 @@ export default function InstantApiOperations() {
         <div className="ia-ops-title"><RotateCcw/><div><h3>Refunds &amp; Reconciliation</h3><p>Owner-only Razorpay refund requests with payment verification, refund-history checks and a stable idempotency key.</p></div></div>
         {refundError && <div className="ia-alert ia-error" role="alert"><AlertTriangle size={16}/>{refundError}</div>}
         {refundNotice && <div className="ia-alert ia-success" role="status">{refundNotice}</div>}
-        <div className="ia-ops-stats"><div><small>Awaiting refund</small><b>{pendingRefunds.length}</b></div><div><small>Timeouts needing provider check</small><b>{unknownOrders.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
+        <div className="ia-ops-stats"><div><small>Awaiting refund</small><b>{pendingRefunds.length}</b></div><div><small>Failed paid orders to review</small><b>{failedPaidOrders.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
         <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Payment ref</th><th>Refund ref</th><th>Status</th><th>Reason</th><th>Action</th></tr></thead><tbody>
-          {[...pendingRefunds, ...unknownOrders, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.razorpay_refund_id || "Not recorded"}</td><td>{order.refund_status || order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td>{order.status === "refund_pending" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Process / reconcile"}</button> : order.status === "fulfillment_unknown" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order, true)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Refund after provider check"}</button> : <button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button>}</td></tr>)}
-          {!pendingRefunds.length && !unknownOrders.length && !completedRefunds.length && <tr><td colSpan={8}>No refund or timeout reconciliation cases recorded.</td></tr>}
+          {[...pendingRefunds, ...unknownOrders, ...failedPaidOrders, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.razorpay_refund_id || "Not recorded"}</td><td>{order.refund_status || order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td>{order.status === "refund_pending" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Process / reconcile"}</button> : (order.status === "fulfillment_unknown" || (order.status === "failed" && Boolean(order.razorpay_payment_id))) ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order, true)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Review / refund"}</button> : <button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button>}</td></tr>)}
+          {!pendingRefunds.length && !unknownOrders.length && !failedPaidOrders.length && !completedRefunds.length && <tr><td colSpan={8}>No refund or timeout reconciliation cases recorded.</td></tr>}
         </tbody></table></div>
         <p className="ia-ops-warning"><AlertTriangle size={15}/> Each action re-checks Razorpay's captured payment and refund history. Existing matching refunds are synchronized instead of recreated. An uncertain request reuses its original idempotency key. Never treat a pending status as settled until Razorpay confirms processing.</p>
       </section>
