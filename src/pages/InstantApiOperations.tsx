@@ -42,7 +42,10 @@ export default function InstantApiOperations() {
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [refresh]);
 
   const counts = orders.reduce<Record<string, number>>((acc, order) => { acc[order.status] = (acc[order.status] ?? 0) + 1; return acc; }, {});
   const needsAttention = orders.filter(order => ["failed", "fulfillment_unknown", "refund_pending"].includes(order.status));
