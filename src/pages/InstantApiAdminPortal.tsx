@@ -180,7 +180,7 @@ export default function InstantApiAdminPortal() {
               <button className="ia-button ia-save" onClick={() => void save()} disabled={saving}><Save size={16}/>{saving ? "Saving…" : "Save service settings"}</button>
             </section>}
           </div>
-          <div className="ia-warning"><SlidersHorizontal size={17}/><p><b>Important:</b> This console saves catalogue settings only. It does not make provider requests or mark payments as paid. Customer lookups must remain unavailable until the API gateway, verified Razorpay payment flow, provider request mapping, consent checks and result handling are implemented and tested.</p></div>
+          <div className="ia-warning"><SlidersHorizontal size={17}/><p><b>Operational boundary:</b> This page controls the service catalogue, customer prices and availability. Provider requests and payment verification run server-side through the Instant API gateway. Never mark an order paid or completed manually. Confirm provider authorisation and the documented consent process before enabling a service; monitor real outcomes in the Operations Centre below.</p></div>
           <InstantApiOperations />
         </section>
       </div>
