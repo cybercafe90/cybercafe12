@@ -90,6 +90,8 @@ export default function InstantApiCustomerPortal() {
         authorisedUse: true, lawfulPurpose, idempotencyKey,
       });
       if (!created.orderId || !created.retrievalToken || !created.razorpayOrderId || !created.keyId || !created.amount) throw new Error("The payment order could not be prepared.");
+      setOrderRef(created.serviceReference || created.orderId!);
+      setOrderStatus("payment_pending");
       setRetrievalToken(created.retrievalToken);
       await loadRazorpay();
       if (!window.Razorpay) throw new Error("Secure payment checkout is unavailable.");
