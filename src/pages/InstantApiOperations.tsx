@@ -13,6 +13,9 @@ type Order = {
   razorpay_payment_id: string | null;
   paid_at: string | null;
   provider_error_code: string | null;
+  razorpay_refund_id?: string | null;
+  refund_status?: string | null;
+  refund_idempotency_key?: string | null;
   created_at: string;
   fulfilled_at: string | null;
 };
@@ -49,6 +52,9 @@ export default function InstantApiOperations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [auditQuery, setAuditQuery] = useState("");
+  const [refundBusyId, setRefundBusyId] = useState<string | null>(null);
+  const [refundNotice, setRefundNotice] = useState("");
+  const [refundError, setRefundError] = useState("");
 
   const refresh = useCallback(async () => {
     if (!supabase) { setError("Supabase is not configured."); setLoading(false); return; }
@@ -57,7 +63,7 @@ export default function InstantApiOperations() {
     try {
       const [orderResult, serviceResult, auditResult] = await Promise.all([
         supabase.from("instant_api_orders")
-          .select("id,service_slug,customer_price,status,provider_cost_at_order,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at")
+          .select("id,service_slug,customer_price,status,provider_cost_at_order,provider_cost_actual,razorpay_order_id,razorpay_payment_id,razorpay_refund_id,refund_status,refund_idempotency_key,paid_at,provider_error_code,created_at,fulfilled_at")
           .order("created_at", { ascending: false }).limit(500),
         supabase.from("instant_api_services")
           .select("slug,name,is_enabled,authorization_verified,endpoint_url,provider_name")
@@ -131,6 +137,36 @@ export default function InstantApiOperations() {
     const ready = service.is_enabled && service.authorization_verified && Boolean(service.endpoint_url);
     return { service, total: serviceOrders.length, completed, failed, latest, ready };
   });
+
+  async function processOrReconcileRefund(order: Order) {
+    if (!supabase || refundBusyId) return;
+    const amount = inr(order.customer_price);
+    const approved = window.confirm(
+      `Confirm full refund/reconciliation for ${amount} on order ${order.id}?\\n\\nThe server will verify the captured Razorpay payment and existing refund history. It will reuse the same idempotency key to prevent duplicate refunds.`
+    );
+    if (!approved) return;
+    setRefundBusyId(order.id);
+    setRefundError("");
+    setRefundNotice("");
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke("instant-api-gateway", {
+        body: { action: "admin_refund", orderId: order.id },
+      });
+      if (invokeError) throw invokeError;
+      if (!data) throw new Error("Refund service returned no result.");
+      if (data.error) throw new Error(String(data.error));
+      setRefundNotice(
+        data.status === "refunded"
+          ? `Refund confirmed for order ${shortId(order.id)}. Razorpay reference: ${data.refundId || "recorded"}.`
+          : `Refund remains pending for order ${shortId(order.id)}. Use reconciliation again to check its latest status.`
+      );
+      await refresh();
+    } catch (reason) {
+      setRefundError(reason instanceof Error ? reason.message : "Refund action could not be completed.");
+    } finally {
+      setRefundBusyId(null);
+    }
+  }
 
   function downloadReconciliation() {
     const rows = [
@@ -296,13 +332,15 @@ export default function InstantApiOperations() {
       </section>
 
       <section className="ia-ops-section" id="ia-refunds">
-        <div className="ia-ops-title"><RotateCcw/><div><h3>Refunds</h3><p>Track refund cases recorded by the payment/provider workflow.</p></div></div>
-        <div className="ia-ops-stats"><div><small>Awaiting refund resolution</small><b>{pendingRefunds.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
-        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Payment ref</th><th>Status</th><th>Reason code</th><th>Review</th></tr></thead><tbody>
-          {[...pendingRefunds, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td><button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View order</button></td></tr>)}
-          {!pendingRefunds.length && !completedRefunds.length && <tr><td colSpan={7}>No refund cases recorded.</td></tr>}
+        <div className="ia-ops-title"><RotateCcw/><div><h3>Refunds &amp; Reconciliation</h3><p>Owner-only Razorpay refund requests with payment verification, refund-history checks and a stable idempotency key.</p></div></div>
+        {refundError && <div className="ia-alert ia-error" role="alert"><AlertTriangle size={16}/>{refundError}</div>}
+        {refundNotice && <div className="ia-alert ia-success" role="status">{refundNotice}</div>}
+        <div className="ia-ops-stats"><div><small>Awaiting resolution</small><b>{pendingRefunds.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
+        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Payment ref</th><th>Refund ref</th><th>Status</th><th>Reason</th><th>Action</th></tr></thead><tbody>
+          {[...pendingRefunds, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.razorpay_refund_id || "Not recorded"}</td><td>{order.refund_status || order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td>{order.status === "refund_pending" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Process / reconcile"}</button> : <button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button>}</td></tr>)}
+          {!pendingRefunds.length && !completedRefunds.length && <tr><td colSpan={8}>No refund cases recorded.</td></tr>}
         </tbody></table></div>
-        <p className="ia-ops-warning"><AlertTriangle size={15}/> Provider-rejection refunds are initiated automatically by the existing gateway. This portal does not issue a second refund or change payment status manually. Verify the final refund in Razorpay before treating a pending case as settled.</p>
+        <p className="ia-ops-warning"><AlertTriangle size={15}/> Each action re-checks Razorpay's captured payment and refund history. Existing matching refunds are synchronized instead of recreated. An uncertain request reuses its original idempotency key. Never treat a pending status as settled until Razorpay confirms processing.</p>
       </section>
     </>}
 
@@ -318,6 +356,8 @@ export default function InstantApiOperations() {
           <div><dt>Provider cost actual</dt><dd>{inr(selectedOrder.provider_cost_actual)}</dd></div>
           <div><dt>Razorpay order reference</dt><dd>{selectedOrder.razorpay_order_id || "Not recorded"}</dd></div>
           <div><dt>Razorpay payment reference</dt><dd>{selectedOrder.razorpay_payment_id || "Not recorded"}</dd></div>
+          <div><dt>Razorpay refund reference</dt><dd>{selectedOrder.razorpay_refund_id || "Not recorded"}</dd></div>
+          <div><dt>Refund status</dt><dd>{selectedOrder.refund_status || "Not recorded"}</dd></div>
           <div><dt>Provider error code</dt><dd>{selectedOrder.provider_error_code || "None recorded"}</dd></div>
           <div><dt>Created</dt><dd>{stamp(selectedOrder.created_at)}</dd></div>
           <div><dt>Paid</dt><dd>{stamp(selectedOrder.paid_at)}</dd></div>
