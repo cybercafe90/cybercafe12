@@ -5,7 +5,7 @@ import { callFunction } from "../lib/supabase";
 import "./InstantApiCustomerPortal.css";
 
 type Service = { slug: string; name: string; description: string; customer_price: number; is_enabled: boolean; is_featured?: boolean; sort_order?: number };
-type GatewayResult = { services?: Service[]; orderId?: string; retrievalToken?: string; razorpayOrderId?: string; amount?: number; currency?: string; keyId?: string; status?: string; result?: unknown; error?: string };
+type GatewayResult = { services?: Service[]; orderId?: string; retrievalToken?: string; razorpayOrderId?: string; amount?: number; currency?: string; keyId?: string; status?: string; result?: unknown; message?: string; error?: string };
 declare global { interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void }; } }
 
 const iconFor = (slug: string) => slug.includes("voter") ? Vote : slug.includes("vehicle") || slug.includes("vahan") ? CarFront : slug.includes("pan") ? CreditCard : slug.includes("licence") ? IdCard : FileCheck2;
@@ -87,7 +87,15 @@ export default function InstantApiCustomerPortal() {
         action: "create_order", serviceSlug: selected.slug, input, consent: true,
         authorisedUse: true, lawfulPurpose, idempotencyKey,
       });
-      if (!created.orderId || !created.retrievalToken || !created.razorpayOrderId || !created.keyId || !created.amount) throw new Error("The payment order could not be prepared.");
+      if (created.orderId) {
+        setOrderRef(created.orderId);
+        setOrderStatus(created.status || "processing");
+      }
+      if (created.status && created.status !== "payment_pending") {
+        setNotice(created.message || "The service has not reached payment-ready status. No payment was requested.");
+        return;
+      }
+      if (!created.orderId || !created.retrievalToken || !created.razorpayOrderId || !created.keyId || !created.amount) throw new Error(created.message || "The payment order could not be prepared.");
       await loadRazorpay();
       if (!window.Razorpay) throw new Error("Secure payment checkout is unavailable.");
       const checkout = new window.Razorpay({
@@ -122,11 +130,11 @@ export default function InstantApiCustomerPortal() {
     <main className="ia-customer">
       <section className="iac-hero"><div className="iac-shell">
         <div className="iac-brand"><span className="iac-mark"><ShieldCheck size={22}/></span><span>BABA'S CYBER CAFE<small>INSTANT DIGITAL SERVICES</small></span><span className="iac-secure"><BadgeCheck size={14}/> Secure service desk</span></div>
-        <div className="iac-hero-copy"><span className="iac-eyebrow">SIMPLE · CLEAR · SECURE</span><h1>Digital services,<br/><em>made simpler.</em></h1><p>Choose a service, review the price and requirements, and follow your request from one place.</p><div className="iac-hero-actions"><a href="#instant-catalogue" className="iac-primary">Explore services <ArrowRight size={16}/></a><Link to="/track" className="iac-secondary">Track an application</Link></div></div>
+        <div className="iac-hero-copy"><span className="iac-eyebrow">SIMPLE · CLEAR · SECURE</span><h1>Digital services,<br/><em>made simpler.</em></h1><p>Choose a service and enter your details. We verify the result first; you pay only if the service succeeds.</p><div className="iac-hero-actions"><a href="#instant-catalogue" className="iac-primary">Explore services <ArrowRight size={16}/></a><Link to="/track" className="iac-secondary">Track an application</Link></div></div>
         <div className="iac-search-wrap"><Search size={19}/><input aria-label="Search Instant API services" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search PAN, vehicle, voter, licence services…"/></div>
       </div></section>
       <section className="iac-shell iac-content" id="instant-catalogue">
-        <div className="iac-section-head"><div><span className="iac-eyebrow">SERVICE DIRECTORY</span><h2>Choose your service</h2><p>Prices are displayed before secure checkout. Submit only information you are authorised to use.</p></div><span className="iac-count">{services.length} services</span></div>
+        <div className="iac-section-head"><div><span className="iac-eyebrow">SERVICE DIRECTORY</span><h2>Choose your service</h2><p>We check service availability before opening Razorpay. Payment is requested only after the provider confirms a result.</p></div><span className="iac-count">{services.length} services</span></div>
         {notice && <div className="iac-notice" role="status"><CircleHelp size={18}/><span>{notice}</span></div>}
         {loading && <div className="iac-loading" role="status"><LoaderCircle className="iac-spin" size={18}/> Checking secure catalogue…</div>}
         {!loading && visible.length === 0 && <div className="iac-empty"><Search size={24}/><b>No available services</b><span>Try another search term or check again later.</span></div>}
@@ -135,7 +143,7 @@ export default function InstantApiCustomerPortal() {
           <h3>{service.name}</h3><p>{service.description}</p><div className="iac-price"><small>Customer price</small><strong>{money(Number(service.customer_price))}</strong></div>
           <div className="iac-card-foot"><span className="iac-status"><CheckCircle2 size={14}/> Available</span><button type="button" onClick={() => openService(service)}>Continue <ArrowRight size={15}/></button></div>
         </article>; })}</div>
-        <section className="iac-steps"><div><span className="iac-eyebrow">HOW IT WORKS</span><h2>Five clear steps</h2></div><div className="iac-step-grid">{[{n:"01",t:"Choose a service",d:"Select the service you need."},{n:"02",t:"Enter details",d:"Provide only the required information."},{n:"03",t:"Review and consent",d:"Confirm your authorised use."},{n:"04",t:"Pay securely",d:"Complete Razorpay checkout."},{n:"05",t:"Receive your result",d:"View your result securely for a limited time."}].map(step => <div className="iac-step" key={step.n}><b>{step.n}</b><strong>{step.t}</strong><span>{step.d}</span></div>)}</div></section>
+        <section className="iac-steps"><div><span className="iac-eyebrow">HOW IT WORKS</span><h2>Five clear steps</h2></div><div className="iac-step-grid">{[{n:"01",t:"Choose a service",d:"Select the service you need."},{n:"02",t:"Enter details",d:"Provide only the required information."},{n:"03",t:"Verify service result",d:"The provider must confirm success first."},{n:"04",t:"Pay securely",d:"Razorpay appears only when the result is ready."},{n:"05",t:"Unlock your result",d:"Your document is released after payment verification."}].map(step => <div className="iac-step" key={step.n}><b>{step.n}</b><strong>{step.t}</strong><span>{step.d}</span></div>)}</div></section>
         <section className="iac-privacy"><ShieldCheck size={20}/><div><b>Your information deserves care</b><p>Only submit information you are authorised to use. Never share OTPs, passwords, UPI PINs or payment PINs. This is an independent private service and is not a government website.</p></div></section>
         <div className="iac-bottom-actions"><Link to="/track"><Search size={17}/> Track an existing application</Link><a href="https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20help%20with%20Instant%20Services." target="_blank" rel="noreferrer"><MessageCircle size={17}/> WhatsApp support</a></div>
       </section>
@@ -149,8 +157,8 @@ export default function InstantApiCustomerPortal() {
             {(fields[selected.slug] || []).map(field => <label className="ia-field" key={field.name}><span>{field.label}</span><input required={!field.label.includes("optional")} type={field.type || "text"} autoComplete="off" value={input[field.name] || ""} placeholder={field.placeholder} onChange={event => setInput(current => ({ ...current, [field.name]: event.target.value }))}/></label>)}
             <label className="ia-field"><span>Purpose of request</span><textarea required minLength={8} maxLength={300} value={lawfulPurpose} onChange={event => setLawfulPurpose(event.target.value)} placeholder="Briefly explain why you are requesting this record"/></label>
             <label className="ia-consent"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)}/><span>I confirm I am the data subject or have valid authority and consent to submit these details for this service. I understand this is a private service, not a government portal.</span></label>
-            <button className="ia-button" type="submit" disabled={busy || !consent}>{busy ? <><LoaderCircle className="iac-spin" size={16}/> Preparing secure checkout…</> : <>Continue to pay {money(Number(selected.customer_price))} <ArrowRight size={16}/></>}</button>
-            <p className="ia-small-note">Your submitted details are encrypted before storage and sent to the provider only after verified payment.</p>
+            <button className="ia-button" type="submit" disabled={busy || !consent}>{busy ? <><LoaderCircle className="iac-spin" size={16}/> Checking service result before payment…</> : <>Continue to pay {money(Number(selected.customer_price))} <ArrowRight size={16}/></>}</button>
+            <p className="ia-small-note">Your request is checked with the service provider first. Razorpay checkout appears only after a successful result; the document stays locked until payment is verified.</p>
           </form>}
         </section>
       </div>}
