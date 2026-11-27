@@ -50,9 +50,9 @@ export default function InstantApiCustomerCaseDesk({ initialReference = "", init
       const result = await callFunction<{ caseReference: string; status: string; message: string }>("instant-api-cases", {
         action: "submit_case", serviceReference: data.order.serviceReference, retrievalToken: token.trim(), caseType, message: message.trim(),
       });
-      setNotice("Query registered: " + result.caseReference + ". Keep this reference for follow-up.");
       setMessage("");
       await lookup();
+      setNotice("Query registered: " + result.caseReference + ". Keep this reference for follow-up.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Your query could not be submitted.");
     } finally { setSubmitting(false); }
