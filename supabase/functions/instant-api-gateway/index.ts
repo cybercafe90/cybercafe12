@@ -249,7 +249,7 @@ Deno.serve(async (request: Request) => {
       let providerResult: Record<string, unknown>;
       try {
         providerResult = await callProvider(service as Service, input) as Record<string, unknown>;
-      } catch (providerError) {
+      } catch {
         await admin.from("instant_api_orders").update({
           status: "fulfillment_unknown",
           provider_error_code: "provider_outcome_unknown",
