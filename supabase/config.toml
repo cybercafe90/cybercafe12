@@ -104,3 +104,6 @@ verify_jwt = true
 
 [functions.instant-tp-portal]
 verify_jwt = false
+
+[functions.instant-api-cases]
+verify_jwt = false
