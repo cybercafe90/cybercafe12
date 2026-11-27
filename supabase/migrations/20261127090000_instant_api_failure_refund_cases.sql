@@ -16,6 +16,15 @@ set service_reference = 'BBC-' || to_char(created_at, 'YYYY') || '-' ||
   lpad(nextval('public.instant_api_service_reference_seq')::text, 6, '0')
 where service_reference is null;
 
+update public.instant_api_orders
+set refund_status = 'processing', refund_amount = customer_price
+where status = 'refund_pending' and refund_status = 'none';
+
+update public.instant_api_orders
+set refund_status = 'refunded', refund_amount = customer_price,
+    refund_processed_at = coalesce(refund_processed_at, updated_at)
+where status = 'refunded' and refund_status = 'none';
+
 alter table public.instant_api_orders
   alter column service_reference set not null,
   add constraint instant_api_orders_refund_status_check
@@ -100,6 +109,7 @@ create policy instant_api_cases_owner_read
 
 revoke all privileges on table public.instant_api_cases from public, anon, authenticated;
 grant select on table public.instant_api_cases to authenticated;
+grant all privileges on table public.instant_api_cases to service_role;
 
 drop trigger if exists instant_api_cases_updated_at on public.instant_api_cases;
 create trigger instant_api_cases_updated_at
