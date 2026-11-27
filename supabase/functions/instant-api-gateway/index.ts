@@ -189,11 +189,20 @@ async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
           amount: Math.round(Number(order.customer_price) * 100),
           notes: { instant_api_order_id: order.id, reason: "provider_rejected" },
         });
-        const finalStatus = refund.status === "processed" ? "refunded" : "refund_pending";
-        await admin.from("instant_api_orders").update({ status: finalStatus, provider_error_code: finalStatus === "refunded" ? "provider_rejected_refunded" : "refund_processing" }).eq("id", order.id).eq("status", "refund_pending");
+        const isProcessed = refund.status === "processed";
+        const finalStatus = isProcessed ? "refunded" : "refund_pending";
+        await admin.from("instant_api_orders").update({
+          status: finalStatus,
+          refund_status: isProcessed ? "refunded" : "processing",
+          refund_amount: order.customer_price,
+          refund_id: typeof refund.id === "string" ? refund.id : null,
+          refund_reference: typeof refund.id === "string" ? refund.id : null,
+          refund_processed_at: isProcessed ? new Date().toISOString() : null,
+          provider_error_code: isProcessed ? "provider_rejected_refunded" : "refund_processing",
+        }).eq("id", order.id).eq("status", "refund_pending");
         return { status: finalStatus, message: finalStatus === "refunded" ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
       } catch {
-        await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "refund_request_failed" }).eq("id", order.id);
+        await admin.from("instant_api_orders").update({ status: "refund_pending", refund_status: "requested", refund_amount: order.customer_price, provider_error_code: "refund_request_failed" }).eq("id", order.id);
         return { status: "refund_pending", message: "The provider could not complete the request. Your refund needs reconciliation; contact support if it is not reflected." };
       }
     }
