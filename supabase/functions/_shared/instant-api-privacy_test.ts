@@ -1,25 +1,42 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { customerSafeResult } from "./instant-api-privacy.ts";
 
-Deno.test("customer result removes provider financial and credential metadata recursively", () => {
+Deno.test("customer result uses an explicit allowlist recursively", () => {
   const result = customerSafeResult({
     status: true,
     message: "Success",
-    data: { pan: "ABCDE1234F", name: "Test", wallet_balance: 900, api_key: "secret" },
-    transaction: { fee: 10, profit: 4, reference: "REF-1" },
+    data: { pan: "ABCDE1234F", name: "Test", wallet_balance: 900, api_key: "secret", custom_provider_field: "private" },
+    transaction: { fee: 10, profit: 4, reference: "REF-1", provider_cost: 3 },
     authorization: "Bearer secret",
   });
   assertEquals(result, {
     status: true,
     message: "Success",
     data: { pan: "ABCDE1234F", name: "Test" },
-    transaction: { reference: "REF-1" },
   });
 });
 
 Deno.test("customer result bounds depth, arrays and oversized strings", () => {
-  const deep = { a: { b: { c: { d: { e: { f: { g: { h: { i: { j: { k: { l: "too deep" } } } } } } } } } } };
-  const output = customerSafeResult({ rows: Array.from({ length: 600 }, (_, i) => i), large: "x".repeat(200_010), deep }) as Record<string, unknown>;
-  assertEquals((output.rows as unknown[]).length, 500);
-  assertEquals((output.large as string).length, 200_000);
+  const deep = { data: { result: { details: { records: { items: { data: { result: { details: { records: { items: { data: { result: "too deep" } } } } } } } } } } };
+  const output = customerSafeResult({ records: Array.from({ length: 120 }, (_, i) => ({ name: "Customer " + i, unknown_provider_field: "private" })), message: "x".repeat(20_010), data: deep }) as Record<string, unknown>;
+  assertEquals((output.records as unknown[]).length, 100);
+  assertEquals((output.message as string).length, 20_000);
+  assertEquals((output.data as Record<string, unknown>).data, null);
+});
+
+Deno.test("customer result preserves safe vehicle data and strips unknown nested keys", () => {
+  assertEquals(customerSafeResult({
+    status: "success",
+    data: {
+      registration_number: "JK01AB1234",
+      owner_name: "Test Owner",
+      vehicle_class: "LMV",
+      insurance_upto: "2027-01-01",
+      provider_balance: 1000,
+      raw_response: { headers: { authorization: "secret" } },
+    },
+  }), {
+    status: "success",
+    data: { registration_number: "JK01AB1234", owner_name: "Test Owner", vehicle_class: "LMV", insurance_upto: "2027-01-01" },
+  });
 });
