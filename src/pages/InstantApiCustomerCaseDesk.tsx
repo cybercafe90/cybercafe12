@@ -36,7 +36,7 @@ export default function InstantApiCustomerCaseDesk({ initialReference = "", init
       const result = await callFunction<LookupResponse>("instant-api-cases", { action: "lookup", serviceReference: reference.trim(), retrievalToken: token.trim() });
       setData(result);
       const orderStatus = result.order.status;
-      setCaseType(["failed", "refund_pending", "refunded"].includes(orderStatus) ? "failed_service" : "delayed_service");
+      setCaseType(["failed", "refund_pending", "refunded"].includes(orderStatus) ? "failed_service" : ["paid", "processing", "fulfillment_unknown"].includes(orderStatus) ? "delayed_service" : "payment_issue");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "We could not verify this transaction.");
     } finally { setLoading(false); }
