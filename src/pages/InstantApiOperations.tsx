@@ -29,7 +29,7 @@ export default function InstantApiOperations() {
       const [orderResult, serviceResult, auditResult] = await Promise.all([
         supabase.from("instant_api_orders").select("id,service_slug,customer_price,status,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at").order("created_at", { ascending: false }).limit(200),
         supabase.from("instant_api_services").select("slug,name,is_enabled,authorization_verified,endpoint_url,provider_name").order("sort_order"),
-        supabase.from("admin_audit_logs").select("id,actor_id,action,entity_type,entity_id,metadata,created_at").or("entity_type.eq.instant_api_order,entity_type.eq.instant_api_service,entity_type.eq.instant_api").order("created_at", { ascending: false }).limit(100),
+        supabase.from("admin_audit_logs").select("id,actor_id,action,entity_type,entity_id,metadata,created_at").or("entity_type.eq.instant_api_orders,entity_type.eq.instant_api_services,entity_type.eq.instant_api_order,entity_type.eq.instant_api_service,entity_type.eq.instant_api").order("created_at", { ascending: false }).limit(100),
       ]);
       if (orderResult.error) throw orderResult.error;
       if (serviceResult.error) throw serviceResult.error;
