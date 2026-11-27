@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0'
+import { buildRazorpayWebhookEventInsert } from '../_shared/razorpay_webhook.ts'
 
 function serviceClient() {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -51,13 +52,9 @@ Deno.serve(async (request) => {
     const orderId = typeof entity?.order_id === 'string' ? entity.order_id : typeof orderEntity?.id === 'string' ? orderEntity.id : ''
     const paymentId = typeof entity?.id === 'string' ? entity.id : null
 
-    const { error: insertError } = await admin.from('razorpay_webhook_events').insert({
-      event_id: eventId,
-      event_type: eventType,
-      payment_id: paymentId,
-      processed: false,
-      metadata: { order_id: orderId || null, event_type: eventType },
-    })
+    const { error: insertError } = await admin.from('razorpay_webhook_events').insert(
+      buildRazorpayWebhookEventInsert(eventId, eventType, orderId, paymentId),
+    )
     if (insertError) {
       if (insertError.code === '23505') {
         const { data: prior } = await admin.from('razorpay_webhook_events').select('processed').eq('event_id', eventId).maybeSingle()

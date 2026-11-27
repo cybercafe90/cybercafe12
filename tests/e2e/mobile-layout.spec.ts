@@ -32,3 +32,26 @@ test("all public and restricted portal routes avoid horizontal overflow", async 
     ).toBeLessThanOrEqual(dimensions.viewport);
   }
 });
+
+
+test("floating WhatsApp support stays on the left edge on desktop and mobile", async ({ page }) => {
+  await page.goto("/");
+  const whatsapp = page.locator(".floating-whatsapp");
+  await expect(whatsapp).toBeVisible();
+  const desktopPosition = await whatsapp.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, viewportWidth: window.innerWidth };
+  });
+  expect(desktopPosition.left).toBeGreaterThanOrEqual(0);
+  expect(desktopPosition.left).toBeLessThan(40);
+  expect(desktopPosition.left).toBeLessThan(desktopPosition.viewportWidth / 2);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobilePosition = await whatsapp.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, viewportWidth: window.innerWidth };
+  });
+  expect(mobilePosition.left).toBeGreaterThanOrEqual(0);
+  expect(mobilePosition.left).toBeLessThan(30);
+  expect(mobilePosition.left).toBeLessThan(mobilePosition.viewportWidth / 2);
+});

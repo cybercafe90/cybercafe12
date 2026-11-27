@@ -7,6 +7,7 @@ type Order = {
   service_slug: string;
   customer_price: number;
   status: string;
+  provider_cost_at_order: number | null;
   provider_cost_actual: number | null;
   razorpay_order_id: string | null;
   razorpay_payment_id: string | null;
@@ -56,7 +57,7 @@ export default function InstantApiOperations() {
     try {
       const [orderResult, serviceResult, auditResult] = await Promise.all([
         supabase.from("instant_api_orders")
-          .select("id,service_slug,customer_price,status,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at")
+          .select("id,service_slug,customer_price,status,provider_cost_at_order,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at")
           .order("created_at", { ascending: false }).limit(500),
         supabase.from("instant_api_services")
           .select("slug,name,is_enabled,authorization_verified,endpoint_url,provider_name")
@@ -66,12 +67,26 @@ export default function InstantApiOperations() {
           .or("entity_type.eq.instant_api_orders,entity_type.eq.instant_api_services,entity_type.eq.instant_api_order,entity_type.eq.instant_api_service,entity_type.eq.instant_api")
           .order("created_at", { ascending: false }).limit(200),
       ]);
-      if (orderResult.error) throw orderResult.error;
-      if (serviceResult.error) throw serviceResult.error;
-      if (auditResult.error) throw auditResult.error;
-      setOrders((orderResult.data ?? []) as Order[]);
-      setServices((serviceResult.data ?? []) as Service[]);
-      setAudit((auditResult.data ?? []) as Audit[]);
+      const failures: string[] = [];
+      if (orderResult.error) {
+        failures.push("Orders: " + orderResult.error.message);
+        setOrders([]);
+      } else {
+        setOrders((orderResult.data ?? []) as Order[]);
+      }
+      if (serviceResult.error) {
+        failures.push("Services: " + serviceResult.error.message);
+        setServices([]);
+      } else {
+        setServices((serviceResult.data ?? []) as Service[]);
+      }
+      if (auditResult.error) {
+        failures.push("Audit logs: " + auditResult.error.message);
+        setAudit([]);
+      } else {
+        setAudit((auditResult.data ?? []) as Audit[]);
+      }
+      setError(failures.join(" · "));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load Instant API operations. Check owner access and the Supabase connection.");
     } finally {
@@ -100,8 +115,8 @@ export default function InstantApiOperations() {
 
   const capturedOrders = orders.filter(order => capturedStatuses.has(order.status) && (Boolean(order.razorpay_payment_id) || Boolean(order.paid_at)));
   const capturedTotal = capturedOrders.reduce((sum, order) => sum + Number(order.customer_price || 0), 0);
-  const knownProviderCost = capturedOrders.reduce((sum, order) => sum + Number(order.provider_cost_actual ?? 0), 0);
-  const knownCostCount = capturedOrders.filter(order => order.provider_cost_actual !== null).length;
+  const knownProviderCost = capturedOrders.reduce((sum, order) => sum + Number(order.provider_cost_actual ?? order.provider_cost_at_order ?? 0), 0);
+  const knownCostCount = capturedOrders.filter(order => order.provider_cost_actual !== null || order.provider_cost_at_order !== null).length;
   const attentionOrders = orders.filter(order => ["failed", "fulfillment_unknown", "refund_pending"].includes(order.status));
   const pendingRefunds = orders.filter(order => order.status === "refund_pending");
   const completedRefunds = orders.filter(order => order.status === "refunded");
@@ -119,8 +134,8 @@ export default function InstantApiOperations() {
 
   function downloadReconciliation() {
     const rows = [
-      ["order_id", "service", "status", "customer_amount_inr", "provider_cost_actual_inr", "razorpay_order_id", "razorpay_payment_id", "paid_at", "created_at"],
-      ...orders.map(order => [order.id, order.service_slug, order.status, String(order.customer_price), order.provider_cost_actual == null ? "" : String(order.provider_cost_actual), order.razorpay_order_id ?? "", order.razorpay_payment_id ?? "", order.paid_at ?? "", order.created_at]),
+      ["order_id", "service", "status", "customer_amount_inr", "provider_cost_at_order_inr", "provider_cost_actual_inr", "razorpay_order_id", "razorpay_payment_id", "paid_at", "created_at"],
+      ...orders.map(order => [order.id, order.service_slug, order.status, String(order.customer_price), order.provider_cost_at_order == null ? "" : String(order.provider_cost_at_order), order.provider_cost_actual == null ? "" : String(order.provider_cost_actual), order.razorpay_order_id ?? "", order.razorpay_payment_id ?? "", order.paid_at ?? "", order.created_at]),
     ];
     const csv = rows.map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(",")).join("\\r\\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -138,7 +153,7 @@ export default function InstantApiOperations() {
     </div>
     {error && <div className="ia-alert ia-error" role="alert"><AlertTriangle size={16}/>{error}</div>}
     {loading && <p className="ia-ops-muted" role="status">Loading operational records…</p>}
-    {!loading && !error && <>
+    {!loading && <>
       <div className="ia-ops-summary">
         <div><small>Orders loaded</small><b>{orders.length}</b></div>
         <div><small>Captured order value</small><b>{inr(capturedTotal)}</b></div>
@@ -152,9 +167,9 @@ export default function InstantApiOperations() {
           <label className="ia-ops-search"><Search size={16}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search order ID, service or payment reference" aria-label="Search Instant API orders"/></label>
           <label className="ia-ops-filter-label"><span>Status</span><select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">All statuses ({orders.length})</option>{Object.entries(counts).sort(([a],[b]) => a.localeCompare(b)).map(([status,count]) => <option key={status} value={status}>{status.replaceAll("_"," ")} ({count})</option>)}</select></label>
         </div>
-        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Status</th><th>Payment ref</th><th>Created</th><th>Details</th></tr></thead><tbody>
-          {filteredOrders.map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td><span className={"ia-ops-status status-" + order.status}>{order.status.replaceAll("_", " ")}</span></td><td>{order.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 13) + "…" : "—"}</td><td>{stamp(order.created_at)}</td><td><button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button></td></tr>)}
-          {!filteredOrders.length && <tr><td colSpan={7}>No orders match this search and status filter.</td></tr>}
+        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Provider cost</th><th>Status</th><th>Payment ref</th><th>Created</th><th>Details</th></tr></thead><tbody>
+          {filteredOrders.map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{inr(order.provider_cost_actual ?? order.provider_cost_at_order)} <small>{order.provider_cost_actual !== null ? "Actual" : order.provider_cost_at_order !== null ? "Quoted" : "—"}</small></td><td><span className={"ia-ops-status status-" + order.status}>{order.status.replaceAll("_", " ")}</span></td><td>{order.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 13) + "…" : "—"}</td><td>{stamp(order.created_at)}</td><td><button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button></td></tr>)}
+          {!filteredOrders.length && <tr><td colSpan={8}>No orders match this search and status filter.</td></tr>}
         </tbody></table></div>
         <p className="ia-ops-muted ia-ops-footnote">Showing up to 500 most recent orders. Sensitive customer inputs and decrypted results are deliberately excluded.</p>
       </section>
@@ -162,9 +177,9 @@ export default function InstantApiOperations() {
       <section className="ia-ops-section" id="ia-health">
         <div className="ia-ops-title"><Activity/><div><h3>API Health &amp; Service Readiness</h3><p>Configuration and real transaction outcomes. No paid or potentially billable provider test calls are sent automatically.</p></div></div>
         <div className="ia-ops-stats"><div><small>Configured services</small><b>{services.length}</b></div><div><small>Enabled &amp; authorised</small><b>{serviceHealth.filter(s => s.ready).length}</b></div><div><small>Orders needing attention</small><b>{attentionOrders.length}</b></div><div><small>Known provider cost</small><b>{inr(knownProviderCost)}</b></div></div>
-        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Service</th><th>Provider</th><th>Configuration</th><th>Requests</th><th>Success</th><th>Attention</th><th>Last request</th></tr></thead><tbody>
-          {serviceHealth.map(({service,total,completed,failed,latest,ready}) => <tr key={service.slug}><td>{service.name}</td><td>{service.provider_name || "Not configured"}</td><td><span className={"ia-ops-status " + (ready ? "status-succeeded" : "status-payment_pending")}>{ready ? "Configured" : "Not ready"}</span></td><td>{total}</td><td>{completed}</td><td>{failed}</td><td>{latest ? stamp(latest.created_at) : "No requests"}</td></tr>)}
-          {!services.length && <tr><td colSpan={7}>No service configuration found.</td></tr>}
+        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Service</th><th>Provider</th><th>Configuration</th><th>Requests</th><th>Success</th><th>Attention</th><th>Last request</th><th>Last outcome</th></tr></thead><tbody>
+          {serviceHealth.map(({service,total,completed,failed,latest,ready}) => <tr key={service.slug}><td>{service.name}</td><td>{service.provider_name || "Not configured"}</td><td><span className={"ia-ops-status " + (ready ? "status-succeeded" : "status-payment_pending")}>{ready ? "Configured" : "Not ready"}</span></td><td>{total}</td><td>{completed}</td><td>{failed}</td><td>{latest ? stamp(latest.created_at) : "No requests"}</td><td>{latest ? latest.provider_error_code || latest.status.replaceAll("_", " ") : "—"}</td></tr>)}
+          {!services.length && <tr><td colSpan={8}>No service configuration found.</td></tr>}
         </tbody></table></div>
         <p className="ia-ops-warning"><Activity size={15}/> This panel reports configuration and observed order outcomes, not a live provider ping. A configured service is not proof that the provider is currently reachable.</p>
       </section>
@@ -173,10 +188,10 @@ export default function InstantApiOperations() {
         <div className="ia-ops-title"><Wallet/><div><h3>Reconciliation</h3><p>Compare stored order, captured-payment and provider-cost references. This is not a bank settlement confirmation.</p></div></div>
         <div className="ia-ops-stats"><div><small>Captured payment records</small><b>{capturedOrders.length}</b></div><div><small>Captured customer value</small><b>{inr(capturedTotal)}</b></div><div><small>Orders with known provider cost</small><b>{knownCostCount}</b></div><div><small>Missing payment references</small><b>{missingPaymentRefs.length}</b></div></div>
         <div className="ia-ops-reconcile-actions"><button className="ia-button ia-button-muted" onClick={downloadReconciliation}><Download size={15}/> Export CSV</button><span>Export contains order/payment references and amounts only; no customer request data.</span></div>
-        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Order ref</th><th>Payment ref</th><th>Amount</th><th>Provider cost</th><th>Paid at</th><th>Fulfilled at</th><th>Check</th></tr></thead><tbody>
+        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Order ref</th><th>Payment ref</th><th>Amount</th><th>Provider cost (actual / quoted)</th><th>Paid at</th><th>Fulfilled at</th><th>Check</th></tr></thead><tbody>
           {orders.filter(order => order.razorpay_order_id || order.razorpay_payment_id || capturedStatuses.has(order.status)).map(order => {
             const issue = capturedStatuses.has(order.status) && !order.razorpay_payment_id;
-            return <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.razorpay_order_id || "Missing"}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{inr(order.customer_price)}</td><td>{inr(order.provider_cost_actual)}</td><td>{stamp(order.paid_at)}</td><td>{stamp(order.fulfilled_at)}</td><td><span className={"ia-ops-status " + (issue ? "status-refund_pending" : "status-succeeded")}>{issue ? "Review" : "Recorded"}</span></td></tr>;
+            return <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.razorpay_order_id || "Missing"}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{inr(order.customer_price)}</td><td>{inr(order.provider_cost_actual ?? order.provider_cost_at_order)} <small>{order.provider_cost_actual !== null ? "Actual" : order.provider_cost_at_order !== null ? "Quoted" : "—"}</small></td><td>{stamp(order.paid_at)}</td><td>{stamp(order.fulfilled_at)}</td><td><span className={"ia-ops-status " + (issue ? "status-refund_pending" : "status-succeeded")}>{issue ? "Review" : "Recorded"}</span></td></tr>;
           })}
           {!orders.length && <tr><td colSpan={8}>No payment records available for reconciliation.</td></tr>}
         </tbody></table></div>
@@ -211,6 +226,7 @@ export default function InstantApiOperations() {
           <div><dt>Service</dt><dd>{selectedOrder.service_slug}</dd></div>
           <div><dt>Status</dt><dd>{selectedOrder.status.replaceAll("_"," ")}</dd></div>
           <div><dt>Customer amount</dt><dd>{inr(selectedOrder.customer_price)}</dd></div>
+          <div><dt>Provider cost at order</dt><dd>{inr(selectedOrder.provider_cost_at_order)}</dd></div>
           <div><dt>Provider cost actual</dt><dd>{inr(selectedOrder.provider_cost_actual)}</dd></div>
           <div><dt>Razorpay order reference</dt><dd>{selectedOrder.razorpay_order_id || "Not recorded"}</dd></div>
           <div><dt>Razorpay payment reference</dt><dd>{selectedOrder.razorpay_payment_id || "Not recorded"}</dd></div>

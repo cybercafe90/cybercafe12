@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import { customerSafeResult } from "../_shared/customer_safe.ts";
+import { normalizeRcPdfInput, parseProviderCost } from "../_shared/rc_pdf.ts";
 
 const ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in"]);
 const BASE_HOST = "api.smmtopserver.shop";
@@ -99,14 +101,14 @@ function validateInput(slug: string, input: Record<string, unknown>) {
   if (slug === "voter-mobile-link" && !/^\d{10}$/.test(output.mobile_no.replace(/\D/g, ""))) throw new Error("Enter a valid 10-digit mobile number.");
   if (slug === "number-details" && !/^\d{10}$/.test(output.mobileNumber.replace(/\D/g, ""))) throw new Error("Enter a valid 10-digit mobile number.");
   if (slug === "driving-licence-hd-pdf" && !/^\d{2}-\d{2}-\d{4}$/.test(output.dob)) throw new Error("Date of birth must be DD-MM-YYYY.");
-  if (slug === "vehicle-rc-pdf" && input.cardtype != null) output.cardtype = String(input.cardtype).slice(0, 30);
-  if (slug === "vehicle-rc-pdf" && input.chiptype != null) output.chiptype = String(input.chiptype).slice(0, 30);
+  if (slug === "vehicle-rc-pdf") return normalizeRcPdfInput(input);
   if (slug === "vahan-to-mobile" && !/^[A-Z0-9 -]{5,15}$/i.test(output.vrn)) throw new Error("Enter a valid vehicle registration number.");
   return output;
 }
 async function callProvider(service: Service, input: Record<string, string>) {
   const endpoint = new URL(service.endpoint_url);
   if (endpoint.protocol !== "https:" || endpoint.hostname !== BASE_HOST || endpoint.username || endpoint.password) throw new Error("Provider endpoint is not on the approved host.");
+  if (service.slug === "vehicle-rc-pdf") { endpoint.pathname = "/api/rc-pdf.php"; endpoint.search = ""; endpoint.hash = ""; }
   const apiKey = Deno.env.get(service.api_key_secret_name);
   if (!apiKey) throw new Error("Provider credential is missing: " + service.api_key_secret_name);
   const params = new URLSearchParams(input);
@@ -121,14 +123,16 @@ async function callProvider(service: Service, input: Record<string, string>) {
     params.set("api_key", apiKey);
     url += "?" + params.toString();
   } else {
+    // PAN Verification's executable cURL examples use Bearer auth.
+    // Do not also place the credential in the URL query string.
     headers.set("Authorization", "Bearer " + apiKey);
-    if (service.slug === "pan-verification") params.set("api_key", apiKey);
     url += "?" + params.toString();
   }
   const response = await fetch(url, { method: service.http_method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(25000), redirect: "error" });
   const contentType = response.headers.get("content-type") || "";
   const raw = await response.text();
-  if (raw.length > 2_000_000) throw new Error("Provider response exceeded the permitted size.");
+  const maxResponseBytes = service.slug === "vehicle-rc-pdf" ? 8_000_000 : 2_000_000;
+  if (raw.length > maxResponseBytes) throw new Error("Provider response exceeded the permitted size.");
   let result: unknown;
   if (contentType.includes("application/json") || raw.trimStart().startsWith("{") || raw.trimStart().startsWith("[")) {
     try { result = JSON.parse(raw); } catch { result = { raw_text: raw.slice(0, 2000) }; }
@@ -150,17 +154,6 @@ async function callProvider(service: Service, input: Record<string, string>) {
   return result;
 }
 type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null };
-function customerSafeResult(value: unknown): unknown {
-  const privateField = /(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i;
-  if (Array.isArray(value)) return value.map(customerSafeResult);
-  if (!value || typeof value !== "object") return value;
-  const output: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    if (privateField.test(key)) continue;
-    output[key] = customerSafeResult(item);
-  }
-  return output;
-}
 async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
   const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
   if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
@@ -198,7 +191,7 @@ async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
       }
     }
     const cipher = await encrypt(result);
-    const actualCost = typeof result.cost_deducted === "number" && Number.isFinite(result.cost_deducted) ? result.cost_deducted : service.provider_cost;
+    const actualCost = parseProviderCost(result.cost_deducted) ?? service.provider_cost;
     const { error } = await admin.from("instant_api_orders").update({
       status: "succeeded", result_ciphertext: cipher, provider_cost_actual: actualCost,
       provider_order_id: typeof result.order_id === "string" ? result.order_id : null,
