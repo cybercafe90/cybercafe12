@@ -113,3 +113,14 @@
 .ia-ops-modal dd{font-size:11px;color:#17243b;font-weight:650;margin:0;overflow-wrap:anywhere}
 .ia-ops-modal>p{font-size:10px;color:#687b94;line-height:1.6;margin:14px 0}
 @media(max-width:700px){.ia-ops-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.ia-ops-modal dl{grid-template-columns:1fr}.ia-ops-filter-label{width:100%}.ia-ops-filter-label select{width:100%}}
+
+
+/* Per-service availability controls in the owner catalogue. */
+.ia-service-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;border-bottom:1px solid #e8edf4}
+.ia-service-row:last-child{border-bottom:0}
+.ia-service-row .ia-service{min-width:0;border:0}
+.ia-service-row .ia-service.is-selected{box-shadow:inset 3px 0 #00a6c2}
+.ia-service-toggle{display:inline-flex;align-items:center;justify-content:center;gap:6px;align-self:center;margin:8px;padding:8px 10px;border:1px solid #b9dce4;border-radius:7px;background:#effbfc;color:#076b80;font:700 10px Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.ia-service-toggle.is-enabled{border-color:#f1c5c9;background:#fff1f2;color:#a11b36}
+.ia-service-toggle:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:420px){.ia-service-row{grid-template-columns:minmax(0,1fr) auto}.ia-service-toggle{margin:6px;padding:8px 7px;font-size:9px}.ia-service-row .ia-service{padding:12px 10px}}
