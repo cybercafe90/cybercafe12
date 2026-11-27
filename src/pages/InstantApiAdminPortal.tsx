@@ -3,6 +3,7 @@ import { ArrowLeft, Check, CircleAlert, ExternalLink, KeyRound, RefreshCw, Save,
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import "./InstantApiAdminPortal.css";
+import InstantApiOperations from "./InstantApiOperations";
 
 type InstantService = {
   slug: string;
@@ -149,11 +150,11 @@ export default function InstantApiAdminPortal() {
       <nav className="ia-admin-nav" aria-label="Instant API administration">
         <a href="#ia-overview">Overview</a>
         <a href="#ia-services" aria-current="page">Services &amp; Pricing</a>
-        <button type="button" disabled title="Available after order gateway integration">Orders</button>
-        <button type="button" disabled title="Available after gateway health checks are implemented">API Health</button>
-        <button type="button" disabled title="Available after payment and provider reconciliation is implemented">Reconciliation</button>
-        <button type="button" disabled title="Available after audit event integration is implemented">Audit Logs</button>
-        <button type="button" disabled title="Available after refund workflow integration is implemented">Refunds</button>
+        <a href="#ia-orders">Orders</a>
+        <a href="#ia-health">API Health</a>
+        <a href="#ia-reconciliation">Reconciliation</a>
+        <a href="#ia-audit">Audit Logs</a>
+        <a href="#ia-refunds">Refunds</a>
       </nav>
       <div className="ia-layout">
         <aside className="ia-sidebar" id="ia-overview"><span className="ia-eyebrow">SERVICE MANAGEMENT</span><h2>Instant API</h2><p>Configure provider endpoints, selling prices and activation controls.</p><div className="ia-side-stats"><span>Configured services</span><b>{items.length}</b><span>Enabled for customers</span><b>{items.filter(item => item.is_enabled && item.authorization_verified).length}</b></div><button className="ia-button ia-button-muted" onClick={() => setShowSetup(value => !value)}><KeyRound size={15}/> API key setup guide</button></aside>
@@ -180,6 +181,7 @@ export default function InstantApiAdminPortal() {
             </section>}
           </div>
           <div className="ia-warning"><SlidersHorizontal size={17}/><p><b>Important:</b> This console saves catalogue settings only. It does not make provider requests or mark payments as paid. Customer lookups must remain unavailable until the API gateway, verified Razorpay payment flow, provider request mapping, consent checks and result handling are implemented and tested.</p></div>
+          <InstantApiOperations />
         </section>
       </div>
     </main>

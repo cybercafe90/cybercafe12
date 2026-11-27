@@ -55,3 +55,33 @@
 .ia-admin a:focus-visible,.ia-admin button:focus-visible,.ia-admin input:focus-visible,.ia-admin select:focus-visible{outline:3px solid #00a6c2;outline-offset:3px}
 @media(max-width:850px){.ia-sidebar{grid-template-columns:1fr 1fr;padding:16px}.ia-side-stats{border-left:0;padding:8px 0}.ia-admin-nav{padding-inline:14px}}
 @media(max-width:560px){.ia-sidebar{grid-template-columns:1fr;padding:15px}.ia-side-stats{max-width:none}.ia-admin-nav{position:static}.ia-main{padding:22px 13px}}
+
+
+/* Instant API operations centre */
+.ia-operations{margin-top:28px;display:grid;gap:18px;color:#17243b}
+.ia-ops-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.ia-ops-head h2{font-size:21px;margin:5px 0;color:#17243b}
+.ia-ops-head p,.ia-ops-muted{font-size:12px;color:#60718a;margin:0;line-height:1.6}
+.ia-ops-section{scroll-margin-top:72px;background:#fff;border:1px solid #dce5f0;border-radius:13px;padding:18px;min-width:0}
+.ia-ops-title{display:flex;align-items:center;gap:11px;margin-bottom:15px}
+.ia-ops-title>svg{color:#087f98;width:21px;height:21px;flex:none}
+.ia-ops-title h3{font-size:15px;margin:0;color:#17243b}
+.ia-ops-title p{font-size:11px;color:#687b94;margin:4px 0 0;line-height:1.5}
+.ia-ops-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.ia-ops-stats>div{background:#f5f8fc;border:1px solid #e6edf4;border-radius:9px;padding:11px;min-width:0}
+.ia-ops-stats small{display:block;color:#687b94;font-size:10px;line-height:1.4}
+.ia-ops-stats b{display:block;color:#17243b;font-size:17px;margin-top:5px;overflow-wrap:anywhere}
+.ia-ops-table-wrap{overflow-x:auto;border:1px solid #e6edf4;border-radius:9px}
+.ia-ops-table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+.ia-ops-table th{text-align:left;background:#f5f8fc;color:#52647b;font-weight:700}
+.ia-ops-table th,.ia-ops-table td{padding:10px 11px;border-bottom:1px solid #edf1f6}
+.ia-ops-table tr:last-child td{border-bottom:0}
+.ia-ops-table td{color:#34465f}
+.ia-ops-table code{color:#087f98;font-size:10px}
+.ia-ops-status{display:inline-flex;padding:4px 7px;border-radius:20px;background:#eef2f7;color:#52647b;font-size:9px;font-weight:700;text-transform:capitalize}
+.ia-ops-status.status-succeeded,.ia-ops-status.status-refunded{background:#e5f8ef;color:#08734f}
+.ia-ops-status.status-failed,.ia-ops-status.status-refund_pending,.ia-ops-status.status-fulfillment_unknown{background:#fff1f2;color:#9f1239}
+.ia-ops-status.status-payment_pending,.ia-ops-status.status-processing{background:#fff7df;color:#8a6412}
+.ia-ops-warning{display:flex;align-items:flex-start;gap:8px;color:#795b19;background:#fff9e9;border:1px solid #f2d79b;border-radius:8px;padding:11px;font-size:10px;line-height:1.6;margin:13px 0 0}
+.ia-ops-warning svg{flex:none;margin-top:1px}
+@media(max-width:700px){.ia-ops-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ia-ops-head{align-items:flex-start;flex-direction:column}.ia-ops-section{padding:12px}}
