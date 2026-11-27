@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import { customerSafeResult } from "../_shared/customer_safe.ts";
 import { normalizeRcPdfInput, parseProviderCost } from "../_shared/rc_pdf.ts";
+import { isDefinitiveProviderFailure } from "../_shared/provider_http.ts";
 
 const ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in"]);
 const BASE_HOST = "api.smmtopserver.shop";
@@ -129,6 +130,10 @@ async function callProvider(service: Service, input: Record<string, string>) {
     url += "?" + params.toString();
   }
   const response = await fetch(url, { method: service.http_method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(25000), redirect: "error" });
+  if (!response.ok && isDefinitiveProviderFailure(response.status)) {
+    return { __provider_failed: true, provider_error_code: "provider_http_" + response.status };
+  }
+  if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   const contentType = response.headers.get("content-type") || "";
   const raw = await response.text();
   const maxResponseBytes = service.slug === "vehicle-rc-pdf" ? 8_000_000 : 2_000_000;
@@ -139,7 +144,6 @@ async function callProvider(service: Service, input: Record<string, string>) {
   } else {
     result = { content_type: contentType, response_text: raw.slice(0, 2000) };
   }
-  if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   if (result && typeof result === "object") {
     const record = result as Record<string, unknown>;
     if (record.status !== true) {
