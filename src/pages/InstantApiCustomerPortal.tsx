@@ -64,9 +64,23 @@ export default function InstantApiCustomerPortal() {
   }, []);
 
   const resultObject = result && typeof result === "object" && !Array.isArray(result) ? result as Record<string, unknown> : null;
-  const nestedResult = resultObject?.data && typeof resultObject.data === "object" ? resultObject.data as Record<string, unknown> : null;
-  const pdfBase64 = [resultObject?.pdf_base64, resultObject?.pdf, nestedResult?.pdf_base64, nestedResult?.pdf].find(value => typeof value === "string" && value.length > 100) as string | undefined;
-  const pdfUrl = [resultObject?.pdf_url, nestedResult?.pdf_url].find(value => typeof value === "string" && value.startsWith("https://")) as string | undefined;
+  function findDocument(value: unknown, keys: RegExp, depth = 0): string | undefined {
+    if (depth > 7 || !value || typeof value !== "object") return undefined;
+    const entries = Array.isArray(value) ? value.map((item, index) => [String(index), item] as const) : Object.entries(value as Record<string, unknown>);
+    for (const [key, item] of entries) {
+      if (keys.test(key) && typeof item === "string" && item.length > 100) return item.trim();
+    }
+    for (const [, item] of entries) {
+      const found = findDocument(item, keys, depth + 1);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  const pdfPayload = findDocument(result, /^(?:pdf|pdf_base64|document_base64|file_base64|pdf_data)$/i);
+  const pdfHref = pdfPayload
+    ? (pdfPayload.startsWith("data:application/pdf") ? pdfPayload : "data:application/pdf;base64," + pdfPayload.replace(/^base64,/i, "").replace(/\\s+/g, ""))
+    : undefined;
+  const pdfUrl = findDocument(result, /^(?:pdf_url|document_url|download_url|file_url)$/i);
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase();
     return services.filter(item => !term || [item.name, item.description, item.slug].join(" ").toLowerCase().includes(term));
@@ -144,7 +158,7 @@ export default function InstantApiCustomerPortal() {
           <header><div><span className="iac-eyebrow">SECURE SERVICE REQUEST</span><h2 id="ia-modal-title">{selected.name}</h2><p>{money(Number(selected.customer_price))} · Payment through Razorpay</p></div><button type="button" aria-label="Close" onClick={() => setSelected(null)} disabled={busy}><X size={20}/></button></header>
           {error && <div className="ia-alert ia-error" role="alert">{error}</div>}
           {orderRef && <div className="ia-alert ia-success" role="status">Order reference: <b>{orderRef}</b> · Status: {orderStatus}</div>}
-          {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfBase64 && <a className="ia-pdf-download" href={`data:application/pdf;base64,${pdfBase64}`} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key) && !/(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i.test(key))) : result, null, 2)}</pre></div> :
+          {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfHref && <a className="ia-pdf-download" href={pdfHref} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key) && !/(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i.test(key))) : result, null, 2)}</pre></div> :
           <form onSubmit={checkout}>
             {(fields[selected.slug] || []).map(field => <label className="ia-field" key={field.name}><span>{field.label}</span><input required={!field.label.includes("optional")} type={field.type || "text"} autoComplete="off" value={input[field.name] || ""} placeholder={field.placeholder} onChange={event => setInput(current => ({ ...current, [field.name]: event.target.value }))}/></label>)}
             <label className="ia-field"><span>Purpose of request</span><textarea required minLength={8} maxLength={300} value={lawfulPurpose} onChange={event => setLawfulPurpose(event.target.value)} placeholder="Briefly explain why you are requesting this record"/></label>
