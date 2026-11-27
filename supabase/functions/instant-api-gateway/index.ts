@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import { customerSafeResult } from "../_shared/customer_safe.ts";
 import { normalizeRcPdfInput, parseProviderCost } from "../_shared/rc_pdf.ts";
+import { isDefinitiveProviderFailure } from "../_shared/provider_http.ts";
 
 const ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in"]);
 const BASE_HOST = "api.smmtopserver.shop";
@@ -129,6 +130,10 @@ async function callProvider(service: Service, input: Record<string, string>) {
     url += "?" + params.toString();
   }
   const response = await fetch(url, { method: service.http_method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(25000), redirect: "error" });
+  if (!response.ok && isDefinitiveProviderFailure(response.status)) {
+    return { __provider_failed: true, provider_error_code: "provider_http_" + response.status };
+  }
+  if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   const contentType = response.headers.get("content-type") || "";
   const raw = await response.text();
   const maxResponseBytes = service.slug === "vehicle-rc-pdf" ? 8_000_000 : 2_000_000;
@@ -139,7 +144,6 @@ async function callProvider(service: Service, input: Record<string, string>) {
   } else {
     result = { content_type: contentType, response_text: raw.slice(0, 2000) };
   }
-  if (!response.ok) throw new Error("Provider returned HTTP " + response.status);
   if (result && typeof result === "object") {
     const record = result as Record<string, unknown>;
     if (record.status !== true) {
@@ -155,57 +159,23 @@ async function callProvider(service: Service, input: Record<string, string>) {
 }
 type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null };
 async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
-  const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
-  if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
-  const stored = await decrypt(order.request_ciphertext) as { providerInput: Record<string, string> };
-  const { data: claimed, error: claimError } = await admin.from("instant_api_orders").update({ status: "processing" }).eq("id", order.id).eq("status", "paid").select("id").maybeSingle();
-  if (claimError) throw claimError;
-  if (!claimed) {
-    const { data: latest } = await admin.from("instant_api_orders").select("status").eq("id", order.id).maybeSingle();
-    return { status: latest?.status || "processing" };
-  }
-  try {
-    const result = await callProvider(service as Service, stored.providerInput) as Record<string, unknown>;
-    if (result.__provider_pending === true) {
-      await admin.from("instant_api_orders").update({
-        status: "fulfillment_unknown",
-        provider_order_id: typeof result.provider_order_id === "string" ? result.provider_order_id : null,
-        provider_error_code: "provider_pending",
-      }).eq("id", order.id).eq("status", "processing");
-      return { status: "fulfillment_unknown", message: "Provider accepted the request but has not confirmed completion. Do not submit it again." };
-    }
-    if (result.__provider_failed === true) {
-      await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "provider_rejected" }).eq("id", order.id).eq("status", "processing");
-      try {
-        if (!order.razorpay_payment_id) throw new Error("Captured payment reference is missing.");
-        const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
-          amount: Math.round(Number(order.customer_price) * 100),
-          notes: { instant_api_order_id: order.id, reason: "provider_rejected" },
-        });
-        const finalStatus = refund.status === "processed" ? "refunded" : "refund_pending";
-        await admin.from("instant_api_orders").update({ status: finalStatus, provider_error_code: finalStatus === "refunded" ? "provider_rejected_refunded" : "refund_processing" }).eq("id", order.id).eq("status", "refund_pending");
-        return { status: finalStatus, message: finalStatus === "refunded" ? "The provider could not complete the request. Your payment has been refunded." : "The provider could not complete the request. Your refund is being processed." };
-      } catch {
-        await admin.from("instant_api_orders").update({ status: "refund_pending", provider_error_code: "refund_request_failed" }).eq("id", order.id);
-        return { status: "refund_pending", message: "The provider could not complete the request. Your refund needs reconciliation; contact support if it is not reflected." };
-      }
-    }
-    const cipher = await encrypt(result);
-    const actualCost = parseProviderCost(result.cost_deducted) ?? service.provider_cost;
-    const { error } = await admin.from("instant_api_orders").update({
-      status: "succeeded", result_ciphertext: cipher, provider_cost_actual: actualCost,
-      provider_order_id: typeof result.order_id === "string" ? result.order_id : null,
-      fulfilled_at: new Date().toISOString(), provider_error_code: null,
-    }).eq("id", order.id).eq("status", "processing");
-    if (error) throw error;
-    return { status: "succeeded" };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Provider request failed.";
+  // Provider work is completed before checkout. This function only releases a paid,
+  // unexpired, privately stored result; it must never call the provider again.
+  if (!order.result_ciphertext || !order.result_expires_at || new Date(order.result_expires_at).getTime() <= Date.now()) {
     await admin.from("instant_api_orders").update({
-      status: "fulfillment_unknown", provider_error_code: message.slice(0, 80),
-    }).eq("id", order.id).eq("status", "processing");
-    return { status: "fulfillment_unknown" };
+      status: "refund_pending",
+      provider_error_code: "paid_result_unavailable",
+    }).eq("id", order.id).eq("status", "paid");
+    return { status: "refund_pending", message: "Payment was received, but the reserved result is unavailable. Your order has been sent for refund review." };
   }
+  const { data: completed, error } = await admin.from("instant_api_orders").update({
+    status: "succeeded",
+    provider_error_code: null,
+  }).eq("id", order.id).eq("status", "paid").not("result_ciphertext", "is", null).select("id").maybeSingle();
+  if (error) throw error;
+  if (completed) return { status: "succeeded", message: "Payment confirmed. Your result is ready." };
+  const { data: latest } = await admin.from("instant_api_orders").select("status").eq("id", order.id).maybeSingle();
+  return { status: latest?.status || "processing" };
 }
 
 Deno.serve(async (request: Request) => {
@@ -239,37 +209,99 @@ Deno.serve(async (request: Request) => {
       const { data: service, error } = await admin.from("instant_api_services").select("*").eq("slug", slug).eq("is_enabled", true).eq("authorization_verified", true).maybeSingle();
       if (error) throw error;
       if (!service) return reply(request, { error: "This service is not currently available." }, 409);
-      const secret = Deno.env.get(service.api_key_secret_name);
-      if (!secret) return reply(request, { error: "Service credentials are not configured. Please contact support." }, 503);
+      if (!Deno.env.get(service.api_key_secret_name)) return reply(request, { error: "Service credentials are not configured. Please contact support." }, 503);
       if (!Deno.env.get("RAZORPAY_KEY_ID") || !Deno.env.get("RAZORPAY_KEY_SECRET")) return reply(request, { error: "Payment gateway is not configured." }, 503);
+      const amount = Math.round(Number(service.customer_price) * 100);
+      if (!Number.isSafeInteger(amount) || amount < 100) return reply(request, { error: "Invalid service price." }, 503);
       const idem = request.headers.get("x-idempotency-key") || body.idempotencyKey;
       if (typeof idem !== "string" || idem.length < 16 || idem.length > 128) return reply(request, { error: "A valid idempotency key is required." }, 400);
       const idemHash = await sha(idem);
-      const { data: existing } = await admin.from("instant_api_orders").select("*").eq("idempotency_key_hash", idemHash).maybeSingle();
+      const { data: existing, error: existingError } = await admin.from("instant_api_orders").select("*").eq("idempotency_key_hash", idemHash).maybeSingle();
+      if (existingError) throw existingError;
       if (existing) {
         const token = await decrypt(existing.retrieval_token_ciphertext);
-        return reply(request, { orderId: existing.id, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount: Math.round(Number(existing.customer_price) * 100), currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), reused: true });
+        if (existing.status === "payment_pending" && existing.razorpay_order_id) {
+          return reply(request, { orderId: existing.id, retrievalToken: token, razorpayOrderId: existing.razorpay_order_id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), status: existing.status, reused: true });
+        }
+        return reply(request, {
+          orderId: existing.id, retrievalToken: token, status: existing.status,
+          message: existing.status === "failed" ? "The service could not be completed. No payment was requested." :
+            existing.status === "fulfillment_unknown" || existing.status === "processing" ? "The provider has not confirmed the result yet. No payment was requested. Please contact support before retrying." :
+            existing.status === "succeeded" ? "This request has already been completed." : "This request is already being processed.",
+        });
       }
+
       const token = randomToken();
       const requestCipher = await encrypt({ providerInput: input, lawfulPurpose: body.lawfulPurpose.trim() });
       const tokenCipher = await encrypt(token);
       const { data: order, error: insertError } = await admin.from("instant_api_orders").insert({
         service_slug: slug, customer_price: service.customer_price, provider_cost_at_order: service.provider_cost,
-        status: "payment_pending", idempotency_key_hash: idemHash, request_ciphertext: requestCipher,
+        status: "processing", idempotency_key_hash: idemHash, request_ciphertext: requestCipher,
         retrieval_token_hash: await sha(token), retrieval_token_ciphertext: tokenCipher,
+        result_expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
       }).select("*").single();
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === "23505") return reply(request, { error: "This request is already being prepared. Please refresh its status before trying again." }, 409);
+        throw insertError;
+      }
+
+      // Provider lookup happens before any Razorpay order is created.
+      let providerResult: Record<string, unknown>;
       try {
-        const amount = Math.round(Number(service.customer_price) * 100);
-        if (!Number.isSafeInteger(amount) || amount < 100) throw new Error("Invalid service price.");
-        const rp = await razorpay("/orders", "POST", { amount, currency: "INR", receipt: order.id, notes: { instant_api_order_id: order.id, service_slug: slug } });
+        providerResult = await callProvider(service as Service, input) as Record<string, unknown>;
+      } catch (providerError) {
+        const message = providerError instanceof Error ? providerError.message : "Provider outcome could not be confirmed.";
+        await admin.from("instant_api_orders").update({
+          status: "fulfillment_unknown",
+          provider_error_code: "provider_outcome_unknown",
+        }).eq("id", order.id).eq("status", "processing");
+        return reply(request, { orderId: order.id, retrievalToken: token, status: "fulfillment_unknown", message: "We could not confirm the provider response. No payment was requested. Please do not submit the same request again until it is reconciled." });
+      }
+      if (providerResult.__provider_pending === true) {
+        await admin.from("instant_api_orders").update({
+          status: "fulfillment_unknown",
+          provider_order_id: typeof providerResult.provider_order_id === "string" ? providerResult.provider_order_id : null,
+          provider_error_code: "provider_pending",
+        }).eq("id", order.id).eq("status", "processing");
+        return reply(request, { orderId: order.id, retrievalToken: token, status: "fulfillment_unknown", message: "The provider is still processing this request. No payment was requested. Please check the order status later." });
+      }
+      if (providerResult.__provider_failed === true) {
+        await admin.from("instant_api_orders").update({
+          status: "failed",
+          provider_error_code: typeof providerResult.provider_error_code === "string" ? providerResult.provider_error_code : "provider_rejected",
+        }).eq("id", order.id).eq("status", "processing");
+        return reply(request, { orderId: order.id, retrievalToken: token, status: "failed", message: "We could not retrieve the requested result. You have not been charged." });
+      }
+
+      const resultCipher = await encrypt(providerResult);
+      const actualCost = parseProviderCost(providerResult.cost_deducted) ?? service.provider_cost;
+      const { error: resultError } = await admin.from("instant_api_orders").update({
+        result_ciphertext: resultCipher,
+        provider_cost_actual: actualCost,
+        provider_order_id: typeof providerResult.order_id === "string" ? providerResult.order_id : null,
+        fulfilled_at: new Date().toISOString(),
+      }).eq("id", order.id).eq("status", "processing");
+      if (resultError) throw resultError;
+
+      try {
+        const rp = await razorpay("/orders", "POST", {
+          amount, currency: "INR", receipt: order.id,
+          notes: { instant_api_order_id: order.id, service_slug: slug },
+        });
         if (typeof rp.id !== "string" || rp.amount !== amount || rp.currency !== "INR") throw new Error("Payment gateway returned an invalid order.");
-        const { error: saveError } = await admin.from("instant_api_orders").update({ razorpay_order_id: rp.id }).eq("id", order.id);
+        const { error: saveError } = await admin.from("instant_api_orders").update({
+          status: "payment_pending", razorpay_order_id: rp.id,
+          result_expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+        }).eq("id", order.id).eq("status", "processing");
         if (saveError) throw saveError;
-        return reply(request, { orderId: order.id, retrievalToken: token, razorpayOrderId: rp.id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID") });
-      } catch (error) {
-        await admin.from("instant_api_orders").update({ status: "failed", provider_error_code: "payment_order_creation_failed" }).eq("id", order.id);
-        throw error;
+        return reply(request, { orderId: order.id, retrievalToken: token, razorpayOrderId: rp.id, amount, currency: "INR", keyId: Deno.env.get("RAZORPAY_KEY_ID"), status: "payment_pending", message: "Your result is ready. Complete payment to unlock it." });
+      } catch {
+        await admin.from("instant_api_orders").update({
+          status: "failed",
+          provider_error_code: "payment_order_creation_failed",
+          result_expires_at: new Date().toISOString(),
+        }).eq("id", order.id).eq("status", "processing");
+        return reply(request, { orderId: order.id, retrievalToken: token, status: "failed", message: "Your result was prepared, but secure payment could not be started. You have not been charged. Please contact support." });
       }
     }
 
@@ -314,6 +346,7 @@ Deno.serve(async (request: Request) => {
       if (error) throw error;
       if (!order || !token || !equal(await sha(token), (await admin.from("instant_api_orders").select("retrieval_token_hash").eq("id", orderId).single()).data?.retrieval_token_hash || "")) return reply(request, { error: "Order not found." }, 404);
       if (new Date(order.result_expires_at).getTime() < Date.now()) return reply(request, { error: "This result has expired. Contact support for assistance." }, 410);
+      if (order.status !== "succeeded") return reply(request, { orderId: order.id, status: order.status, result: null });
       const result = order.result_ciphertext ? customerSafeResult(await decrypt(order.result_ciphertext)) : null;
       return reply(request, { orderId: order.id, status: order.status, result });
     }
