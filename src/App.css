@@ -1432,7 +1432,7 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
 
 
 /* Customer service assistant */
-.customer-chat-assistant { position:fixed; z-index:120; left:22px; bottom:22px; display:flex; align-items:flex-start; flex-direction:column; gap:12px; font-family:'Inter','DM Sans',sans-serif; }
+.customer-chat-assistant { position:fixed; z-index:120; left:auto; right:22px; bottom:22px; display:flex; align-items:flex-end; flex-direction:column; gap:12px; font-family:'Inter','DM Sans',sans-serif; }
 .customer-chat-launcher { display:flex; min-height:54px; align-items:center; justify-content:center; gap:10px; padding:0 19px; border:1px solid #00f5ff; border-radius:999px; color:#071018; background:#00f5ff; box-shadow:0 8px 35px rgba(0,245,255,.24),0 3px 10px rgba(0,0,0,.3); font-size:12px; font-weight:800; cursor:pointer; transition:transform .2s ease,box-shadow .2s ease; }
 .customer-chat-launcher:hover { transform:translateY(-2px); box-shadow:0 10px 42px rgba(0,245,255,.34); }
 .customer-chat-launcher.is-open { color:#e9fbff; background:#131a2e; }
@@ -1965,3 +1965,50 @@ body:has(.cyber-home) .ask-question-trigger svg { color:#00f5ff; }
 .quick-whatsapp-form{display:grid;gap:17px}.quick-whatsapp-form .field{margin:0}.quick-whatsapp-form textarea{width:100%;resize:vertical}.quick-whatsapp-form .cyber-button{justify-content:center;min-height:52px}.floating-whatsapp{position:fixed;z-index:1200;left:20px;right:auto;bottom:24px;display:flex;min-height:54px;align-items:center;gap:9px;padding:0 19px;border:1px solid #46c879;border-radius:999px;color:#062012;background:#35c96b;box-shadow:0 10px 28px rgba(0,0,0,.32);font-size:14px;font-weight:850;text-decoration:none}.floating-whatsapp svg{width:22px;height:22px}.floating-whatsapp:hover{background:#53dd83;transform:translateY(-2px)}
 @media(max-width:760px){.customer-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px auto}.customer-shortcut{min-height:106px}.customer-shortcut span{font-size:14px}.homepage-service-search{grid-template-columns:1fr;gap:14px;margin:0 14px 24px;padding:18px}.homepage-service-search form{min-width:0}.homepage-service-search button{padding:0 13px}.service-guidance-list{grid-template-columns:1fr}.service-guidance-faq{grid-template-columns:1fr}.floating-whatsapp{left:14px;right:auto;bottom:88px;min-height:50px;padding:0 15px;font-size:13px}}
 @media(prefers-reduced-motion:reduce){.customer-shortcut,.floating-whatsapp{transition:none}.customer-shortcut:hover,.floating-whatsapp:hover{transform:none}}
+
+/* Final floating support controls: independent hit targets on both sides. */
+.customer-chat-assistant {
+  position: fixed !important;
+  z-index: 1300 !important;
+  top: auto !important;
+  right: 20px !important;
+  bottom: 24px !important;
+  left: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 12px !important;
+  pointer-events: none;
+}
+.customer-chat-assistant > * { pointer-events: auto; }
+.customer-chat-launcher {
+  position: relative;
+  z-index: 1301;
+  min-height: 54px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.customer-chat-panel { max-width: calc(100vw - 28px); }
+.floating-whatsapp {
+  z-index: 1200;
+  right: auto;
+  left: 20px;
+}
+@media (max-width: 767px) {
+  .customer-chat-assistant {
+    right: 14px !important;
+    bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    align-items: flex-end !important;
+  }
+  .customer-chat-panel {
+    width: min(390px, calc(100vw - 28px));
+    max-height: calc(100dvh - 175px) !important;
+  }
+  .customer-chat-launcher { min-height: 50px; }
+  .floating-whatsapp {
+    right: auto;
+    left: 14px;
+    bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
