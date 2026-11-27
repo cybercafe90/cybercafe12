@@ -88,6 +88,7 @@ export default function InstantApiCaseCentre() {
         <div className="ia-case-admin-actions">
           <button type="button" onClick={() => void updateCase(item, "under_review")} disabled={busyId === item.id}><ClipboardCheck size={14}/> Mark under review</button>
           <button type="button" onClick={() => void updateCase(item, "awaiting_customer")} disabled={busyId === item.id}>Awaiting customer</button>
+          <button type="button" onClick={() => void updateCase(item, "resolved")} disabled={busyId === item.id || (notes[item.id] ?? item.admin_note ?? "").trim().length < 8}>Mark resolved</button>
           <button type="button" onClick={() => void updateCase(item, "rejected")} disabled={busyId === item.id || (notes[item.id] ?? item.admin_note ?? "").trim().length < 8}>Reject with reason</button>
           {canRefund && <button type="button" className="refund" onClick={() => void approveRefund(item)} disabled={busyId === item.id}><ShieldCheck size={14}/> {busyId === item.id ? "Processing…" : "Approve & process refund"}</button>}
           {order?.refund_status === "processing" && <span className="ia-case-processing">Refund submitted; verify Razorpay status before closing.</span>}
