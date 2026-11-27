@@ -61,16 +61,33 @@ async function consumeRateLimit(admin: ReturnType<typeof client>, request: Reque
   if (error) throw new Error("Rate-limit storage is unavailable.");
   return data === true;
 }
+async function verifyOwner(request: Request, admin: ReturnType<typeof client>) {
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!token || !anonKey || !url) throw new Error("Unauthorized.");
+  const userClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: "Bearer " + token } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+  if (authError || !user) throw new Error("Unauthorized.");
+  const { data: role, error: roleError } = await admin.from("user_roles")
+    .select("role").eq("user_id", user.id).eq("role", "owner").maybeSingle();
+  if (roleError || role?.role !== "owner") throw new Error("Owner authorization required.");
+  return user;
+}
+
 function client() {
   const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) throw new Error("Supabase backend is not configured.");
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
-async function razorpay(path: string, method: string, body?: unknown) {
+async function razorpay(path: string, method: string, body?: unknown, extraHeaders: Record<string, string> = {}) {
   const id = Deno.env.get("RAZORPAY_KEY_ID"), secret = Deno.env.get("RAZORPAY_KEY_SECRET");
   if (!id || !secret) throw new Error("Razorpay is not configured.");
   const response = await fetch("https://api.razorpay.com/v1" + path, {
-    method, headers: { Authorization: "Basic " + btoa(id + ":" + secret), "Content-Type": "application/json" },
+    method, headers: { Authorization: "Basic " + btoa(id + ":" + secret), "Content-Type": "application/json", ...extraHeaders },
     ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(15000),
   });
   const json = await response.json().catch(() => ({}));
@@ -227,6 +244,82 @@ Deno.serve(async (request: Request) => {
       const identifier = action === "create_order" && typeof body.serviceSlug === "string" ? body.serviceSlug : "public";
       const limit = action === "create_order" ? 5 : action === "verify_payment" ? 15 : action === "retrieve_order" ? 40 : 60;
       if (!await consumeRateLimit(admin, request, "instant-api-" + action, identifier, limit, 15)) return reply(request, { error: "Too many attempts. Please wait and try again." }, 429);
+    }
+
+    if (action === "admin_refund") {
+      let actor;
+      try { actor = await verifyOwner(request, admin); }
+      catch (reason) {
+        const message = reason instanceof Error ? reason.message : "";
+        return reply(request, { error: message.includes("authorization") ? "Owner authorization required." : "Verified owner sign-in required." }, message.includes("authorization") ? 403 : 401);
+      }
+      const orderId = typeof body.orderId === "string" ? body.orderId : "";
+      if (!/^[0-9a-f-]{36}$/i.test(orderId)) return reply(request, { error: "A valid order ID is required." }, 400);
+      const { data: order, error: orderError } = await admin.from("instant_api_orders")
+        .select("id,service_slug,customer_price,status,provider_error_code,razorpay_order_id,razorpay_payment_id,razorpay_refund_id,refund_status,refund_idempotency_key")
+        .eq("id", orderId).maybeSingle();
+      if (orderError) throw orderError;
+      if (!order) return reply(request, { error: "Order not found." }, 404);
+      if (order.status === "refunded" && order.razorpay_refund_id) return reply(request, { status: "refunded", refundId: order.razorpay_refund_id, duplicate: true });
+      if (order.status !== "refund_pending" || !order.razorpay_payment_id) {
+        return reply(request, { error: "Only captured orders awaiting refund resolution can be refunded." }, 409);
+      }
+      const expectedAmount = Math.round(Number(order.customer_price) * 100);
+      if (!Number.isSafeInteger(expectedAmount) || expectedAmount < 100) return reply(request, { error: "Stored refund amount is invalid." }, 409);
+      const payment = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id), "GET");
+      if (payment.status !== "captured" || payment.captured !== true || payment.currency !== "INR" ||
+          payment.order_id !== order.razorpay_order_id || Number(payment.amount) !== expectedAmount) {
+        return reply(request, { error: "Razorpay payment is not captured or its order/amount does not match. No refund was sent." }, 409);
+      }
+      const refundList = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refunds", "GET");
+      const refunds = Array.isArray(refundList.items) ? refundList.items : [];
+      const matched = refunds.find((item: Record<string, unknown>) =>
+        Number(item.amount) === expectedAmount &&
+        item.notes && typeof item.notes === "object" &&
+        (item.notes as Record<string, unknown>).instant_api_order_id === order.id
+      );
+      if (matched && typeof matched.id === "string") {
+        const status = matched.status === "processed" ? "refunded" : "refund_pending";
+        const { error: syncError } = await admin.from("instant_api_orders").update({
+          razorpay_refund_id: matched.id, refund_status: matched.status === "processed" ? "processed" : "pending",
+          status, refund_processed_at: matched.status === "processed" ? new Date().toISOString() : null,
+          provider_error_code: status === "refunded" ? "provider_rejected_refunded" : "refund_processing",
+        }).eq("id", order.id);
+        if (syncError) throw syncError;
+        return reply(request, { status, refundId: matched.id, reconciled: true });
+      }
+      const refundedAmount = Number(payment.amount_refunded || 0);
+      if (refundedAmount > 0) return reply(request, { error: "Razorpay shows another refund or partial refund for this payment. Manual reconciliation is required; no new refund was sent." }, 409);
+      const idempotencyKey = order.refund_idempotency_key || "instant-api-refund-" + order.id;
+      const { error: reserveError } = await admin.from("instant_api_orders").update({
+        refund_idempotency_key: idempotencyKey,
+        refund_status: "pending",
+        refund_requested_at: new Date().toISOString(),
+      }).eq("id", order.id).eq("status", "refund_pending");
+      if (reserveError) throw reserveError;
+      try {
+        const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
+          amount: expectedAmount,
+          notes: { instant_api_order_id: order.id, reason: "provider_rejected", initiated_by: actor.id },
+        }, { "X-Refund-Idempotency": idempotencyKey });
+        if (typeof refund.id !== "string") throw new Error("Razorpay did not return a refund reference.");
+        const processed = refund.status === "processed";
+        const { error: saveError } = await admin.from("instant_api_orders").update({
+          razorpay_refund_id: refund.id, refund_status: processed ? "processed" : "pending",
+          status: processed ? "refunded" : "refund_pending",
+          refund_processed_at: processed ? new Date().toISOString() : null,
+          provider_error_code: processed ? "provider_rejected_refunded" : "refund_processing",
+        }).eq("id", order.id);
+        if (saveError) throw saveError;
+        await admin.from("admin_audit_logs").insert({
+          actor_id: actor.id, action: "instant_api_refund_requested", entity_type: "instant_api_orders",
+          entity_id: order.id, metadata: { refund_id: refund.id, amount_paise: expectedAmount, refund_status: refund.status },
+        });
+        return reply(request, { status: processed ? "refunded" : "refund_pending", refundId: refund.id });
+      } catch {
+        await admin.from("instant_api_orders").update({ status: "refund_pending", refund_status: "pending", provider_error_code: "refund_reconciliation_required" }).eq("id", order.id);
+        return reply(request, { status: "refund_pending", reconciliationRequired: true, message: "Refund request outcome is uncertain. Retry the reconciliation action; the same idempotency key will be reused." }, 202);
+      }
     }
 
     if (action === "catalog") {
