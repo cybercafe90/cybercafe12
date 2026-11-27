@@ -352,7 +352,7 @@ Deno.serve(async (request: Request) => {
         refund_idempotency_key: idempotencyKey,
         refund_status: "pending",
         refund_requested_at: new Date().toISOString(),
-      }).eq("id", order.id).eq("status", "refund_pending");
+      }).eq("id", order.id).in("status", ["refund_pending", "fulfillment_unknown"]);
       if (reserveError) throw reserveError;
       try {
         const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
