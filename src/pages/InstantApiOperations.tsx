@@ -142,6 +142,12 @@ export default function InstantApiOperations() {
 
   async function processOrReconcileRefund(order: Order, confirmProviderNotFulfilled = false) {
     if (!supabase || refundBusyId) return;
+    if (order.status === "refunded" || order.refund_status === "processed") {
+      setRefundError("");
+      setRefundNotice(`Order ${shortId(order.id)} is already marked refunded. No further refund request was sent.`);
+      await refresh();
+      return;
+    }
     const amount = inr(order.customer_price);
     const approved = window.confirm(
       confirmProviderNotFulfilled
@@ -156,7 +162,25 @@ export default function InstantApiOperations() {
       const { data, error: invokeError } = await supabase.functions.invoke("instant-api-gateway", {
         body: { action: "admin_refund", orderId: order.id, ...(confirmProviderNotFulfilled ? { confirmProviderNotFulfilled: true } : {}) },
       });
-      if (invokeError) throw invokeError;
+      if (invokeError) {
+        let serverMessage = invokeError.message || "Refund request was rejected.";
+        const response = (invokeError as typeof invokeError & { context?: Response }).context;
+        if (response && typeof response.clone === "function") {
+          try {
+            const payload = await response.clone().json() as { error?: unknown; message?: unknown; status?: unknown };
+            if (typeof payload.error === "string") serverMessage = payload.error;
+            else if (typeof payload.message === "string") serverMessage = payload.message;
+            if (response.status === 409 && /already.*refund|already.*refunded|refund.*processed/i.test(serverMessage)) {
+              setRefundNotice(serverMessage + " No new refund was created.");
+              await refresh();
+              return;
+            }
+          } catch {
+            // Preserve the SDK error message when the response is not JSON.
+          }
+        }
+        throw new Error(serverMessage);
+      }
       if (!data) throw new Error("Refund service returned no result.");
       if (data.error) throw new Error(String(data.error));
       setRefundNotice(
@@ -167,6 +191,7 @@ export default function InstantApiOperations() {
       await refresh();
     } catch (reason) {
       setRefundError(reason instanceof Error ? reason.message : "Refund action could not be completed.");
+      await refresh();
     } finally {
       setRefundBusyId(null);
     }
