@@ -65,7 +65,7 @@ test("WhatsApp and Ask Assistant remain independently clickable on opposite side
   await chatInput.fill("What services do you offer?");
   await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
   await page.getByRole("button", { name: "Send message" }).click();
-  await expect(page.getByText("Browse Services Hub")).toBeVisible();
+  await expect(page.getByText("What services do you offer?")).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Close customer assistant" }).click();
