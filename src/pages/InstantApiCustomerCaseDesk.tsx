@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AlertCircle, CheckCircle2, Clock3, FileQuestion, RefreshCw, ShieldCheck } from "lucide-react";
 import { callFunction } from "../lib/supabase";
 import "./InstantApiCaseDesk.css";
@@ -23,10 +23,6 @@ export default function InstantApiCustomerCaseDesk({ initialReference = "", init
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  useEffect(() => {
-    setReference(initialReference);
-    setToken(initialToken);
-  }, [initialReference, initialToken]);
 
   async function lookup(event?: React.FormEvent) {
     event?.preventDefault();
