@@ -43,6 +43,8 @@ export default function InstantApiCaseCentre() {
   }
 
   async function approveRefund(item: ApiCase) {
+    const amount = item.instant_api_orders ? money(Number(item.instant_api_orders.customer_price)) : "the captured amount";
+    if (!window.confirm("Approve a full refund of " + amount + " for " + (item.instant_api_orders?.service_reference ?? item.case_reference) + "? Razorpay will be checked for existing refunds first.")) return;
     setBusyId(item.id); setError(""); setNotice("");
     try {
       const result = await callFunction<{ status: string; message: string }>("instant-api-cases", { action: "admin_approve_refund", caseId: item.id });
@@ -78,7 +80,7 @@ export default function InstantApiCaseCentre() {
         </div>
         <p className="ia-case-customer-message">{item.customer_message}</p>
         {order?.refund_reference && <p className="ia-case-refund-ref">Refund reference: <code>{order.refund_reference}</code></p>}
-        <label className="ia-case-admin-note">Internal / customer update note<textarea value={notes[item.id] ?? item.admin_note ?? ""} onChange={event => setNotes(current => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} placeholder="Explain what was checked or what the customer should do next."/></label>
+        <label className="ia-case-admin-note">Customer-visible update note<textarea value={notes[item.id] ?? item.admin_note ?? ""} onChange={event => setNotes(current => ({ ...current, [item.id]: event.target.value }))} maxLength={1000} placeholder="Explain what was checked or what the customer should do next."/></label>
         <div className="ia-case-admin-actions">
           <button type="button" onClick={() => void updateCase(item, "under_review")} disabled={busyId === item.id}><ClipboardCheck size={14}/> Mark under review</button>
           <button type="button" onClick={() => void updateCase(item, "awaiting_customer")} disabled={busyId === item.id}>Awaiting customer</button>
