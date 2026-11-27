@@ -125,6 +125,7 @@ export default function InstantApiOperations() {
   const knownCostCount = capturedOrders.filter(order => order.provider_cost_actual !== null || order.provider_cost_at_order !== null).length;
   const attentionOrders = orders.filter(order => ["failed", "fulfillment_unknown", "refund_pending"].includes(order.status));
   const pendingRefunds = orders.filter(order => order.status === "refund_pending");
+  const unknownOrders = orders.filter(order => order.status === "fulfillment_unknown");
   const completedRefunds = orders.filter(order => order.status === "refunded");
   const missingPaymentRefs = orders.filter(order => capturedStatuses.has(order.status) && !order.razorpay_payment_id);
   const filteredAudit = audit.filter(entry => !auditQuery.trim() || [entry.action, entry.entity_type, entry.entity_id ?? "", entry.actor_id ?? ""].join(" ").toLowerCase().includes(auditQuery.trim().toLowerCase()));
@@ -138,11 +139,13 @@ export default function InstantApiOperations() {
     return { service, total: serviceOrders.length, completed, failed, latest, ready };
   });
 
-  async function processOrReconcileRefund(order: Order) {
+  async function processOrReconcileRefund(order: Order, confirmProviderNotFulfilled = false) {
     if (!supabase || refundBusyId) return;
     const amount = inr(order.customer_price);
     const approved = window.confirm(
-      `Confirm full refund/reconciliation for ${amount} on order ${order.id}?\\n\\nThe server will verify the captured Razorpay payment and existing refund history. It will reuse the same idempotency key to prevent duplicate refunds.`
+      confirmProviderNotFulfilled
+        ? `You are confirming that the provider did NOT fulfil order ${order.id}. Only proceed after checking the provider dashboard/logs. The server will verify the captured Razorpay payment and existing refund history before issuing the full refund of ${amount}. Continue?`
+        : `Confirm full refund/reconciliation for ${amount} on order ${order.id}? The server will verify the captured Razorpay payment and existing refund history.`
     );
     if (!approved) return;
     setRefundBusyId(order.id);
@@ -150,7 +153,7 @@ export default function InstantApiOperations() {
     setRefundNotice("");
     try {
       const { data, error: invokeError } = await supabase.functions.invoke("instant-api-gateway", {
-        body: { action: "admin_refund", orderId: order.id },
+        body: { action: "admin_refund", orderId: order.id, ...(confirmProviderNotFulfilled ? { confirmProviderNotFulfilled: true } : {}) },
       });
       if (invokeError) throw invokeError;
       if (!data) throw new Error("Refund service returned no result.");
@@ -335,10 +338,10 @@ export default function InstantApiOperations() {
         <div className="ia-ops-title"><RotateCcw/><div><h3>Refunds &amp; Reconciliation</h3><p>Owner-only Razorpay refund requests with payment verification, refund-history checks and a stable idempotency key.</p></div></div>
         {refundError && <div className="ia-alert ia-error" role="alert"><AlertTriangle size={16}/>{refundError}</div>}
         {refundNotice && <div className="ia-alert ia-success" role="status">{refundNotice}</div>}
-        <div className="ia-ops-stats"><div><small>Awaiting resolution</small><b>{pendingRefunds.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
+        <div className="ia-ops-stats"><div><small>Awaiting refund</small><b>{pendingRefunds.length}</b></div><div><small>Timeouts needing provider check</small><b>{unknownOrders.length}</b></div><div><small>Recorded as refunded</small><b>{completedRefunds.length}</b></div><div><small>Pending refund value</small><b>{inr(pendingRefunds.reduce((sum,order)=>sum+Number(order.customer_price),0))}</b></div></div>
         <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Payment ref</th><th>Refund ref</th><th>Status</th><th>Reason</th><th>Action</th></tr></thead><tbody>
-          {[...pendingRefunds, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.razorpay_refund_id || "Not recorded"}</td><td>{order.refund_status || order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td>{order.status === "refund_pending" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Process / reconcile"}</button> : <button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button>}</td></tr>)}
-          {!pendingRefunds.length && !completedRefunds.length && <tr><td colSpan={8}>No refund cases recorded.</td></tr>}
+          {[...pendingRefunds, ...unknownOrders, ...completedRefunds].map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td>{order.razorpay_payment_id || "Missing"}</td><td>{order.razorpay_refund_id || "Not recorded"}</td><td>{order.refund_status || order.status.replaceAll("_", " ")}</td><td>{order.provider_error_code || "—"}</td><td>{order.status === "refund_pending" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Process / reconcile"}</button> : order.status === "fulfillment_unknown" ? <button className="ia-button ia-button-muted" onClick={() => void processOrReconcileRefund(order, true)} disabled={refundBusyId !== null}>{refundBusyId === order.id ? "Checking…" : "Refund after provider check"}</button> : <button className="ia-ops-link" onClick={() => setSelectedOrder(order)}>View</button>}</td></tr>)}
+          {!pendingRefunds.length && !unknownOrders.length && !completedRefunds.length && <tr><td colSpan={8}>No refund or timeout reconciliation cases recorded.</td></tr>}
         </tbody></table></div>
         <p className="ia-ops-warning"><AlertTriangle size={15}/> Each action re-checks Razorpay's captured payment and refund history. Existing matching refunds are synchronized instead of recreated. An uncertain request reuses its original idempotency key. Never treat a pending status as settled until Razorpay confirms processing.</p>
       </section>
