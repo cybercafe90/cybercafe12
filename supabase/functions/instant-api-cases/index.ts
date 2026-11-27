@@ -143,7 +143,7 @@ Deno.serve(async (request: Request) => {
       if (caseType === "failed_service" && !["failed", "refund_pending", "refunded"].includes(order.status)) {
         return reply(request, { error: "A failed-service query is available only when the service is marked failed or refund processing." }, 409);
       }
-      if (caseType === "payment_issue" && !["payment_pending", "paid", "processing", "fulfillment_unknown", "failed", "refund_pending", "refunded"].includes(order.status)) {
+      if (caseType === "payment_issue" && !["payment_pending", "paid", "processing", "fulfillment_unknown", "failed", "refund_pending", "refunded", "succeeded"].includes(order.status)) {
         return reply(request, { error: "This transaction is not eligible for a payment query." }, 409);
       }
 
@@ -185,7 +185,7 @@ Deno.serve(async (request: Request) => {
       const caseId = String(body.caseId || "");
       const status = String(body.status || "");
       const note = typeof body.adminNote === "string" ? body.adminNote.trim() : "";
-      if (!/^[0-9a-f-]{36}$/i.test(caseId) || !["under_review", "awaiting_customer", "resolved", "rejected"].includes(status) || note.length > 1000) {
+      if (!/^[0-9a-f-]{36}$/i.test(caseId) || !["under_review", "awaiting_customer", "resolved", "rejected"].includes(status) || note.length > 1000 || (status === "rejected" && note.length < 8)) {
         return reply(request, { error: "Invalid case update." }, 400);
       }
       const { data: updated, error } = await admin.from("instant_api_cases").update({
