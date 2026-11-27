@@ -33,7 +33,7 @@ test("all public and restricted portal routes avoid horizontal overflow", async 
   }
 });
 
-test("floating WhatsApp and Ask Assistant controls stay on opposite edges on desktop and mobile", async ({ page }) => {
+test("WhatsApp and Ask Assistant remain independently clickable on opposite sides", async ({ page }) => {
   await page.goto("/");
   const whatsapp = page.locator(".floating-whatsapp");
   const assistant = page.locator(".customer-chat-launcher");
@@ -58,6 +58,18 @@ test("floating WhatsApp and Ask Assistant controls stay on opposite edges on des
   };
 
   await assertOppositeEdges();
+  await assistant.click();
+  await expect(page.getByRole("dialog", { name: "BABA'S CYBER CAFE customer assistant" })).toBeVisible();
+  const chatInput = page.getByRole("textbox", { name: "Ask about BABA'S CYBER CAFE services" });
+  await expect(chatInput).toBeVisible();
+  await chatInput.fill("What services do you offer?");
+  await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText("Browse Services Hub")).toBeVisible();
+
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Close customer assistant" }).click();
   await assertOppositeEdges();
+  await assistant.click();
+  await expect(page.getByRole("dialog", { name: "BABA'S CYBER CAFE customer assistant" })).toBeVisible();
 });
