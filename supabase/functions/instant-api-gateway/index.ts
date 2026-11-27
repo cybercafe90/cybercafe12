@@ -150,6 +150,17 @@ async function callProvider(service: Service, input: Record<string, string>) {
   return result;
 }
 type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null };
+function customerSafeResult(value: unknown): unknown {
+  const privateField = /(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i;
+  if (Array.isArray(value)) return value.map(customerSafeResult);
+  if (!value || typeof value !== "object") return value;
+  const output: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    if (privateField.test(key)) continue;
+    output[key] = customerSafeResult(item);
+  }
+  return output;
+}
 async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
   const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
   if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
@@ -310,7 +321,7 @@ Deno.serve(async (request: Request) => {
       if (error) throw error;
       if (!order || !token || !equal(await sha(token), (await admin.from("instant_api_orders").select("retrieval_token_hash").eq("id", orderId).single()).data?.retrieval_token_hash || "")) return reply(request, { error: "Order not found." }, 404);
       if (new Date(order.result_expires_at).getTime() < Date.now()) return reply(request, { error: "This result has expired. Contact support for assistance." }, 410);
-      const result = order.result_ciphertext ? await decrypt(order.result_ciphertext) : null;
+      const result = order.result_ciphertext ? customerSafeResult(await decrypt(order.result_ciphertext)) : null;
       return reply(request, { orderId: order.id, status: order.status, result });
     }
     return reply(request, { error: "Unsupported action." }, 400);
