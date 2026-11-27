@@ -218,6 +218,7 @@ Deno.serve(async (request: Request) => {
       const existingItems = Array.isArray(existingRefunds.items) ? existingRefunds.items : [];
       const matching = existingItems.find((item: Record<string, unknown>) => Number(item.amount) >= fullAmount && ["processed", "pending"].includes(String(item.status)));
       let refund = matching;
+      if (!refund && order.refund_status === "processing") return reply(request, { error: "A refund request is already marked as processing. Reconcile Razorpay status before another attempt." }, 409);
       if (!refund) {
         const { data: claimed, error: claimError } = await admin.from("instant_api_orders").update({
           refund_status: "processing", refund_amount: order.customer_price,
