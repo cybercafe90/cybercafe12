@@ -463,6 +463,38 @@ function HomePage() {
         <a className="customer-shortcut shortcut-docs" href="#services"><FileCheck2/><span>Documents Needed</span><small>ضروری کاغذات</small></a>
         <Link className="customer-shortcut shortcut-track" to="/track"><Search/><span>Track My Application</span><small>درخواست ٹریک کریں</small></Link>
       </section>
+      <Link
+        to="/instant-services"
+        aria-label="Explore Instant API Services"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 18,
+          maxWidth: 1384,
+          margin: "0 auto 28px",
+          padding: "clamp(18px, 3vw, 28px)",
+          border: "1px solid rgba(77,163,255,.55)",
+          borderRadius: 18,
+          color: "#f8fbff",
+          background: "radial-gradient(ellipse at 8% 50%, rgba(240,90,166,.18), transparent 42%), linear-gradient(115deg, #10182a, #0b1324)",
+          boxShadow: "0 14px 38px rgba(0,0,0,.2)",
+          textDecoration: "none",
+        }}
+      >
+        <span aria-hidden="true" style={{ display: "grid", width: 62, height: 62, flex: "0 0 62px", placeItems: "center", border: "1px solid rgba(77,163,255,.65)", borderRadius: 16, color: "#ff78b7", background: "linear-gradient(145deg, rgba(240,90,166,.16), rgba(77,163,255,.16))" }}>
+          <Zap size={29} />
+        </span>
+        <span style={{ flex: "1 1 260px", minWidth: 0 }}>
+          <span className="cyber-eyebrow" style={{ color: "#83c5ff" }}>SECURE API-POWERED CUSTOMER SERVICES</span>
+          <strong style={{ display: "block", margin: "6px 0", color: "#fff", fontSize: "clamp(21px, 2.8vw, 30px)", lineHeight: 1.2 }}>Instant Services <span style={{ color: "#ff78b7" }}>·</span> Direct digital access</strong>
+          <span style={{ display: "block", color: "#b9c7dc", fontSize: 13, lineHeight: 1.65 }}>Vehicle RC PDF, PAN verification, voter and driving licence services — choose a service, enter the required details and follow the secure checkout.</span>
+        </span>
+        <span style={{ display: "inline-flex", minHeight: 44, alignItems: "center", justifyContent: "center", gap: 9, padding: "0 17px", borderRadius: 10, color: "#07101c", background: "linear-gradient(105deg, #ff70ad, #72baff)", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>
+          Explore Instant Services <ArrowRight size={16} />
+        </span>
+      </Link>
+
       <section className="homepage-service-search" aria-label="Search services">
         <div><span className="cyber-eyebrow">FIND A SERVICE</span><h2>What do you need help with?</h2><p>Search by service or department name.</p></div>
         <form onSubmit={(event) => { event.preventDefault(); navigate(`/services?search=${encodeURIComponent(homeServiceQuery.trim())}`); }}>
