@@ -65,6 +65,15 @@ export default function InstantApiCustomerPortal() {
     return () => { active = false; };
   }, []);
 
+  function customerDisplayValue(value: unknown): unknown {
+    const hidden = /^(?:pdf|pdf_base64|document_base64|file_base64|pdf_data|pdf_url|document_url|download_url|file_url)$/i;
+    const financial = /(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i;
+    if (Array.isArray(value)) return value.map(customerDisplayValue);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !hidden.test(key) && !financial.test(key))
+      .map(([key, item]) => [key, customerDisplayValue(item)]));
+  }
   const resultObject = result && typeof result === "object" && !Array.isArray(result) ? result as Record<string, unknown> : null;
   function findDocument(value: unknown, keys: RegExp, depth = 0): string | undefined {
     if (depth > 7 || !value || typeof value !== "object") return undefined;
@@ -187,7 +196,7 @@ export default function InstantApiCustomerPortal() {
           {error && <div className="ia-alert ia-error" role="alert">{error}</div>}
           {orderRef && <div className="ia-alert ia-success" role="status">Order reference: <b>{orderRef}</b> · Status: {orderStatus}</div>}
           {orderRef && !result && <button type="button" className="ia-pdf-download" onClick={() => void refreshResult()} disabled={checkingResult || !retrievalToken}>{checkingResult ? "Checking service result…" : "Check service result again"}</button>}
-          {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfHref && <a className="ia-pdf-download" href={pdfHref} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(resultObject ? Object.fromEntries(Object.entries(resultObject).filter(([key]) => !["pdf", "pdf_base64"].includes(key) && !/(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i.test(key))) : result, null, 2)}</pre></div> :
+          {result !== null ? <div className="ia-result"><h3>Service result</h3>{pdfHref && <a className="ia-pdf-download" href={pdfHref} download="BABA-CYBER-CAFE-document.pdf">Download PDF document</a>}{pdfUrl && <a className="ia-pdf-download" href={pdfUrl} target="_blank" rel="noreferrer">Open PDF document</a>}<pre>{JSON.stringify(customerDisplayValue(result), null, 2)}</pre></div> :
           <form onSubmit={checkout}>
             {(fields[selected.slug] || []).map(field => <label className="ia-field" key={field.name}><span>{field.label}</span><input required={!field.label.includes("optional")} type={field.type || "text"} autoComplete="off" value={input[field.name] || ""} placeholder={field.placeholder} onChange={event => setInput(current => ({ ...current, [field.name]: event.target.value }))}/></label>)}
             <label className="ia-field"><span>Purpose of request</span><textarea required minLength={8} maxLength={300} value={lawfulPurpose} onChange={event => setLawfulPurpose(event.target.value)} placeholder="Briefly explain why you are requesting this record"/></label>
