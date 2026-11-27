@@ -26,9 +26,9 @@ Deno.test("customer result bounds depth, arrays and oversized strings", () => {
   }) as Record<string, unknown>;
   assertEquals((output.records as unknown[]).length, 100);
   assertEquals((output.message as string).length, 20_000);
-  let nested = output.data as Record<string, unknown>;
-  for (let i = 0; i < 10; i++) nested = nested.data as Record<string, unknown>;
-  assertEquals(nested.data, null);
+  let nested: unknown = output.data;
+  for (let i = 0; i < 10 && nested !== null; i++) nested = (nested as Record<string, unknown>).data;
+  assertEquals(nested, null);
 });
 
 Deno.test("customer result preserves safe vehicle data and strips unknown nested keys", () => {
