@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import { customerSafeResult } from "../_shared/instant-api-privacy.ts";
 
 const ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in"]);
 const BASE_HOST = "api.smmtopserver.shop";
@@ -150,17 +151,6 @@ async function callProvider(service: Service, input: Record<string, string>) {
   return result;
 }
 type InstantOrder = { id: string; service_slug: string; request_ciphertext: string; status: string; customer_price: number; razorpay_payment_id?: string | null };
-function customerSafeResult(value: unknown): unknown {
-  const privateField = /(?:provider.?cost|cost.?deducted|remaining.?balance|wallet|profit|margin|commission|api.?balance|account.?balance|credit.?balance)/i;
-  if (Array.isArray(value)) return value.map(customerSafeResult);
-  if (!value || typeof value !== "object") return value;
-  const output: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    if (privateField.test(key)) continue;
-    output[key] = customerSafeResult(item);
-  }
-  return output;
-}
 async function fulfill(admin: ReturnType<typeof client>, order: InstantOrder) {
   const { data: service, error: serviceError } = await admin.from("instant_api_services").select("*").eq("slug", order.service_slug).maybeSingle();
   if (serviceError || !service || !service.is_enabled || !service.authorization_verified) throw new Error("Service is not authorised for fulfilment.");
