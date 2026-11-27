@@ -318,8 +318,9 @@ Deno.serve(async (request: Request) => {
       if (!order) return reply(request, { error: "Order not found." }, 404);
       if (order.status === "refunded" && order.razorpay_refund_id) return reply(request, { status: "refunded", refundId: order.razorpay_refund_id, duplicate: true });
       const ownerConfirmedUnknown = order.status === "fulfillment_unknown" && body.confirmProviderNotFulfilled === true;
-      if ((order.status !== "refund_pending" && !ownerConfirmedUnknown) || !order.razorpay_payment_id) {
-        return reply(request, { error: "Only refund-pending orders, or timeout orders explicitly confirmed as not fulfilled by the owner, can be refunded." }, 409);
+      const ownerConfirmedFailed = order.status === "failed" && body.confirmProviderNotFulfilled === true;
+      if ((order.status !== "refund_pending" && !ownerConfirmedUnknown && !ownerConfirmedFailed) || !order.razorpay_payment_id) {
+        return reply(request, { error: "Only refund-pending orders, or failed/timeout orders with a captured payment explicitly confirmed as not fulfilled by the owner, can be refunded." }, 409);
       }
       const expectedAmount = Math.round(Number(order.customer_price) * 100);
       if (!Number.isSafeInteger(expectedAmount) || expectedAmount < 100) return reply(request, { error: "Stored refund amount is invalid." }, 409);
@@ -352,7 +353,7 @@ Deno.serve(async (request: Request) => {
         refund_idempotency_key: idempotencyKey,
         refund_status: "pending",
         refund_requested_at: new Date().toISOString(),
-      }).eq("id", order.id).in("status", ["refund_pending", "fulfillment_unknown"]);
+      }).eq("id", order.id).in("status", ["refund_pending", "fulfillment_unknown", "failed"]);
       if (reserveError) throw reserveError;
       try {
         const refund = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refund", "POST", {
