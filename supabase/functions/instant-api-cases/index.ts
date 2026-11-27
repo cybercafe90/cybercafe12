@@ -203,9 +203,10 @@ Deno.serve(async (request: Request) => {
     if (action === "admin_approve_refund") {
       const caseId = String(body.caseId || "");
       if (!/^[0-9a-f-]{36}$/i.test(caseId)) return reply(request, { error: "Invalid case reference." }, 400);
-      const { data: caseRow, error: caseError } = await admin.from("instant_api_cases").select("id,order_id,case_reference,status").eq("id", caseId).maybeSingle();
+      const { data: caseRow, error: caseError } = await admin.from("instant_api_cases").select("id,order_id,case_reference,status,case_type").eq("id", caseId).maybeSingle();
       if (caseError) throw caseError;
       if (!caseRow) return reply(request, { error: "Refund query not found." }, 404);
+      if (!["failed_service", "payment_issue"].includes(caseRow.case_type) || ["rejected", "resolved"].includes(caseRow.status)) return reply(request, { error: "This case is not eligible for refund approval." }, 409);
       const { data: order, error: orderError } = await admin.from("instant_api_orders").select("id,service_reference,status,customer_price,razorpay_payment_id,refund_status,refund_id").eq("id", caseRow.order_id).single();
       if (orderError) throw orderError;
       if (!["failed", "refund_pending"].includes(order.status)) return reply(request, { error: "Refund is blocked until the service failure is confirmed. Investigate uncertain or processing requests first." }, 409);
@@ -216,7 +217,15 @@ Deno.serve(async (request: Request) => {
       const existingRefunds = await razorpay("/payments/" + encodeURIComponent(order.razorpay_payment_id) + "/refunds", "GET");
       const fullAmount = Math.round(Number(order.customer_price) * 100);
       const existingItems = Array.isArray(existingRefunds.items) ? existingRefunds.items : [];
-      const matching = existingItems.find((item: Record<string, unknown>) => Number(item.amount) >= fullAmount && ["processed", "pending"].includes(String(item.status)));
+      const eligibleRefunds = existingItems.filter((item: Record<string, unknown>) => ["processed", "pending"].includes(String(item.status)));
+      const existingRefundTotal = eligibleRefunds.reduce((sum: number, item: Record<string, unknown>) => sum + Number(item.amount || 0), 0);
+      if (existingRefundTotal > 0 && existingRefundTotal < fullAmount) {
+        return reply(request, { error: "A partial refund already exists. No additional refund was issued; reconcile the existing refund with Razorpay before proceeding." }, 409);
+      }
+      const allExistingProcessed = eligibleRefunds.length > 0 && eligibleRefunds.every((item: Record<string, unknown>) => item.status === "processed");
+      const matching = existingRefundTotal >= fullAmount
+        ? { ...eligibleRefunds[eligibleRefunds.length - 1], status: allExistingProcessed ? "processed" : "pending" }
+        : undefined;
       let refund = matching;
       if (!refund && order.refund_status === "processing") return reply(request, { error: "A refund request is already marked as processing. Reconcile Razorpay status before another attempt." }, 409);
       if (!refund) {
