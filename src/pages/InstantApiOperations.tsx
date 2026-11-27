@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, ClipboardList, FileClock, RefreshCw, RotateCcw
 import { supabase } from "../lib/supabase";
 
 type Order = {
-  id: string; service_slug: string; customer_price: number; status: string;
+  id: string; service_reference: string; service_slug: string; customer_price: number; status: string;
   provider_cost_actual: number | null; razorpay_order_id: string | null;
   razorpay_payment_id: string | null; paid_at: string | null;
   provider_error_code: string | null; created_at: string; fulfilled_at: string | null;
@@ -27,7 +27,7 @@ export default function InstantApiOperations() {
     setLoading(true); setError("");
     try {
       const [orderResult, serviceResult, auditResult] = await Promise.all([
-        supabase.from("instant_api_orders").select("id,service_slug,customer_price,status,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at").order("created_at", { ascending: false }).limit(200),
+        supabase.from("instant_api_orders").select("id,service_reference,service_slug,customer_price,status,provider_cost_actual,razorpay_order_id,razorpay_payment_id,paid_at,provider_error_code,created_at,fulfilled_at").order("created_at", { ascending: false }).limit(200),
         supabase.from("instant_api_services").select("slug,name,is_enabled,authorization_verified,endpoint_url,provider_name").order("sort_order"),
         supabase.from("admin_audit_logs").select("id,actor_id,action,entity_type,entity_id,metadata,created_at").or("entity_type.eq.instant_api_orders,entity_type.eq.instant_api_services,entity_type.eq.instant_api_order,entity_type.eq.instant_api_service,entity_type.eq.instant_api").order("created_at", { ascending: false }).limit(100),
       ]);
@@ -62,8 +62,8 @@ export default function InstantApiOperations() {
     {!loading && !error && <>
       <section className="ia-ops-section" id="ia-orders"><div className="ia-ops-title"><ClipboardList/><div><h3>Orders</h3><p>Latest 200 orders · newest first</p></div></div>
         <div className="ia-ops-stats"><div><small>Total loaded</small><b>{orders.length}</b></div><div><small>Paid / in progress / complete</small><b>{paid.length}</b></div><div><small>Needs attention</small><b>{needsAttention.length}</b></div><div><small>Captured order value</small><b>{inr(paidTotal)}</b></div></div>
-        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>Order</th><th>Service</th><th>Amount</th><th>Status</th><th>Payment ref</th><th>Created</th></tr></thead><tbody>
-          {orders.map(order => <tr key={order.id}><td><code>{shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td><span className={"ia-ops-status status-" + order.status}>{order.status.replaceAll("_", " ")}</span></td><td>{order.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 12) + "…" : "—"}</td><td>{stamp(order.created_at)}</td></tr>)}
+        <div className="ia-ops-table-wrap"><table className="ia-ops-table"><thead><tr><th>E-Service ID</th><th>Service</th><th>Amount</th><th>Status</th><th>Payment ref</th><th>Created</th></tr></thead><tbody>
+          {orders.map(order => <tr key={order.id}><td><code>{order.service_reference || shortId(order.id)}</code></td><td>{order.service_slug}</td><td>{inr(order.customer_price)}</td><td><span className={"ia-ops-status status-" + order.status}>{order.status.replaceAll("_", " ")}</span></td><td>{order.razorpay_payment_id ? order.razorpay_payment_id.slice(0, 12) + "…" : "—"}</td><td>{stamp(order.created_at)}</td></tr>)}
           {!orders.length && <tr><td colSpan={6}>No Instant API orders recorded yet.</td></tr>}
         </tbody></table></div>
       </section>
