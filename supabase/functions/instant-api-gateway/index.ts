@@ -123,8 +123,9 @@ async function callProvider(service: Service, input: Record<string, string>) {
     params.set("api_key", apiKey);
     url += "?" + params.toString();
   } else {
+    // PAN Verification's executable cURL examples use Bearer auth.
+    // Do not also place the credential in the URL query string.
     headers.set("Authorization", "Bearer " + apiKey);
-    if (service.slug === "pan-verification") params.set("api_key", apiKey);
     url += "?" + params.toString();
   }
   const response = await fetch(url, { method: service.http_method, headers, ...(body ? { body } : {}), signal: AbortSignal.timeout(25000), redirect: "error" });
