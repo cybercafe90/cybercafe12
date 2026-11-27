@@ -317,8 +317,9 @@ Deno.serve(async (request: Request) => {
       if (orderError) throw orderError;
       if (!order) return reply(request, { error: "Order not found." }, 404);
       if (order.status === "refunded" && order.razorpay_refund_id) return reply(request, { status: "refunded", refundId: order.razorpay_refund_id, duplicate: true });
-      if (order.status !== "refund_pending" || !order.razorpay_payment_id) {
-        return reply(request, { error: "Only captured orders awaiting refund resolution can be refunded." }, 409);
+      const ownerConfirmedUnknown = order.status === "fulfillment_unknown" && body.confirmProviderNotFulfilled === true;
+      if ((order.status !== "refund_pending" && !ownerConfirmedUnknown) || !order.razorpay_payment_id) {
+        return reply(request, { error: "Only refund-pending orders, or timeout orders explicitly confirmed as not fulfilled by the owner, can be refunded." }, 409);
       }
       const expectedAmount = Math.round(Number(order.customer_price) * 100);
       if (!Number.isSafeInteger(expectedAmount) || expectedAmount < 100) return reply(request, { error: "Stored refund amount is invalid." }, 409);
