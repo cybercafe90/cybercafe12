@@ -83,7 +83,7 @@ export default function InstantApiCustomerCaseDesk({ initialReference = "", init
           {["paid","processing","fulfillment_unknown"].includes(data.order.status) && <option value="delayed_service">Service taking too long</option>}
           <option value="payment_issue">Payment deducted / payment confirmation issue</option>
         </select></label>
-        <label>Describe the issue<textarea value={message} onChange={event => setMessage(event.target.value)} minLength={8} maxLength={1000} required placeholder="Briefly describe what happened. Do not include OTPs, PINs or passwords."/></label>
+        <label>Describe the issue<textarea value={message} onChange={event => setMessage(event.target.value)} minLength={8} maxLength={1000} required placeholder="Briefly describe what happened. Do not include Aadhaar/PAN numbers, OTPs, PINs or passwords."/></label>
         <button type="submit" disabled={submitting || !message.trim()}>{submitting ? "Submitting…" : "Submit service query"}</button>
         <small><Clock3 size={13}/> Delayed-service queries are available after 15 minutes. Payment issues are sent for reconciliation before any refund decision.</small>
       </form>
