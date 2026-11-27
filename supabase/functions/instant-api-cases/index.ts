@@ -185,7 +185,7 @@ Deno.serve(async (request: Request) => {
       const caseId = String(body.caseId || "");
       const status = String(body.status || "");
       const note = typeof body.adminNote === "string" ? body.adminNote.trim() : "";
-      if (!/^[0-9a-f-]{36}$/i.test(caseId) || !["under_review", "awaiting_customer", "resolved", "rejected"].includes(status) || note.length > 1000 || (status === "rejected" && note.length < 8)) {
+      if (!/^[0-9a-f-]{36}$/i.test(caseId) || !["under_review", "awaiting_customer", "resolved", "rejected"].includes(status) || note.length > 1000 || (["rejected", "resolved"].includes(status) && note.length < 8)) {
         return reply(request, { error: "Invalid case update." }, 400);
       }
       const { data: updated, error } = await admin.from("instant_api_cases").update({
