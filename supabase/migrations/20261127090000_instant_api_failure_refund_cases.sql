@@ -106,4 +106,7 @@ create trigger instant_api_cases_updated_at
   before update on public.instant_api_cases
   for each row execute function public.set_updated_at();
 
+grant usage, select on sequence public.instant_api_service_reference_seq to service_role;
+grant usage, select on sequence public.instant_api_case_reference_seq to service_role;
+
 commit;
