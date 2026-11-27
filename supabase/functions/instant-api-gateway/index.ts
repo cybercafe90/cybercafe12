@@ -316,7 +316,7 @@ Deno.serve(async (request: Request) => {
           entity_id: order.id, metadata: { refund_id: refund.id, amount_paise: expectedAmount, refund_status: refund.status },
         });
         return reply(request, { status: processed ? "refunded" : "refund_pending", refundId: refund.id });
-      } catch (reason) {
+      } catch {
         await admin.from("instant_api_orders").update({ status: "refund_pending", refund_status: "pending", provider_error_code: "refund_reconciliation_required" }).eq("id", order.id);
         return reply(request, { status: "refund_pending", reconciliationRequired: true, message: "Refund request outcome is uncertain. Retry the reconciliation action; the same idempotency key will be reused." }, 202);
       }
