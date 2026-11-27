@@ -159,8 +159,11 @@ Deno.serve(async (request: Request) => {
         if (error.code === "23505") return reply(request, { error: "A query is already open for this E-Service ID." }, 409);
         throw error;
       }
-      if (caseType === "failed_service" && order.refund_status === "none") {
-        await admin.from("instant_api_orders").update({ refund_status: "requested", refund_amount: order.customer_price }).eq("id", order.id).eq("refund_status", "none");
+      if (["failed_service", "payment_issue"].includes(caseType) && ["failed", "refund_pending"].includes(order.status) && order.refund_status === "none") {
+        await admin.from("instant_api_orders").update({
+          refund_status: order.razorpay_payment_id ? "requested" : "under_review",
+          refund_amount: order.razorpay_payment_id ? order.customer_price : null,
+        }).eq("id", order.id).eq("refund_status", "none");
       } else if (caseType === "payment_issue" && order.status === "payment_pending" && order.refund_status === "none") {
         await admin.from("instant_api_orders").update({ refund_status: "under_review" }).eq("id", order.id).eq("refund_status", "none");
       }
