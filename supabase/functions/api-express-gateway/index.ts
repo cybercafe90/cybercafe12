@@ -234,16 +234,16 @@ Deno.serve(async (req: Request) => {
   const service = body.service;
   const payload = (body.payload ?? {}) as Json;
   if (service === "admin_logs") {
-    if (!identity.roles.some(role => ["owner", "admin"].includes(role))) return reply(req, { ok: false, service, error: "Owner/admin authorization required." }, 403);
+    if (!identity.roles.includes("owner")) return reply(req, { ok: false, service, error: "Owner/admin authorization required." }, 403);
     return await readLogs(req, admin);
   }
   if (!SERVICES.has(service)) return reply(req, { ok: false, service, error: "Unsupported service." }, 400);
   const serviceName = service as ServiceName;
-  if (serviceName === "bank_verify" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
+  if (serviceName === "bank_verify" && !identity.roles.includes("owner")) {
     await logCall(admin, identity.user.id, service, "rejected", 403, environment);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
-  if (serviceName === "mobile_recharge" && !identity.roles.some(role => ["owner", "admin", "agent"].includes(role))) {
+  if (serviceName === "mobile_recharge" && !identity.roles.includes("owner")) {
     await logCall(admin, identity.user.id, service, "rejected", 403, environment);
     return reply(req, { ok: false, service, error: "Agent or owner authorization required." }, 403);
   }
