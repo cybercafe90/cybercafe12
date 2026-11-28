@@ -265,10 +265,16 @@ Deno.serve(async (req: Request) => {
   const configuredLimit = Number.isSafeInteger(configuredLimitRaw) && configuredLimitRaw > 0
     ? Math.min(configuredLimitRaw, 1000000)
     : 1000;
+  const monthlyUsageOffsetRaw = Deno.env.get("APIEXPRESS_MONTHLY_USAGE_OFFSET") ?? "0";
+  const monthlyUsageOffset = Number(monthlyUsageOffsetRaw);
+  if (!Number.isSafeInteger(monthlyUsageOffset) || monthlyUsageOffset < 0 || monthlyUsageOffset > configuredLimit) {
+    return reply(req, { ok: false, service, error: "API Express monthly usage baseline is invalid. Check gateway configuration." }, 503);
+  }
   const { data: reservation, error: reservationError } = await admin.rpc("reserve_api_express_quota", {
     p_user_id: identity.user.id,
     p_environment: environment,
     p_monthly_limit: configuredLimit,
+    p_monthly_usage_offset: monthlyUsageOffset,
     p_user_minute_limit: 20,
   });
   if (reservationError || !jsonObject(reservation)) {
