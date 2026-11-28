@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2.57.0";
+import { parseApiExpressBaseUrl, readBoundedJson } from "../_shared/api-express-security.ts";
 
-const DEFAULT_BASE_URL = "https://sandbox.api.apiexpress.in";
 const ALLOWED_ORIGINS = new Set(["https://babacybercafe.in", "https://www.babacybercafe.in", "http://localhost:3000"]);
 const SERVICES = new Set([
   "kyc_pan", "kyc_aadhaar_dl", "rc_verify", "bank_verify", "telecom_operator",
@@ -213,17 +213,24 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const apiKey = Deno.env.get("APIEXPRESS_API_KEY");
-  const baseUrl = (Deno.env.get("APIEXPRESS_BASE_URL") || DEFAULT_BASE_URL).replace(/\/+$/, "");
-  const environment: "sandbox" | "production" = baseUrl.includes("sandbox.api.apiexpress.in") ? "sandbox" : "production";
-  if (!supabaseUrl || !serviceRoleKey || !apiKey) return reply(req, { ok: false, service: "unknown", error: "Gateway is not configured." }, 503);
+  const providerConfig = parseApiExpressBaseUrl(Deno.env.get("APIEXPRESS_BASE_URL"));
+  if (!supabaseUrl || !serviceRoleKey || !apiKey || !providerConfig) {
+    return reply(req, { ok: false, service: "unknown", error: "Gateway is not configured with a valid API Express provider URL and key." }, 503);
+  }
+  const { baseUrl, environment } = providerConfig;
 
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const identity = await getUserAndRole(req, admin);
   if (!identity) return reply(req, { ok: false, service: "unknown", error: "Authenticated account required." }, 401);
 
-  let body: unknown;
-  try { body = await req.json(); } catch { return reply(req, { ok: false, service: "unknown", error: "Invalid JSON body." }, 400); }
-  if (!jsonObject(body) || typeof body.service !== "string" || !jsonObject(body.payload ?? {})) return reply(req, { ok: false, service: "unknown", error: "Expected { service, payload }." }, 400);
+  const parsedBody = await readBoundedJson(req.body, 16 * 1024, req.headers.get("content-length"));
+  if (!parsedBody.ok) {
+    return reply(req, { ok: false, service: "unknown", error: parsedBody.reason === "too_large" ? "Request body is too large." : "Invalid JSON body." }, 400);
+  }
+  const body: unknown = parsedBody.value;
+  if (!jsonObject(body) || typeof body.service !== "string" || !jsonObject(body.payload ?? {})) {
+    return reply(req, { ok: false, service: "unknown", error: "Expected { service, payload }." }, 400);
+  }
   const service = body.service;
   const payload = (body.payload ?? {}) as Json;
   if (service === "admin_logs") {
@@ -298,6 +305,7 @@ Deno.serve(async (req: Request) => {
       method: routed.method,
       headers: { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json", ...(routed.body ? { "Content-Type": "application/json" } : {}) },
       ...(routed.body ? { body: JSON.stringify(routed.body) } : {}),
+      redirect: "error",
       signal: AbortSignal.timeout(15000),
     });
   } catch {
@@ -305,8 +313,12 @@ Deno.serve(async (req: Request) => {
     return reply(req, { ok: false, service, error: "API Express could not be reached. Please try again later." }, 502);
   }
 
-  let upstreamData: unknown;
-  try { upstreamData = await upstream.json(); } catch { upstreamData = null; }
+  const parsedUpstream = await readBoundedJson(upstream.body, 1024 * 1024, upstream.headers.get("content-length"));
+  if (!parsedUpstream.ok) {
+    await logCall(admin, identity.user.id, service, "error", 502, environment);
+    return reply(req, { ok: false, service, error: "The verification provider returned an invalid or oversized response." }, 502);
+  }
+  const upstreamData: unknown = parsedUpstream.value;
   if (!upstream.ok) {
     const invalid = isInvalidProviderError(upstreamData);
     await logCall(admin, identity.user.id, service, "error", upstream.status, environment);
