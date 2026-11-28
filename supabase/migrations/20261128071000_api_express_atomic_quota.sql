@@ -73,8 +73,11 @@ declare
   v_user_used integer := 0;
 begin
   if p_user_id is null
+    or p_environment is null
     or p_environment not in ('sandbox', 'production')
+    or p_monthly_limit is null
     or p_monthly_limit < 1
+    or p_user_minute_limit is null
     or p_user_minute_limit < 1 then
     raise exception 'Invalid API Express quota reservation parameters'
       using errcode = '22023';
