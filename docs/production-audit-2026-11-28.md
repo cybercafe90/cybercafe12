@@ -31,6 +31,7 @@
 ### High priority — production configuration
 
 - **Cloudflare SSL mode is `Full`, not `Full (strict)`.** Strict mode should be enabled after confirming the Pages origin certificate is valid for the configured origin. This is a live Cloudflare setting and was not changed.
+- **HSTS is disabled and `nosniff` is false** in Cloudflare's security-header setting. Enable HSTS with a staged max-age after confirming HTTPS coverage for every included subdomain; enable `X-Content-Type-Options: nosniff`. This is a live Cloudflare setting and was not changed.
 - **Supabase leaked-password protection is disabled.** Enable it in Supabase Auth password security settings.
 - **Supabase TOTP MFA enrollment and verification are disabled.** This matches the repository's current configuration and earlier owner preference, but it weakens owner-account protection. The owner must explicitly decide whether to enable TOTP or another second factor; this audit did not override that preference.
 - **The main branch is not protected and has no required status checks.** Require successful build, dependency, E2E, and Edge Function checks before merging to main.
@@ -47,6 +48,7 @@
 - Supabase reported three unindexed foreign keys in the Instant TP application/audit tables. Add indexes after reviewing query plans and expected write volume.
 - Supabase reported 36 currently unused indexes. Do not bulk-delete them: several may be intended for future or infrequent owner workflows. Review usage over a representative operating period first.
 - Cloudflare's security level is currently Medium. Review WAF/bot settings against real customer traffic before increasing challenge friction.
+- Two proxied wildcard A records for `*.babacybercafe.in` point to Vercel IP addresses while the apex and www domains use Cloudflare Pages. Confirm whether any wildcard subdomains are intentionally hosted on Vercel before changing them; do not remove them blindly.
 - The site uses React 19, TypeScript, Vite, and React Router (not Next.js). The Pages project is GitHub-connected to `main`, with preview deployments enabled for all branches.
 
 ## Changes made on the audit branch
