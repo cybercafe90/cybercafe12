@@ -1,0 +1,25 @@
+# Security testing checklist
+
+- [ ] Anonymous users can read only published service categories and services.
+- [ ] Anonymous users cannot select, insert, update, or delete application, role, audit, or document rows.
+- [ ] A customer cannot view an application with only its tracking ID or only its mobile number.
+- [ ] Tracking responses contain no customer name, phone, email, message, or internal notes.
+- [ ] Invalid and unmatched tracking requests return no application data.
+- [ ] Application input length, email, phone, department/service association, and required consent are enforced by the Edge Function and database.
+- [ ] Customers cannot choose an unpublished service or set a tracking ID/status.
+- [ ] A signed-in non-admin cannot read applications or invoke admin updates/notifications.
+- [ ] An allowlisted owner can update application status, customer-visible remarks, and internal notes.
+- [ ] Customer tracking exposes public remarks but never internal notes.
+- [ ] The document storage bucket is private and inaccessible to anonymous users; customer/admin downloads use authorization checks and 60-second signed URLs.
+- [ ] Uploads reject unsupported extensions/MIME/signatures, empty/oversized files, and documents beyond the per-application limit.
+- [ ] Document-upload verification requires both tracking ID and mobile number; a signed-in non-admin cannot access another customer's file.
+- [ ] Document handling, retention, deletion requests, malware response, and incident ownership have been reviewed before launch.
+- [ ] Email status notifications require a server-verified admin role and do not include internal notes or sensitive data.
+- [ ] Application email confirmations are attempted only when configured; provider acceptance is not represented as delivery.
+- [ ] Rate limits reject bursts for applications, tracking, document uploads/downloads, and admin notifications; the secret and database RPC are configured.
+- [ ] `user_roles` cannot be changed through the public client; no public admin sign-up or role selection is enabled.
+- [ ] Admin accounts use strong credentials and MFA; departed administrators are removed from `user_roles` and Auth.
+- [ ] The production website contains no service charges or payment instructions other than directing customers to WhatsApp.
+- [ ] No service-role key, customer data, OTP, password, or sensitive identity data is committed or exposed to the browser.
+- [ ] Supabase `SITE_ORIGIN` and hosting CORS/domain settings match the deployed site.
+- [ ] Insurance disclaimers and independent-facilitator language are visible and reviewed by the business before launch.
