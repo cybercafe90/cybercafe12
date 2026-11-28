@@ -60,15 +60,20 @@
 4. Updated the security verification workflow to run on this audit branch, support manual dispatch, install Chromium, and run lint, build, browser E2E, Edge Function tests, and Edge Function type checks.
 5. Updated the dependency audit workflow to run on this audit branch as well.
 
-## Validation still required
+## Validation status (2026-11-28)
 
-- Wait for the new audit-branch GitHub Actions runs and confirm every check passes.
-- Confirm the updated audit branch receives a successful Cloudflare Pages preview deployment.
-- Run interactive desktop/mobile checks against the preview URL for home, service search, Instant API, RC PDF, tracking, payment, grievance, print, insurance, and owner login.
-- Perform non-production test transactions for successful payment, failed provider request, timeout/reconciliation, refund pending, and duplicate webhook delivery.
-- Verify API Express secrets and provider credentials exist in Supabase without exposing their values; test one sandbox request and confirm cache/quota behavior.
-- Confirm no remaining callers before retiring the four stale Investigation Edge Functions.
-- Apply approved production configuration changes only after owner confirmation and a rollback plan.
+- Audit branch CI passed on commit `8b8269f13af558a3d8aa8a3bd586e1a66f914f61`: dependency security audit, npm install, lint, production build, Playwright E2E, shared Edge Function tests, and Edge Function type checks.
+- Cloudflare Pages preview deployment succeeded for the same commit: [https://900bb407.babacybercafe.pages.dev](https://900bb407.babacybercafe.pages.dev).
+- Production remains on `main` at `f59541b1a4e75bdcdfdf89782092d82a56fa4097`; the audit branch is 14 commits ahead and 0 behind. No merge or production deployment occurred.
+- Added a database-side quota reservation RPC with ordered row locks, monthly global counter, per-user minute counter, and configurable provider-usage baseline.
+- Added SQL regression checks for private table grants, quota RPC grants, the per-user minute limit, and the global monthly cap. These SQL checks are committed but have NOT been executed against a database because no isolated Supabase development database was created.
+- Added Deno tests for API Express provider-host allowlisting, bounded request-body parsing, and invalid/oversized JSON handling; these passed in the branch CI run above.
+- Added 16 KiB request and 1 MiB provider-response limits, rejected provider redirects, required an explicit valid HTTPS API Express base URL, and aligned privileged bank/recharge/admin-log operations with the currently supported owner-only role schema.
+- A read-only live schema inspection confirms `api_express_logs` and `api_express_cache` are absent from production. The migration is prepared but has NOT been applied.
+- A current source-tree scan found no Investigation Portal function source or frontend route references. Four old Investigation Edge Functions remain ACTIVE in production. Recent function log aggregation did not expose usable function-name labels, so external callers cannot be ruled out conclusively.
+- Live browser walkthroughs across all customer journeys and non-production payment/provider transaction scenarios remain unverified. No real provider API call, Razorpay transaction, refund, or webhook replay was executed.
+- API Express production quota must be reconciled against the provider's current-month dashboard usage before enabling production calls. Set `APIEXPRESS_MONTHLY_USAGE_OFFSET` to the already-consumed count for the current provider billing month; the gateway defaults this baseline to zero if unset.
+- Production security changes (Cloudflare Full (strict), HSTS, `nosniff`, Supabase leaked-password protection, MFA choice, branch protection) remain recommendations only and have not been applied.
 
 ## Production safety
 
