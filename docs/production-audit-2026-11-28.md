@@ -62,13 +62,14 @@
 
 ## Validation status (2026-11-28)
 
-- Audit branch CI passed on commit `8b8269f13af558a3d8aa8a3bd586e1a66f914f61`: dependency security audit, npm install, lint, production build, Playwright E2E, shared Edge Function tests, and Edge Function type checks.
-- Cloudflare Pages preview deployment succeeded for the same commit: [https://900bb407.babacybercafe.pages.dev](https://900bb407.babacybercafe.pages.dev).
-- Production remains on `main` at `f59541b1a4e75bdcdfdf89782092d82a56fa4097`; the audit branch is 14 commits ahead and 0 behind. No merge or production deployment occurred.
+- Final API Express code CI passed on commit `3cd8e7b083a84b5ba238e3ea5c2c4d1a60170fe9`: dependency security audit, npm install, lint, production build, Playwright E2E, shared Edge Function tests, and Edge Function type checks. The earlier type-check failure on commit `26fcae8385c9878cdc905706df5ea4b27f123cbd` was corrected by explicitly normalizing the optional environment variable to null; the final run is green.
+- Cloudflare Pages preview deployment succeeded for the tested code commit: [https://5be6d34b.babacybercafe.pages.dev](https://5be6d34b.babacybercafe.pages.dev).
+- Production remains on `main` at `f59541b1a4e75bdcdfdf89782092d82a56fa4097`; the audit branch is 24 commits ahead and 0 behind at report update time. No merge or production deployment occurred.
 - Added a database-side quota reservation RPC with ordered row locks, monthly global counter, per-user minute counter, and configurable provider-usage baseline.
 - Added SQL regression checks for private table grants, quota RPC grants, the per-user minute limit, and the global monthly cap. These SQL checks are committed but have NOT been executed against a database because no isolated Supabase development database was created.
 - Added Deno tests for API Express provider-host allowlisting, bounded request-body parsing, and invalid/oversized JSON handling; these passed in the branch CI run above.
-- Added 16 KiB request and 1 MiB provider-response limits, rejected provider redirects, required an explicit valid HTTPS API Express base URL, and aligned privileged bank/recharge/admin-log operations with the currently supported owner-only role schema.
+- Added 16 KiB request and 1 MiB provider-response limits, rejected provider redirects, allowlisted the exact HTTPS API Express sandbox/production hosts, required an explicit valid base URL, and aligned privileged bank/recharge/admin-log operations with the currently supported owner-only role schema.
+- Added `APIEXPRESS_MONTHLY_USAGE_OFFSET` to the environment example so current-month provider usage can be included in the atomic quota counter before production calls. The code defaults this value to zero when unset; the actual provider dashboard usage must therefore be reconciled and the offset set before production use.
 - A read-only live schema inspection confirms `api_express_logs` and `api_express_cache` are absent from production. The migration is prepared but has NOT been applied.
 - A current source-tree scan found no Investigation Portal function source or frontend route references. Four old Investigation Edge Functions remain ACTIVE in production. Recent function log aggregation did not expose usable function-name labels, so external callers cannot be ruled out conclusively.
 - Live browser walkthroughs across all customer journeys and non-production payment/provider transaction scenarios remain unverified. No real provider API call, Razorpay transaction, refund, or webhook replay was executed.
