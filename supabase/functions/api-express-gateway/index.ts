@@ -43,11 +43,6 @@ function str(value: unknown, max = 160): string | null {
   const v = value.trim();
   return v.length > 0 && v.length <= max ? v : null;
 }
-function digits(value: unknown, min: number, max: number): string | null {
-  if (typeof value !== "string") return null;
-  const v = value.replace(/\s+/g, "").toUpperCase();
-  return v.length >= min && v.length <= max && /^[A-Z0-9]+$/.test(v) ? v : null;
-}
 function isInvalidProviderError(value: unknown): boolean {
   if (!jsonObject(value)) return false;
   const code = String(value.code ?? value.error_code ?? "").toUpperCase();
