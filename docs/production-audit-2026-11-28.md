@@ -73,3 +73,10 @@
 ## Production safety
 
 No production changes were made by this audit. The report and code fixes are staged only on the audit branch. Do not merge or deploy this branch until its checks pass and the owner approves the production-only security settings and cleanup.
+
+
+### API Express database dependency verification
+
+A read-only inspection of project `dyzyfugxzsdvboxerbxv` on 2026-11-28 found that neither `public.api_express_logs` nor `public.api_express_cache` resolves in the connected production database, although the deployed `api-express-gateway` source reads/writes both tables. This is a deployment/schema drift risk: the gateway's logging/cache path can fail before returning a normal result. The audit branch now includes an idempotent migration to provision both backend-only tables and an atomic quota-counter table/RPC. This migration has NOT been applied to production.
+
+The gateway source now reserves quota through the database RPC before making an upstream call. The reservation transaction locks the monthly global counter and per-user minute counter, preventing concurrent requests from passing the same remaining quota. Reservations are intentionally conservative: a request that times out after reservation still consumes one reserved provider attempt because the provider may have received it.
