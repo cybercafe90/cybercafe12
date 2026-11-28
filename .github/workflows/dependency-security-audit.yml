@@ -2,7 +2,7 @@ name: Dependency security audit
 
 on:
   push:
-    branches: [dependency-audit-review-20261107]
+    branches: [dependency-audit-review-20261107, audit/security-review-2026-11-28]
   pull_request:
     branches: [main]
   workflow_dispatch:
