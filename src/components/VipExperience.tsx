@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
-  ArrowRight, ArrowUpRight, BadgeCheck, BriefcaseBusiness, CarFront,
-  CheckCircle2, ChevronDown, Clock3, FileCheck2, HeartHandshake,
-  Landmark, LockKeyhole, MessageCircle, Search, ShieldCheck, Sparkles,
-  Zap,
+  Activity, ArrowRight, ArrowUpRight, BadgeCheck, BookOpen, BriefcaseBusiness,
+  Building2, CarFront, CheckCircle2, ChevronDown, Clock3, FileCheck2,
+  HeartHandshake, Landmark, Layers, LockKeyhole, MessageCircle, Search,
+  ShieldCheck, Sparkles, Ticket, UsersRound, Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -39,6 +39,257 @@ const faqs = [
   { group: "Trust & safety", q: "Does submitting an enquiry guarantee approval?", a: "No. An enquiry or assistance request is not an approval. Eligibility, processing, fees and final decisions are controlled by the relevant department, insurer or service provider." },
 ];
 
+
+const orbitPalettes = {
+  gold: { label: "Gold", core: 0x8b681f, glow: 0xffc94f, rim: 0x9b6d1c, wire: 0xf3d27a, ring: 0xb88e32, node: 0xc69a32, star: 0xe8c875, css: "#d4af37" },
+  blue: { label: "Electric blue", core: 0x164a82, glow: 0x48baff, rim: 0x174d9b, wire: 0x8bdcff, ring: 0x278de0, node: 0x53baff, star: 0xb5e8ff, css: "#39a9ff" },
+  rose: { label: "Rose pink", core: 0x7d285d, glow: 0xff78c8, rim: 0x9a316f, wire: 0xffb2df, ring: 0xe45aa8, node: 0xff91d0, star: 0xffd1eb, css: "#f06ab8" },
+  violet: { label: "Violet", core: 0x49277f, glow: 0xb68cff, rim: 0x5d37a5, wire: 0xd2baff, ring: 0x9163e8, node: 0xb99aff, star: 0xe4d7ff, css: "#a987ff" },
+};
+
+const orbitServices = [
+  { icon: ShieldCheck, title: "Motor Insurance", copy: "Third-party and own-damage motor insurance enquiries.", department: "insurance", service: "Motor Insurance" },
+  { icon: Landmark, title: "Revenue Services", copy: "Certificate and land-record application assistance.", department: "revenue", service: "Revenue Department Assistance" },
+  { icon: CarFront, title: "RTO Services", copy: "Driving licence, registration and transport enquiries.", department: "rto", service: "RTO Assistance" },
+  { icon: Building2, title: "SMC Services", copy: "Birth, death and municipal application assistance.", department: "smc", service: "SMC Assistance" },
+  { icon: BriefcaseBusiness, title: "Labour Services", copy: "Labour registration and welfare application guidance.", department: "labour", service: "Labour Department Assistance" },
+  { icon: HeartHandshake, title: "Handloom & Craft", copy: "Weaver, artisan and handicraft documentation support.", department: "handloom", service: "Handloom and Handicrafts Assistance" },
+  { icon: FileCheck2, title: "PAN & ABHA", copy: "Digital identity and public-service application support.", department: "central", service: "PAN / ABHA Assistance" },
+  { icon: BookOpen, title: "Education", copy: "Education-related online application guidance.", department: "education", service: "Education Assistance" },
+  { icon: UsersRound, title: "Employment", copy: "Employment and registration assistance.", department: "employment", service: "Employment Assistance" },
+  { icon: Activity, title: "Health Services", copy: "Health-service application guidance.", department: "health", service: "Health Services Assistance" },
+  { icon: Ticket, title: "Ticketing", copy: "Railway and bus ticketing enquiries.", department: "travel", service: "Ticket Booking Assistance" },
+  { icon: Zap, title: "Other Services", copy: "Ask about other digital and public services.", department: "other", service: "Other Service Enquiry" },
+];
+
+export function VipHeroExperience() {
+  const [active, setActive] = useState(0);
+  const [motion, setMotion] = useState(true);
+  const [palette, setPalette] = useState<keyof typeof orbitPalettes>("gold");
+  const colours = orbitPalettes[palette];
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
+    let frame = 0;
+    let renderer: { setPixelRatio: (value: number) => void; setSize: (width: number, height: number, updateStyle?: boolean) => void; render: (scene: unknown, camera: unknown) => void; dispose: () => void } | null = null;
+    const resources: Array<{ dispose: () => void }> = [];
+    const track = <T extends { dispose: () => void }>(resource: T): T => {
+      resources.push(resource);
+      return resource;
+    };
+    let cleanup: (() => void) | undefined;
+
+    const initialise = async () => {
+      const moduleUrl = "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+      const THREE = await import(/* @vite-ignore */ moduleUrl);
+      if (cancelled) return;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+      camera.position.set(0, 0, 5.4);
+      const activeRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer = activeRenderer;
+      activeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      scene.add(new THREE.AmbientLight(colours.wire, 1.7));
+      const keyLight = new THREE.PointLight(colours.glow, 95, 12);
+      keyLight.position.set(2.6, 2.1, 3.2);
+      scene.add(keyLight);
+      const rimLight = new THREE.PointLight(colours.rim, 70, 10);
+      rimLight.position.set(-3, -1.8, -2);
+      scene.add(rimLight);
+
+      const core = new THREE.Mesh(
+        track(new THREE.SphereGeometry(1.12, 96, 64)),
+        new THREE.MeshPhysicalMaterial({ color: colours.core, metalness: 0.88, roughness: 0.2, emissive: colours.rim, emissiveIntensity: 0.48, clearcoat: 1, clearcoatRoughness: 0.18 })
+      );
+      scene.add(core);
+      const shell = new THREE.Mesh(
+        track(new THREE.SphereGeometry(1.2, 36, 24)),
+        new THREE.MeshBasicMaterial({ color: colours.wire, wireframe: true, transparent: true, opacity: 0.32 })
+      );
+      scene.add(shell);
+
+      const ringGroup = new THREE.Group();
+      [1.48, 1.67, 1.88].forEach((radius, index) => {
+        const ring = new THREE.Mesh(
+          track(new THREE.TorusGeometry(radius, index === 1 ? 0.012 : 0.008, 8, 180)),
+          new THREE.MeshBasicMaterial({ color: index === 1 ? colours.wire : colours.ring, transparent: true, opacity: index === 1 ? 0.82 : 0.48 })
+        );
+        ring.rotation.set(0.7 + index * 0.42, 0.35 + index * 0.3, index * 0.62);
+        ringGroup.add(ring);
+      });
+      scene.add(ringGroup);
+
+      const nodeGroup = new THREE.Group();
+      for (let index = 0; index < 12; index += 1) {
+        const angle = (index / 12) * Math.PI * 2;
+        const node = new THREE.Mesh(
+          track(new THREE.SphereGeometry(index % 3 === 0 ? 0.065 : 0.043, 16, 16)),
+          new THREE.MeshStandardMaterial({ color: index % 3 === 0 ? colours.wire : colours.node, metalness: 0.8, roughness: 0.22, emissive: colours.rim, emissiveIntensity: 0.6 })
+        );
+        node.position.set(Math.cos(angle) * 1.83, Math.sin(angle) * 1.83, Math.sin(angle * 2) * 0.18);
+        nodeGroup.add(node);
+      }
+      scene.add(nodeGroup);
+
+      const starPositions = new Float32Array(540 * 3);
+      for (let index = 0; index < 540; index += 1) {
+        const radius = 2.15 + Math.random() * 1.25;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        starPositions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+        starPositions[index * 3 + 2] = radius * Math.cos(phi);
+      }
+      const starGeometry = track(new THREE.BufferGeometry());
+      starGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starPositions, 3));
+      scene.add(new THREE.Points(starGeometry, new THREE.PointsMaterial({ color: colours.star, size: 0.018, transparent: true, opacity: 0.65, sizeAttenuation: true })));
+
+      let targetX = 0;
+      let targetY = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      const onPointerDown = (event: PointerEvent) => {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        canvas.setPointerCapture?.(event.pointerId);
+      };
+      const onPointerMove = (event: PointerEvent) => {
+        const bounds = canvas.getBoundingClientRect();
+        if (dragging) {
+          targetY += (event.clientX - lastX) * 0.008;
+          targetX += (event.clientY - lastY) * 0.008;
+          lastX = event.clientX;
+          lastY = event.clientY;
+        } else {
+          targetY = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.55;
+          targetX = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.35;
+        }
+      };
+      const onPointerUp = () => { dragging = false; };
+      const onPointerLeave = () => { dragging = false; targetX = 0; targetY = 0; };
+      canvas.addEventListener("pointerdown", onPointerDown);
+      canvas.addEventListener("pointerup", onPointerUp);
+      canvas.addEventListener("pointercancel", onPointerUp);
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerleave", onPointerLeave);
+
+      const resize = () => {
+        if (!renderer) return;
+        const width = Math.max(1, canvas.clientWidth);
+        const height = Math.max(1, canvas.clientHeight);
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
+      const observer = new ResizeObserver(resize);
+      observer.observe(canvas);
+      resize();
+
+      const animate = () => {
+        if (cancelled || !renderer) return;
+        frame = window.requestAnimationFrame(animate);
+        if (motion) {
+          core.rotation.y += 0.0028;
+          core.rotation.x += 0.0011;
+          shell.rotation.y -= 0.0018;
+          shell.rotation.x += 0.0013;
+          ringGroup.rotation.y += 0.0017;
+          ringGroup.rotation.z -= 0.0008;
+          nodeGroup.rotation.z += 0.0014;
+          pointerX += (targetX - pointerX) * 0.035;
+          pointerY += (targetY - pointerY) * 0.035;
+          scene.rotation.x = pointerX;
+          scene.rotation.y = pointerY;
+        }
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      cleanup = () => {
+        observer.disconnect();
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
+        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerleave", onPointerLeave);
+      };
+    };
+
+    void initialise().catch((error: unknown) => {
+      if (!cancelled) console.warn("3D concierge visual could not initialise:", error);
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      cleanup?.();
+      resources.forEach((resource) => resource.dispose());
+      renderer?.dispose();
+    };
+  }, [motion, palette]);
+
+  const selected = orbitServices[active];
+  const reduceMotion = () => {
+    const next = !motion;
+    setMotion(next);
+    document.documentElement.classList.toggle("vip-reduced-motion", !next);
+  };
+  return (
+    <section className={motion ? "vip-hero" : "vip-hero vip-motion-off"} id="home">
+      <div className="vip-hero-grid" aria-hidden="true"/>
+      <div className="vip-hero-inner" style={{ "--vip-accent": colours.css } as CSSProperties}>
+        <div className="vip-hero-copy">
+          <span className="vip-hero-pill"><i/> YOUR TRUST, OUR SERVICE.</span>
+          <h1>YOUR <em>DIGITAL SERVICE PARTNER</em> IN SRINAGAR</h1>
+          <p>Reliable assistance for online applications, insurance, government-service processes and everyday digital needs.</p>
+          <div className="vip-hero-actions">
+            <Link className="vip-hero-primary" to="/services">EXPLORE SERVICES <ArrowRight size={16}/></Link>
+            <a className="vip-hero-secondary" href="https://wa.me/917006865909?text=Hello%20BABA%27S%20CYBER%20CAFE%2C%20I%20need%20assistance%20with%20a%20digital%20service." target="_blank" rel="noreferrer"><MessageCircle size={16}/> TALK ON WHATSAPP</a>
+          </div>
+          <article className="vip-active-service">
+            <div><span className="vip-hero-kicker">VIP DIGITAL CONCIERGE · ACTIVE SERVICE</span><h2>{selected.title}</h2><p>{selected.copy}</p></div>
+            <Link to={`/apply?department=${selected.department}&service=${encodeURIComponent(selected.service)}`}>Enquire <ArrowUpRight size={14}/></Link>
+          </article>
+          <div className="vip-hero-footnote"><ShieldCheck size={15}/> Independent assistance · Clear updates · Customer-first support</div>
+        </div>
+        <div className="vip-orbit-column">
+          <div className="vip-orbit-stage">
+            <div className="vip-orbit-ring vip-ring-one"/><div className="vip-orbit-ring vip-ring-two"/><div className="vip-orbit-ring vip-ring-three"/>
+            <canvas ref={canvasRef} className="vip-3d-canvas" aria-label="Rotating three-dimensional gold BCC digital concierge orb. Move your pointer over it to explore."/>
+            <div className="vip-3d-orb-label" aria-hidden="true"><span>BCC</span><small>360° DIGITAL CONCIERGE</small></div>
+            <div className="vip-orbit-nodes">
+              {orbitServices.map(({icon:Icon,title},index)=> {
+                const angle=(index*30)-90;
+                return <button type="button" key={title} className={active===index?"vip-orbit-node is-active":"vip-orbit-node"} style={{"--orbit-angle":`${angle}deg`} as CSSProperties} onClick={()=>setActive(index)} aria-label={`View ${title}`} aria-pressed={active===index}><Icon size={18}/></button>;
+              })}
+            </div>
+            <div className="vip-orbit-caption"><span>12 SERVICE NODES</span><span>SRINAGAR · J&amp;K</span></div>
+          </div>
+          <div className="vip-mobile-service-dock"><span>SELECT A DEPARTMENT</span><div>{orbitServices.map(({icon:Icon,title},index)=><button type="button" key={title} className={active===index?"is-active":""} onClick={()=>setActive(index)} aria-label={title}><Icon size={17}/></button>)}</div></div>
+          <div className="vip-orbit-controls" aria-label="3D model controls"><span>ORBIT COLOUR</span><div>{(Object.keys(orbitPalettes) as Array<keyof typeof orbitPalettes>).map((key) => <button type="button" key={key} className={`vip-palette-swatch vip-swatch-${key}${palette === key ? " is-active" : ""}`} onClick={() => setPalette(key)} aria-label={`Use ${orbitPalettes[key].label} colour`} aria-pressed={palette === key}/>)}</div><button className="vip-motion-toggle" type="button" onClick={reduceMotion}><Sparkles size={14}/> 3D Motion: {motion?"On":"Off"}</button></div>
+        </div>
+      </div>
+      <div className="vip-hero-trust-strip">
+        <div><Layers size={19}/><span><b>1000+ Services</b><small>Multi-department digital hub</small></span></div>
+        <div><BadgeCheck size={19}/><span><b>Personal Assistance</b><small>Guided document review</small></span></div>
+        <div><Activity size={19}/><span><b>Application Tracking</b><small>Reference-based status lookup</small></span></div>
+        <div><MessageCircle size={19}/><span><b>Customer Support</b><small>WhatsApp and service desk</small></span></div>
+      </div>
+    </section>
+  );
+}
+
 export function VipHomeExperience() {
   return (
     <div className="vip-experience">
@@ -61,7 +312,7 @@ export function VipHomeExperience() {
         </div>
       </section>
 
-      <section className="vip-process-section">
+      <section className="vip-process-section" id="how-it-works">
         <div className="vip-section-heading vip-centered">
           <span className="vip-kicker"><Zap size={14}/> SIMPLE BY DESIGN</span>
           <h2>Your request, <em>step by step.</em></h2>

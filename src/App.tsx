@@ -76,7 +76,7 @@ import "./portal-experience.css";
 import "./performance-mobile.css";
 import "./vip-experience.css";
 import FreeEnhancements from "./components/FreeEnhancements";
-import { VipAboutExperience, VipFaqPage, VipHomeExperience } from "./components/VipExperience";
+import { VipAboutExperience, VipFaqPage, VipHeroExperience, VipHomeExperience } from "./components/VipExperience";
 
 function csvFlag(value?: string, fallback = false) {
   const normalized = value?.trim().toLowerCase();
@@ -268,9 +268,10 @@ function Header() {
           <NavLink to="/services" onClick={close}>Services Hub</NavLink>
           <NavLink to="/instant-services" onClick={close}>Instant Services</NavLink>
           <NavLink to="/challan" onClick={close}>Check Challan</NavLink>
-          <NavLink to="/dashboard" onClick={close}>Security Vault</NavLink>
+          <NavLink to="/dashboard" onClick={close}>Customer Login</NavLink>
           <NavLink to="/track" onClick={close}>Track Reference</NavLink>
           <NavLink to="/about" onClick={close}>About Us</NavLink>
+          <a href="/#how-it-works" onClick={close}>How It Works</a>
           <NavLink to="/faq" onClick={close}>FAQ</NavLink>
           <NavLink to="/contact" onClick={close}>Direct Contact</NavLink>
           <Link className="nav-button" to="/track" onClick={close}>Track Application <ArrowUpRight size={15}/></Link>
@@ -431,31 +432,8 @@ function HomePage() {
       {settings.announcement.enabled && settings.announcement.text && (
         <div className="cyber-announcement"><BadgeCheck size={15}/>{settings.announcement.text}</div>
       )}
-      <section className="cyber-hero">
-        <div className="cyber-hero-grid"/>
-        <div className="cyber-hero-copy">
-          <span className="cyber-eyebrow"><i/> DIGITAL CIVIC INFRASTRUCTURE · SECURE DOCUMENT ASSISTANCE</span>
-          <h1>Smart Civic Assistance.<br/><em>Digitalized &amp; Secure.</em></h1>
-          <p>Fast, friendly documentation and application assistance for Srinagar Municipal Corporation, Revenue, RTO, welfare schemes and more.</p>
-          <div className="cyber-hero-actions">
-            <Link className="cyber-button cyber-button-primary" to="/services">Explore Services <ArrowRight size={16}/></Link>
-            <Link className="cyber-button cyber-button-ghost" to="/apply">Start an Application <ArrowUpRight size={16}/></Link>
-          </div>
-          <div className="cyber-trust-line"><ShieldCheck size={15}/> Independent assistance · Clear updates · Customer-first support</div>
-        </div>
-        <div className="cyber-hero-visual" aria-label="Animated cyber shield emblem">
-          <div className="cyber-orbit cyber-orbit-a"/><div className="cyber-orbit cyber-orbit-b"/>
-          <div className="cyber-shield-card">
-            <div className="cyber-card-top"><span><i/> SYSTEM ONLINE</span><span>BBC / SRN</span></div>
-            <div className="cyber-shield-emblem"><span className="shield-aura"/><ShieldCheck size={112} strokeWidth={1.1}/><LockKeyhole className="shield-lock" size={30}/></div>
-            <div className="cyber-card-bottom"><span>SECURE SERVICE DESK</span><b>SRINAGAR · J&amp;K</b></div>
-            <div className="cyber-circuit circuit-one"/><div className="cyber-circuit circuit-two"/>
-          </div>
-          <span className="cyber-float-tag"><Activity size={13}/> DIGITAL SERVICE NETWORK</span>
-          <span className="cyber-float-code">01 / 06 &nbsp; · &nbsp; VERIFIED WORKFLOW</span>
-        </div>
-        <div className="cyber-hero-bottom"><span>01 — LOCAL SERVICE DESK</span><span>ASSISTANCE · DOCUMENTATION · TRACKING</span></div>
-      </section>
+      <VipHeroExperience />
+
 
       <section className="customer-shortcuts" aria-label="Quick customer actions">
         <a className="customer-shortcut shortcut-whatsapp" href={`https://wa.me/${settings.contact.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent("Hi, I need help from BABA'S CYBER CAFE.")}`} target="_blank" rel="noreferrer"><MessageCircle/><span>WhatsApp</span><small>واٹس ایپ</small></a>
