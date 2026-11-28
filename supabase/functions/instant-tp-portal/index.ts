@@ -64,7 +64,7 @@ Deno.serve(async (request: Request) => {
         if (row.payment_status === 'paid') return response(request, { error: 'Payment is already marked Paid.' }, 409)
         const { error: updateError } = await db.from('instant_tp_applications').update({ utr, payment_status: 'under_verification', updated_at: new Date().toISOString() }).eq('id', row.id)
         if (updateError) throw updateError
-        await audit(db, row.id, null, 'utr_submitted', { utr })
+        await audit(db, row.id, null, 'utr_submitted', { utrLast4: utr.slice(-4) })
         row.utr = utr; row.payment_status = 'under_verification'
       }
       let policyUrl: string | null = null
@@ -99,7 +99,7 @@ Deno.serve(async (request: Request) => {
       if (!row || row.payment_status !== 'under_verification' || !row.utr) return response(request, { error: 'A submitted UTR must be present before verification.' }, 409)
       const { error } = await db.from('instant_tp_applications').update({ payment_status: 'paid', payment_verified_by: owner.id, payment_verified_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
-      await audit(db, id, owner.id, 'payment_verified_paid', { utr: row.utr })
+      await audit(db, id, owner.id, 'payment_verified_paid', { utrLast4: row.utr.slice(-4) })
       return response(request, { updated: true })
     }
     if (body.action === 'admin_issue_policy') {
