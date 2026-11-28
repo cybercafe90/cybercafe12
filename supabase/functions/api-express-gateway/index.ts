@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const apiKey = Deno.env.get("APIEXPRESS_API_KEY");
-  const providerConfig = parseApiExpressBaseUrl(Deno.env.get("APIEXPRESS_BASE_URL"));
+  const providerConfig = parseApiExpressBaseUrl(Deno.env.get("APIEXPRESS_BASE_URL") ?? null);
   if (!supabaseUrl || !serviceRoleKey || !apiKey || !providerConfig) {
     return reply(req, { ok: false, service: "unknown", error: "Gateway is not configured with a valid API Express provider URL and key." }, 503);
   }
