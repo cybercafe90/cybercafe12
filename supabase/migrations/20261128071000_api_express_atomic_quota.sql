@@ -56,6 +56,7 @@ create or replace function public.reserve_api_express_quota(
   p_user_id uuid,
   p_environment text,
   p_monthly_limit integer,
+  p_monthly_usage_offset integer,
   p_user_minute_limit integer
 )
 returns jsonb
@@ -77,6 +78,9 @@ begin
     or p_environment not in ('sandbox', 'production')
     or p_monthly_limit is null
     or p_monthly_limit < 1
+    or p_monthly_usage_offset is null
+    or p_monthly_usage_offset < 0
+    or p_monthly_usage_offset > p_monthly_limit
     or p_user_minute_limit is null
     or p_user_minute_limit < 1 then
     raise exception 'Invalid API Express quota reservation parameters'
@@ -91,7 +95,7 @@ begin
   -- user second, avoiding lock-order inversions between concurrent requests.
   if p_environment = 'production' then
     insert into public.api_express_quota_counters (bucket_key, window_start, used)
-    values (v_global_key, v_month_start, 0)
+    values (v_global_key, v_month_start, p_monthly_usage_offset)
     on conflict (bucket_key, window_start) do nothing;
   end if;
 
@@ -153,7 +157,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.reserve_api_express_quota(uuid, text, integer, integer)
+revoke all on function public.reserve_api_express_quota(uuid, text, integer, integer, integer)
   from public, anon, authenticated;
-grant execute on function public.reserve_api_express_quota(uuid, text, integer, integer)
+grant execute on function public.reserve_api_express_quota(uuid, text, integer, integer, integer)
   to service_role;
