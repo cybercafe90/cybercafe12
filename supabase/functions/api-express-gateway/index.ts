@@ -168,18 +168,19 @@ async function readLogs(req: Request, admin: SupabaseClient) {
   const { data, error } = await admin.from("api_express_logs").select("id,user_id,service_name,status,http_code,created_at").order("created_at", { ascending: false }).limit(limit);
   if (error) return reply(req, { ok: false, service: "admin_logs", error: "Could not load API logs." }, 500);
   const rows = data ?? [];
-  const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
-  const [totalResult, successResult, errorResult, cacheResult, upstreamResult] = await Promise.all([
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const [totalResult, successResult, errorResult, cacheResult, quotaResult] = await Promise.all([
     admin.from("api_express_logs").select("id", { count: "exact", head: true }),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "success"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "error"),
     admin.from("api_express_logs").select("id", { count: "exact", head: true }).eq("status", "cache_hit"),
-    admin.from("api_express_logs").select("id", { count: "exact", head: true }).in("status", ["success", "error"]).eq("environment", "production").gte("created_at", monthStart.toISOString()),
+    admin.from("api_express_quota_counters").select("used").eq("bucket_key", "global:production").eq("window_start", monthStart.toISOString()).maybeSingle(),
   ]);
-  if ([totalResult, successResult, errorResult, cacheResult, upstreamResult].some(result => result.error)) {
+  if ([totalResult, successResult, errorResult, cacheResult].some(result => result.error) || quotaResult.error) {
     return reply(req, { ok: false, service: "admin_logs", error: "Could not calculate API usage." }, 500);
   }
-  const used = upstreamResult.count ?? 0;
+  const used = Number(quotaResult.data?.used ?? 0);
   const quotaLimit = Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000);
   const counts = {
     total: totalResult.count ?? 0,
@@ -197,7 +198,7 @@ async function readLogs(req: Request, admin: SupabaseClient) {
         configured_limit: quotaLimit,
         estimated_upstream_attempts: used,
         remaining_estimate: Math.max(0, quotaLimit - used),
-        note: "Estimate from retained gateway logs; API Express account usage is authoritative.",
+        note: "Usage is counted by atomic quota reservations; API Express account usage remains authoritative.",
       },
     },
   });
@@ -260,29 +261,29 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  const minuteAgo = new Date(Date.now() - 60_000).toISOString();
-  const { count: userCalls, error: rateError } = await admin.from("api_express_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", identity.user.id)
-    .in("status", ["success", "error"])
-    .gte("created_at", minuteAgo);
-  if (rateError) return reply(req, { ok: false, service, error: "Usage protection is temporarily unavailable." }, 503);
-  if ((userCalls ?? 0) >= 20) {
-    await logCall(admin, identity.user.id, service, "rejected", 429, environment);
-    return reply(req, { ok: false, service, error: "Request limit reached. Please wait one minute before trying again." }, 429);
+  const configuredLimitRaw = Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000);
+  const configuredLimit = Number.isSafeInteger(configuredLimitRaw) && configuredLimitRaw > 0
+    ? Math.min(configuredLimitRaw, 1000000)
+    : 1000;
+  const { data: reservation, error: reservationError } = await admin.rpc("reserve_api_express_quota", {
+    p_user_id: identity.user.id,
+    p_environment: environment,
+    p_monthly_limit: configuredLimit,
+    p_user_minute_limit: 20,
+  });
+  if (reservationError || !jsonObject(reservation)) {
+    return reply(req, { ok: false, service, error: "API quota protection is temporarily unavailable." }, 503);
   }
-
-  const configuredLimit = Math.max(1, Number(Deno.env.get("APIEXPRESS_FREE_CALL_LIMIT") ?? 1000));
-  const quotaMonthStart = new Date(); quotaMonthStart.setUTCDate(1); quotaMonthStart.setUTCHours(0, 0, 0, 0);
-  const { count: totalAttempts, error: quotaError } = await admin.from("api_express_logs")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["success", "error"])
-    .eq("environment", "production")
-    .gte("created_at", quotaMonthStart.toISOString());
-  if (quotaError) return reply(req, { ok: false, service, error: "API quota protection is temporarily unavailable." }, 503);
-  if (environment === "production" && (totalAttempts ?? 0) >= configuredLimit) {
+  if (reservation.allowed !== true) {
     await logCall(admin, identity.user.id, service, "rejected", 429, environment);
-    return reply(req, { ok: false, service, error: "The configured API Express call allowance has been reached. Please check the provider account quota." }, 429);
+    const monthlyLimitReached = reservation.reason === "monthly_quota";
+    return reply(req, {
+      ok: false,
+      service,
+      error: monthlyLimitReached
+        ? "The configured API Express call allowance has been reached. Please check the provider account quota."
+        : "Request limit reached. Please wait before trying again.",
+    }, 429);
   }
 
   let upstream: Response;
